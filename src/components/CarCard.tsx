@@ -21,7 +21,7 @@ export default function CarCard({ car }: { car: Car }) {
                 <img
                     src={car.imageUrl}
                     alt={`${car.make} ${car.model}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute top-0 left-0 bg-black text-white text-[9px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-br-lg">
                     Seminuevo
@@ -62,9 +62,18 @@ export default function CarCard({ car }: { car: Car }) {
 
                     <Link
                         href={`/auto/${car._id}`}
-                        className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 transition-colors hover:bg-black hover:text-white hover:border-black"
+                        className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 transition-all hover:bg-black hover:text-white hover:border-black"
                     >
-                        <span className="text-xl">›</span>
+                        {/* SVG REEMPLAZANDO AL TEXTO › PARA CENTRADO PERFECTO */}
+                        <svg
+                            viewBox="0 0 24 24"
+                            className="w-4 h-4 fill-none stroke-current translate-x-[1px]"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <polyline points="9 18 15 12 9 6" />
+                        </svg>
                     </Link>
                 </div>
             </div>
