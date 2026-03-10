@@ -87,7 +87,7 @@ export default async function HomePage() {
 
       {/* 4. RESEÑAS DE CLIENTES
       */}
-      <section className="bg-white pb-20 pt-10 border-t border-gray-100">
+      <section className="bg-white pb-14 pt-10 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10 space-y-2">
             <h2 className="text-xl font-black tracking-tight text-black uppercase text-left">Reseña de nuestros clientes</h2>
