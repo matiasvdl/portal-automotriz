@@ -7,73 +7,65 @@ export const car = defineType({
     fields: [
         defineField({ name: 'make', title: 'Marca', type: 'string' }),
         defineField({ name: 'model', title: 'Modelo', type: 'string' }),
+        defineField({
+            name: 'slug',
+            title: 'Enlace (Slug)',
+            type: 'slug',
+            options: { source: (doc: any) => `${doc.make}-${doc.model}-${doc.year}` },
+            validation: Rule => Rule.required()
+        }),
         defineField({ name: 'year', title: 'Año', type: 'number' }),
         defineField({ name: 'price', title: 'Precio', type: 'number' }),
+        defineField({ name: 'mileage', title: 'Kilometraje', type: 'number' }),
+
+        // COLOR con lista predefinida pero permite escribir cualquiera
+        defineField({
+            name: 'color',
+            title: 'Color',
+            type: 'string',
+            options: {
+                list: [
+                    { title: 'Blanco', value: 'Blanco' },
+                    { title: 'Negro', value: 'Negro' },
+                    { title: 'Gris', value: 'Gris' },
+                    { title: 'Azul', value: 'Azul' },
+                    { title: 'Rojo', value: 'Rojo' },
+                ],
+            }
+        }),
+
         defineField({
             name: 'fuel',
             title: 'Combustible',
             type: 'string',
             options: {
                 list: [
-                    { title: 'Eléctrico', value: 'electrico' },
-                    { title: 'Híbrido', value: 'hibrido' },
-                    { title: 'Gasolina', value: 'gasolina' },
-                    { title: 'Diésel', value: 'diesel' },
+                    { title: 'Bencina', value: 'Bencina' },
+                    { title: 'Diésel', value: 'Diesel' },
+                    { title: 'Híbrido', value: 'Hibrido' },
                 ],
             },
         }),
+
+        // CARACTERÍSTICAS (Equipamiento)
         defineField({
-            name: 'transmission',
-            title: 'Transmisión',
-            type: 'string',
-            options: {
-                list: [
-                    { title: 'Automática', value: 'automatica' },
-                    { title: 'Manual', value: 'manual' },
-                ],
-            },
+            name: 'features',
+            title: 'Equipamiento / Características',
+            type: 'array',
+            of: [{ type: 'string' }],
+            options: { layout: 'tags' } // Esto hace que se vean como etiquetas
         }),
-        defineField({
-            name: 'body',
-            title: 'Carrocería',
-            type: 'string',
-            options: {
-                list: [
-                    { title: 'Camioneta', value: 'camioneta' },
-                    { title: 'Sedán', value: 'sedan' },
-                    { title: 'SUV', value: 'suv' },
-                    { title: 'Hatchback', value: 'hatchback' },
-                    { title: 'Coupé', value: 'coupe' },
-                    { title: 'Van', value: 'van' },
-                    { title: 'Minivan', value: 'minivan' },
-                    { title: 'Camión', value: 'camion' },
-                    { title: 'Wagon', value: 'wagon' },
-                ],
-            },
-        }),
+
         defineField({
             name: 'images',
             title: 'Imágenes',
             type: 'array',
-            of: [{ type: 'image' }],
+            of: [{ type: 'image', options: { hotspot: true } }],
         }),
         defineField({
             name: 'description',
             title: 'Descripción',
             type: 'text',
         }),
-        defineField({
-            name: 'slug',
-            title: 'Enlace',
-            type: 'slug',
-            options: { source: (doc: any) => `${doc.make}-${doc.model}-${doc.year}` },
-        }),
     ],
-    preview: {
-        select: {
-            title: 'make',
-            subtitle: 'model',
-            media: 'images.0',
-        },
-    },
 })

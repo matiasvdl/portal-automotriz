@@ -1,14 +1,16 @@
 import Link from 'next/link'
 
-// Definimos qué datos recibe la tarjeta
+// Definimos la interfaz con los nuevos campos de Sanity
 interface Car {
     _id: string
+    slug: string // Cambiamos ID por slug para las rutas
     make: string
     model: string
     year: number
     price: number
     fuel: string
     transmission: string
+    mileage: number // Campo dinámico de kilometraje
     imageUrl: string
 }
 
@@ -16,10 +18,10 @@ export default function CarCard({ car }: { car: Car }) {
     return (
         <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col transition-colors">
 
-            {/* IMAGEN Y BADGE */}
+            {/* IMAGEN Y BADGE CON SEGURIDAD */}
             <div className="aspect-[4/3] relative bg-gray-50 border-b border-gray-100 overflow-hidden">
                 <img
-                    src={car.imageUrl}
+                    src={car.imageUrl || 'https://via.placeholder.com/600x450?text=Sin+Imagen'}
                     alt={`${car.make} ${car.model}`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -30,7 +32,7 @@ export default function CarCard({ car }: { car: Car }) {
 
             {/* INFORMACIÓN */}
             <div className="p-6 flex-grow flex flex-col justify-between space-y-5 text-left">
-                <Link href={`/auto/${car._id}`}>
+                <Link href={`/auto/${car.slug}`}>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
                         {car.year} · {car.transmission}
                     </p>
@@ -41,7 +43,10 @@ export default function CarCard({ car }: { car: Car }) {
                     <div className="flex gap-4">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1.5">Kilómetros</span>
-                            <span className="text-[11px] font-bold text-gray-700">45.000 KM</span>
+                            {/* KILOMETRAJE DINÁMICO */}
+                            <span className="text-[11px] font-bold text-gray-700">
+                                {car.mileage ? car.mileage.toLocaleString('es-CL') : '0'} KM
+                            </span>
                         </div>
                         <div className="h-6 w-[1px] bg-gray-100"></div>
                         <div className="flex flex-col">
@@ -61,13 +66,12 @@ export default function CarCard({ car }: { car: Car }) {
                     </div>
 
                     <Link
-                        href={`/auto/${car._id}`}
-                        className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 transition-all hover:bg-black hover:text-white hover:border-black"
+                        href={`/auto/${car.slug}`}
+                        className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 transition-all hover:bg-black hover:text-white hover:border-black shrink-0"
                     >
-                        {/* SVG REEMPLAZANDO AL TEXTO › PARA CENTRADO PERFECTO */}
                         <svg
                             viewBox="0 0 24 24"
-                            className="w-4 h-4 fill-none stroke-current translate-x-[1px]"
+                            className="w-5 h-5 fill-none stroke-current translate-x-[0.5px]"
                             strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
