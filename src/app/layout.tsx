@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Portal Automotriz",
+  title: "VDL MOTORS",
   description: "Compra y venta de vehículos usados",
 };
 

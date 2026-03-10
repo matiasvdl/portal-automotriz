@@ -2,37 +2,61 @@ import { client } from '@/sanity/lib/client'
 import Link from 'next/link'
 import CarCard from '../components/CarCard'
 
+// Forzamos que la página se actualice siempre para ver cambios de Sanity al instante
+export const revalidate = 0
+
 /**
- * Función para obtener los autos desde Sanity
+ * Obtiene todos los datos necesarios para la Home en una sola consulta eficiente
  */
-async function getCars() {
-  const query = `*[_type == "car"] | order(_createdAt desc)[0...4] {
-    _id, make, model, year, price, fuel, transmission,
-    "imageUrl": images[0].asset->url
+async function getData() {
+  const query = `{
+    "cars": *[_type == "car"] | order(_createdAt desc)[0...4] {
+      _id, make, model, year, price, fuel, transmission,
+      "imageUrl": images[0].asset->url
+    },
+    "reviews": *[_type == "review"] | order(date desc)[0...3] {
+      _id, name, date, rating, comment, badge 
+    },
+    "config": *[_type == "siteConfig"][0] { 
+      navMenu,
+      footerDescription,
+      footerLinks,
+      footerTagline
+    }
   }`
   return await client.fetch(query)
 }
 
 export default async function HomePage() {
-  const cars = await getCars()
+  const { cars, reviews, config } = await getData()
 
   return (
     <main className="min-h-screen">
 
-      {/* 1. NAVEGACIÓN */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 h-20 flex items-center shadow-none">
+      {/* 1. NAVEGACIÓN - COMPACTA Y FIEL AL DISEÑO ORIGINAL */}
+      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none">
         <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
+
+          {/* Logo */}
           <Link href="/" className="text-2xl font-black tracking-tighter uppercase flex items-center text-black">
             VDL<span className="font-light">MOTORS</span>
           </Link>
 
+          {/* Menú: Color #4A5568 y tamaño compacto */}
           <div className="hidden lg:flex gap-10">
-            <Link href="/comprar" className="nav-link">Comprar un auto</Link>
-            <Link href="/vender" className="nav-link">Vende tu auto</Link>
-            <Link href="/financia" className="nav-link">Financiamiento</Link>
+            {config?.navMenu?.map((link: any, i: number) => (
+              <Link
+                key={i}
+                href={link.path}
+                className="text-[12px] font-bold uppercase tracking-widest text-[#4A5568] hover:text-black transition-colors"
+              >
+                {link.title}
+              </Link>
+            ))}
           </div>
 
-          <Link href="/admin" className="bg-black text-white text-[12px] font-bold uppercase tracking-[0.15em] px-8 py-3 rounded-lg hover:bg-zinc-800 transition-colors">
+          {/* Botón Ingresar: Tamaño optimizado */}
+          <Link href="/admin" className="bg-black text-white text-[12px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-800 transition-colors">
             Ingresar
           </Link>
         </div>
@@ -53,7 +77,8 @@ export default async function HomePage() {
             Comprar y vender un auto nunca fue tan simple.
           </p>
 
-          <div className="bg-white p-2 rounded-xl flex max-w-xl mx-auto border border-gray-200">
+          {/* Buscador minimalista */}
+          <div className="bg-white p-2 rounded-xl flex max-w-xl mx-auto border border-gray-200 shadow-sm">
             <input
               type="text"
               placeholder="Busca por marca o modelo..."
@@ -66,7 +91,7 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* 3. LISTADO DE AUTOS RECIÉN LLEGADOS */}
+      {/* 3. LISTADO DE AUTOS DESTACADOS */}
       <section className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex justify-between items-baseline mb-8">
           <div className="space-y-2">
@@ -85,61 +110,72 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 4. RESEÑAS DE CLIENTES
-      */}
-      <section className="bg-white pb-14 pt-10 border-t border-gray-100">
+      {/* 4. SECCIÓN DE RESEÑAS - DISEÑO FLAT MONOCROMÁTICO */}
+      <section className="bg-white pb-16 pt-10 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="mb-10 space-y-2">
-            <h2 className="text-xl font-black tracking-tight text-black uppercase text-left">Reseña de nuestros clientes</h2>
+          <div className="mb-10 space-y-2 text-left">
+            <h2 className="text-xl font-black tracking-tight text-black uppercase">Reseña de nuestros clientes</h2>
             <div className="h-1 w-12 bg-black"></div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-            <ReviewCard
-              name="Josue Villalon"
-              date="2025-09-26"
-              text="Excelente servicio, el proceso de compra fue muy rápido y transparente. 100% recomendados."
-            />
-            <ReviewCard
-              name="Natalia Espinoza"
-              date="2025-09-24"
-              text="Buscaba seguridad y aquí la encontré. El informe Autofact me dio toda la tranquilidad que necesitaba."
-            />
-            <ReviewCard
-              name="Mario Rodriguez"
-              date="2025-09-16"
-              text="La mejor gestión. Vendí mi auto anterior y compré el nuevo en el mismo lugar sin complicaciones."
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {reviews?.map((review: any) => (
+              <ReviewCard
+                key={review._id}
+                name={review.name}
+                date={review.date}
+                text={review.comment}
+                rating={review.rating}
+                badge={review.badge}
+              />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 5. FOOTER */}
+      {/* 5. FOOTER DINÁMICO - RESTAURADO (Sin mayúsculas forzadas en enlaces) */}
       <footer className="bg-black text-white pt-16 pb-8 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-16 mb-12 text-left">
-          <div className="md:col-span-4">
+
+          {/* Logo y descripción bajo el logo */}
+          <div className="md:col-span-4 space-y-4">
             <span className="text-2xl font-black tracking-tighter uppercase text-white">
               VDL<span className="font-light">MOTORS</span>
             </span>
+            <p className="text-zinc-400 text-sm leading-relaxed max-w-xs font-medium">
+              {config?.footerDescription}
+            </p>
           </div>
 
+          {/* Enlaces Columna 1 */}
           <div className="md:col-span-3 space-y-4 text-sm font-medium text-gray-400">
-            <Link href="/comprar" className="block hover:text-white transition-colors">Compra un auto</Link>
-            <Link href="/sedes" className="block hover:text-white transition-colors">Sedes</Link>
-            <Link href="/faq" className="block hover:text-white transition-colors">Preguntas frecuentes</Link>
+            {config?.footerLinks?.slice(0, 3).map((link: any, i: number) => (
+              <Link key={i} href={link.path} className="block hover:text-white transition-colors">
+                {link.title}
+              </Link>
+            ))}
           </div>
 
+          {/* Enlaces Columna 2 + Selector de País */}
           <div className="md:col-span-3 space-y-4 text-sm font-medium text-gray-400">
-            <Link href="/contacto" className="block hover:text-white transition-colors">Contacto</Link>
+            {config?.footerLinks?.slice(3).map((link: any, i: number) => (
+              <Link key={i} href={link.path} className="block hover:text-white transition-colors">
+                {link.title}
+              </Link>
+            ))}
             <div className="flex items-center gap-2 pt-4 opacity-50 text-white">
               <span className="text-[10px] font-bold border border-white px-1.5 py-0.5 rounded uppercase tracking-tighter">CL</span>
               <span className="text-sm font-normal">Chile</span>
             </div>
           </div>
         </div>
+
+        {/* Barra final: Copyright y frase dinámica en cursiva */}
         <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
           <p>© 2026 VDL MOTORS SPA | TODOS LOS DERECHOS RESERVADOS</p>
-          <p className="italic font-medium text-white uppercase tracking-normal">Transforma tu camino</p>
+          <p className="italic font-medium text-white uppercase tracking-normal">
+            {config?.footerTagline || "TRANSFORMA TU CAMINO"}
+          </p>
         </div>
       </footer>
     </main>
@@ -147,26 +183,56 @@ export default async function HomePage() {
 }
 
 /**
- * Componente interno para las tarjetas de reseña
+ * Componente interno: Tarjeta de reseña monocromática y plana
  */
-function ReviewCard({ name, date, text }: { name: string; date: string; text: string }) {
+function ReviewCard({ name, date, text, rating, badge }: { name: string; date: string; text: string; rating: number; badge?: string }) {
   return (
-    <div className="bg-[#F7F8F9] border border-gray-100 p-8 rounded-2xl space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center font-bold text-white uppercase text-left">
-          {name.charAt(0)}
+    <div className="bg-[#F7F8F9] border border-gray-200 p-8 rounded-2xl text-left h-full transition-colors hover:border-gray-300">
+      <div className="space-y-5">
+
+        {/* Encabezado con Avatar y Badge dinámico */}
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0 text-lg">
+            {name.charAt(0)}
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-0.5">
+              {badge || 'Comprador'}
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <h4 className="font-extrabold text-black uppercase text-sm tracking-tighter leading-none">{name}</h4>
+              {/* Check de verificado en negro sólido */}
+              <div className="w-3.5 h-3.5 bg-zinc-900 rounded-full flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-current" stroke="currentColor" strokeWidth="4">
+                  <path d="M20 6L9 17L4 12" fill="none" />
+                </svg>
+              </div>
+            </div>
+
+            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{date}</p>
+          </div>
         </div>
-        <div>
-          <h4 className="font-bold text-black uppercase text-sm tracking-tight leading-none mb-1 text-left">{name}</h4>
-          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest text-left">{date}</p>
+
+        {/* Estrellas en Gris Oscuro para estilo monocromático */}
+        <div className="flex gap-0.5">
+          {[...Array(5)].map((_, i) => (
+            <svg
+              key={i}
+              className={`w-3.5 h-3.5 ${i < rating ? 'text-zinc-800' : 'text-zinc-200'} fill-current`}
+              viewBox="0 0 20 20"
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          ))}
         </div>
+
+        {/* Texto de la opinión */}
+        <p className="text-sm text-zinc-700 leading-relaxed font-medium italic">
+          "{text}"
+        </p>
       </div>
-      <div className="flex gap-1 justify-start">
-        {[...Array(5)].map((_, i) => (
-          <span key={i} className="text-black text-[10px]">★</span>
-        ))}
-      </div>
-      <p className="text-sm text-gray-600 leading-relaxed font-medium text-left italic">"{text}"</p>
     </div>
   )
 }
