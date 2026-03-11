@@ -1,30 +1,45 @@
+'use client'
+
 import Link from 'next/link'
 
-export default function Navigation() {
+/**
+ * Header dinámico y compacto fiel al diseño original de la Home.
+ */
+export default function Navigation({ config }: { config?: any }) {
+    // Si no hay links en Sanity, usamos los básicos por defecto
+    const menuItems = config?.navMenu || [
+        { title: 'Comprar un auto', path: '/catalogo' },
+        { title: 'Vende tu auto', path: '/vende-tu-auto' },
+        { title: 'Financiamiento', path: '/financiamiento' }
+    ];
+
     return (
-        <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none text-left">
+        <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none text-left font-sans">
             <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
 
-                {/* Logo */}
+                {/* 1. Logo */}
                 <Link href="/" className="text-2xl font-black tracking-tighter uppercase flex items-center text-black">
                     VDL<span className="font-light">MOTORS</span>
                 </Link>
 
-                {/* Menú */}
+                {/* 2. Menú Central Dinámico (Desktop) */}
                 <div className="hidden lg:flex gap-10">
-                    <Link href="/catalogo" className="text-[12px] font-bold uppercase tracking-widest text-[#4A5568] hover:text-black transition-colors">
-                        Comprar un auto
-                    </Link>
-                    <Link href="/sucursales" className="text-[12px] font-bold uppercase tracking-widest text-[#4A5568] hover:text-black transition-colors">
-                        Sucursales
-                    </Link>
-                    <Link href="/contacto" className="text-[12px] font-bold uppercase tracking-widest text-[#4A5568] hover:text-black transition-colors">
-                        Contacto
-                    </Link>
+                    {menuItems.map((link: any, i: number) => (
+                        <Link
+                            key={i}
+                            href={link.path || '#'}
+                            className="text-[12px] font-bold uppercase tracking-widest text-[#4A5568] hover:text-black transition-colors"
+                        >
+                            {link.title}
+                        </Link>
+                    ))}
                 </div>
 
-                {/* Botón Acceso */}
-                <Link href="/admin" className="bg-black text-white text-[12px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-800 transition-colors">
+                {/* 3. Botón Derecha - Diseño "Ingresar" Original */}
+                <Link
+                    href="/admin"
+                    className="bg-black text-white text-[12px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-800 transition-colors"
+                >
                     Ingresar
                 </Link>
             </div>
