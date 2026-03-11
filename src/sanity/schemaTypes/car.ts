@@ -18,18 +18,47 @@ export const car = defineType({
         defineField({ name: 'price', title: 'Precio', type: 'number' }),
         defineField({ name: 'mileage', title: 'Kilometraje', type: 'number' }),
 
-        // COLOR con lista predefinida pero permite escribir cualquiera
+        // NUEVO: CARROCERÍA (Kavak Style)
         defineField({
-            name: 'color',
-            title: 'Color',
+            name: 'body',
+            title: 'Carrocería',
             type: 'string',
             options: {
                 list: [
-                    { title: 'Blanco', value: 'Blanco' },
-                    { title: 'Negro', value: 'Negro' },
-                    { title: 'Gris', value: 'Gris' },
-                    { title: 'Azul', value: 'Azul' },
-                    { title: 'Rojo', value: 'Rojo' },
+                    { title: 'SUV', value: 'Suv' },
+                    { title: 'Sedán', value: 'Sedan' },
+                    { title: 'Hatchback', value: 'Hatchback' },
+                    { title: 'Camioneta', value: 'Camioneta' },
+                    { title: 'Coupé', value: 'Coupe' },
+                    { title: 'Van', value: 'Van' },
+                ],
+            }
+        }),
+
+        // NUEVO: TRANSMISIÓN
+        defineField({
+            name: 'transmission',
+            title: 'Transmisión',
+            type: 'string',
+            options: {
+                list: [
+                    { title: 'Automática', value: 'Automatica' },
+                    { title: 'Manual', value: 'Manual' },
+                ],
+            }
+        }),
+
+        // NUEVO: TRACCIÓN
+        defineField({
+            name: 'drivetrain',
+            title: 'Tracción',
+            type: 'string',
+            options: {
+                list: [
+                    { title: 'Delantera', value: 'Delantera' },
+                    { title: 'Trasera', value: 'Trasera' },
+                    { title: '4x4', value: '4x4' },
+                    { title: '4x2', value: '4x2' },
                 ],
             }
         }),
@@ -43,17 +72,41 @@ export const car = defineType({
                     { title: 'Bencina', value: 'Bencina' },
                     { title: 'Diésel', value: 'Diesel' },
                     { title: 'Híbrido', value: 'Hibrido' },
+                    { title: 'Eléctrico', value: 'Electrico' },
                 ],
             },
         }),
 
-        // CARACTERÍSTICAS (Equipamiento)
+        defineField({
+            name: 'color',
+            title: 'Color',
+            type: 'string',
+            options: {
+                list: [
+                    { title: 'Blanco', value: 'Blanco' },
+                    { title: 'Negro', value: 'Negro' },
+                    { title: 'Gris', value: 'Gris' },
+                    { title: 'Azul', value: 'Azul' },
+                    { title: 'Rojo', value: 'Rojo' },
+                    { title: 'Plateado', value: 'Plateado' },
+                ],
+            }
+        }),
+
+        // NUEVO: UBICACIÓN (Para que aparezca "Metropolitana de Santiago")
+        defineField({
+            name: 'location',
+            title: 'Ubicación',
+            type: 'string',
+            initialValue: 'Metropolitana de Santiago'
+        }),
+
         defineField({
             name: 'features',
             title: 'Equipamiento / Características',
             type: 'array',
             of: [{ type: 'string' }],
-            options: { layout: 'tags' } // Esto hace que se vean como etiquetas
+            options: { layout: 'tags' }
         }),
 
         defineField({
