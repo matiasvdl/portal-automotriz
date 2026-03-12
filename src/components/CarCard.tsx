@@ -7,7 +7,8 @@ interface Car {
     make: string
     model: string
     year: number
-    price: number
+    listPrice: number // Actualizado
+    financedPrice: number // Actualizado
     fuel: string
     transmission: string
     mileage: number
@@ -15,13 +16,12 @@ interface Car {
 }
 
 export default function CarCard({ car }: { car: Car }) {
-    // Definimos la ruta de detalle para usarla en ambos Links
     const detailUrl = `/catalogo/${car.slug}`
 
     return (
         <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col transition-colors">
 
-            {/* IMAGEN Y BADGE CON SEGURIDAD */}
+            {/* IMAGEN Y BADGE */}
             <div className="aspect-[4/3] relative bg-gray-50 border-b border-gray-100 overflow-hidden">
                 <Link href={detailUrl}>
                     <img
@@ -47,25 +47,29 @@ export default function CarCard({ car }: { car: Car }) {
 
                     <div className="flex gap-4">
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1.5">Kilómetros</span>
-                            <span className="text-[11px] font-bold text-gray-700">
+                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1.5 text-zinc-400">Kilómetros</span>
+                            <span className="text-[11px] font-bold text-zinc-700 italic">
                                 {car.mileage ? car.mileage.toLocaleString('es-CL') : '0'} KM
                             </span>
                         </div>
                         <div className="h-6 w-[1px] bg-gray-100"></div>
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1.5">Motor</span>
-                            <span className="text-[11px] font-bold text-gray-700 uppercase">{car.fuel}</span>
+                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1.5 text-zinc-400">Motor</span>
+                            <span className="text-[11px] font-bold text-zinc-700 uppercase italic">{car.fuel}</span>
                         </div>
                     </div>
                 </Link>
 
-                {/* PRECIO Y BOTÓN */}
+                {/* PRECIO DINÁMICO (DOBLE PRECIO) */}
                 <div className="pt-5 border-t border-gray-100 flex items-center justify-between">
                     <div className="flex flex-col text-left">
-                        <span className="text-[9px] font-bold text-gray-400 uppercase mb-1 leading-none">Precio</span>
+                        {/* Precio de lista tachado (pequeño) */}
+                        <span className="text-[8px] font-black text-gray-400 uppercase mb-1 leading-none line-through opacity-50 italic">
+                            ${car.listPrice?.toLocaleString('es-CL')}
+                        </span>
+                        {/* Precio financiado (protagonista) */}
                         <p className="text-xl font-black text-black tracking-tighter leading-none">
-                            ${car.price?.toLocaleString('es-CL')}
+                            ${car.financedPrice?.toLocaleString('es-CL')}
                         </p>
                     </div>
 

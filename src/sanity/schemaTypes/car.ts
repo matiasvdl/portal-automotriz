@@ -15,10 +15,24 @@ export const car = defineType({
             validation: Rule => Rule.required()
         }),
         defineField({ name: 'year', title: 'Año', type: 'number' }),
-        defineField({ name: 'price', title: 'Precio', type: 'number' }),
+
+        // --- CAMBIO AQUÍ: REEMPLAZAMOS 'price' POR ESTOS DOS ---
+        defineField({
+            name: 'listPrice',
+            title: 'Precio Lista (Contado)',
+            type: 'number',
+            validation: Rule => Rule.required().min(0)
+        }),
+        defineField({
+            name: 'financedPrice',
+            title: 'Precio Financiado (Bono)',
+            type: 'number',
+            validation: Rule => Rule.required().min(0)
+        }),
+        // -------------------------------------------------------
+
         defineField({ name: 'mileage', title: 'Kilometraje', type: 'number' }),
 
-        // NUEVO: CARROCERÍA (Kavak Style)
         defineField({
             name: 'body',
             title: 'Carrocería',
@@ -35,7 +49,6 @@ export const car = defineType({
             }
         }),
 
-        // NUEVO: TRANSMISIÓN
         defineField({
             name: 'transmission',
             title: 'Transmisión',
@@ -48,7 +61,6 @@ export const car = defineType({
             }
         }),
 
-        // NUEVO: TRACCIÓN
         defineField({
             name: 'drivetrain',
             title: 'Tracción',
@@ -93,7 +105,6 @@ export const car = defineType({
             }
         }),
 
-        // NUEVO: UBICACIÓN (Para que aparezca "Metropolitana de Santiago")
         defineField({
             name: 'location',
             title: 'Ubicación',

@@ -1,19 +1,16 @@
 import { client } from '@/sanity/lib/client'
 import CatalogFilters from '@/components/CatalogFilters'
 
-// Forzamos que la página siempre traiga datos frescos de Sanity
 export const revalidate = 0
 
-/**
- * Obtenemos todos los autos con los campos necesarios para los filtros tipo Kavak
- */
 async function getCars() {
     const query = `*[_type == "car"] | order(_createdAt desc) {
     _id, 
     make, 
     model, 
     year, 
-    price, 
+    listPrice,
+    financedPrice,
     fuel, 
     transmission, 
     mileage, 
@@ -32,9 +29,6 @@ export default async function CatalogoPage() {
 
     return (
         <main className="min-h-screen bg-[#F7F8F9]">
-            {/* Renderizamos el componente de filtros que maneja la lógica 
-                lateral y la grilla de resultados.
-            */}
             <CatalogFilters initialCars={cars} />
         </main>
     )

@@ -2,16 +2,19 @@ import { client } from '@/sanity/lib/client'
 import Link from 'next/link'
 import CarCard from "@/components/CarCard"
 
-// Forzamos que la página se actualice siempre para ver cambios de Sanity al instante
 export const revalidate = 0
 
-/**
- * Obtiene todos los datos necesarios para la Home en una sola consulta eficiente
- */
 async function getData() {
   const query = `{
     "cars": *[_type == "car"] | order(_createdAt desc)[0...4] {
-      _id, make, model, year, price, fuel, transmission, 
+      _id, 
+      make, 
+      model, 
+      year, 
+      listPrice,
+      financedPrice,
+      fuel, 
+      transmission, 
       mileage,
       "slug": slug.current,
       "imageUrl": images[0].asset->url
@@ -34,8 +37,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen">
-
-      {/* 1. HERO / BANNER - Limpio de navegación manual */}
+      {/* 1. HERO / BANNER */}
       <header className="relative h-[450px] bg-zinc-900 flex items-center justify-center overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1920"
@@ -43,7 +45,7 @@ export default async function HomePage() {
           alt="Hero Banner"
         />
         <div className="relative z-10 text-center text-white px-4 max-w-3xl">
-          <h1 className="text-5xl font-extrabold tracking-tight mb-4 leading-tight">
+          <h1 className="text-5xl font-extrabold tracking-tight mb-4 leading-tight uppercase">
             Transforma tu camino
           </h1>
           <p className="text-lg font-medium opacity-80 mb-8">
@@ -82,7 +84,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 3. SECCIÓN DE RESEÑAS - Limpio de footer manual */}
+      {/* 3. SECCIÓN DE RESEÑAS */}
       <section className="bg-white pb-16 pt-10 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10 space-y-2 text-left">
@@ -108,9 +110,6 @@ export default async function HomePage() {
   )
 }
 
-/**
- * Componente interno: Tarjeta de reseña monocromática y plana
- */
 function ReviewCard({ name, date, text, rating, badge }: { name: string; date: string; text: string; rating: number; badge?: string }) {
   return (
     <div className="bg-[#F7F8F9] border border-gray-200 p-8 rounded-2xl text-left h-full transition-colors hover:border-gray-300">
@@ -119,7 +118,6 @@ function ReviewCard({ name, date, text, rating, badge }: { name: string; date: s
           <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0 text-lg">
             {name.charAt(0)}
           </div>
-
           <div className="flex flex-col gap-0.5">
             <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-0.5">
               {badge || 'Comprador'}
@@ -135,22 +133,14 @@ function ReviewCard({ name, date, text, rating, badge }: { name: string; date: s
             <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{date}</p>
           </div>
         </div>
-
         <div className="flex gap-0.5">
           {[...Array(5)].map((_, i) => (
-            <svg
-              key={i}
-              className={`w-3.5 h-3.5 ${i < rating ? 'text-zinc-800' : 'text-zinc-200'} fill-current`}
-              viewBox="0 0 20 20"
-            >
+            <svg key={i} className={`w-3.5 h-3.5 ${i < rating ? 'text-zinc-800' : 'text-zinc-200'} fill-current`} viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           ))}
         </div>
-
-        <p className="text-sm text-zinc-700 leading-relaxed font-medium italic">
-          "{text}"
-        </p>
+        <p className="text-sm text-zinc-700 leading-relaxed font-medium italic">"{text}"</p>
       </div>
     </div>
   )
