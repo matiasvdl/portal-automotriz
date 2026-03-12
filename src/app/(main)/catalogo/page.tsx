@@ -33,7 +33,7 @@ export default async function CatalogoPage() {
     return (
         <main className="min-h-screen bg-[#F7F8F9]">
             {/* Renderizamos el componente de filtros que maneja la lógica 
-                lateral estilo Kavak y la grilla de resultados.
+                lateral y la grilla de resultados.
             */}
             <CatalogFilters initialCars={cars} />
         </main>
