@@ -2,7 +2,7 @@
 
 import { client } from '@/sanity/lib/client'
 import { notFound } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react' // Importamos use
 import FeaturesAccordion from '@/components/FeaturesAccordion'
 import CarCard from '@/components/CarCard'
 
@@ -33,6 +33,9 @@ async function getRecommendedCars(currentId: string) {
 }
 
 export default function CarDetailPage({ params }: { params: any }) {
+    // Ajuste técnico para Vercel/Next.js moderno sin cambiar diseño
+    const resolvedParams: any = use(params);
+
     const [car, setCar] = useState<any>(null)
     const [recommendedCars, setRecommendedCars] = useState<any[]>([])
     const [selectedImage, setSelectedImage] = useState<string>('')
@@ -40,7 +43,7 @@ export default function CarDetailPage({ params }: { params: any }) {
 
     useEffect(() => {
         async function loadData() {
-            const resolvedParams = await params
+            // Usamos la variable ya resuelta arriba
             const carData = await getCar(resolvedParams.slug)
 
             if (!carData) {
@@ -55,7 +58,7 @@ export default function CarDetailPage({ params }: { params: any }) {
             setLoading(false)
         }
         loadData()
-    }, [params])
+    }, [resolvedParams.slug])
 
     if (loading) return <div className="min-h-screen bg-white" />
     if (!car) notFound()
