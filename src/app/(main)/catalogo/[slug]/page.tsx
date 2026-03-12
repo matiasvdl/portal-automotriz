@@ -1,11 +1,12 @@
-'use client' // Agregamos esto para manejar el clic en las fotos
+'use client'
 
 import { client } from '@/sanity/lib/client'
 import { notFound } from 'next/navigation'
-import { useState, useEffect, use } from 'react' // Importamos use
+import { useState, useEffect, use } from 'react'
 import FeaturesAccordion from '@/components/FeaturesAccordion'
 import CarCard from '@/components/CarCard'
 
+// Funciones de obtención de datos (GROQ)
 async function getCar(slug: string) {
     const query = `*[_type == "car" && slug.current == $slug][0] {
     _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage,
@@ -32,9 +33,9 @@ async function getRecommendedCars(currentId: string) {
     return await client.fetch(query, { currentId })
 }
 
-export default function CarDetailPage({ params }: { params: any }) {
-    // Ajuste técnico para Vercel/Next.js moderno sin cambiar diseño
-    const resolvedParams: any = use(params);
+export default function CarDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+    // Resolvemos los parámetros de la URL de forma segura para Next.js 15+
+    const resolvedParams = use(params)
 
     const [car, setCar] = useState<any>(null)
     const [recommendedCars, setRecommendedCars] = useState<any[]>([])
@@ -42,24 +43,34 @@ export default function CarDetailPage({ params }: { params: any }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        if (!resolvedParams?.slug) return
+
         async function loadData() {
-            // Usamos la variable ya resuelta arriba
-            const carData = await getCar(resolvedParams.slug)
+            try {
+                const carData = await getCar(resolvedParams.slug)
 
-            if (!carData) {
+                if (!carData) {
+                    setLoading(false)
+                    return
+                }
+
+                const recCars = await getRecommendedCars(carData._id)
+                setCar(carData)
+                setRecommendedCars(recCars)
+                // Aseguramos que cargue la primera imagen si existe
+                if (carData.images && carData.images.length > 0) {
+                    setSelectedImage(carData.images[0])
+                }
+            } catch (error) {
+                console.error("Error en Sanity Fetch:", error)
+            } finally {
                 setLoading(false)
-                return
             }
-
-            const recCars = await getRecommendedCars(carData._id)
-            setCar(carData)
-            setRecommendedCars(recCars)
-            setSelectedImage(carData.images[0]) // Inicializamos con la primera foto
-            setLoading(false)
         }
         loadData()
     }, [resolvedParams.slug])
 
+    // Pantalla de carga (opcional, puedes poner un skeleton aquí)
     if (loading) return <div className="min-h-screen bg-white" />
     if (!car) notFound()
 
@@ -99,18 +110,20 @@ export default function CarDetailPage({ params }: { params: any }) {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-                    {/* COLUMNA IZQUIERDA: GALERÍA DINÁMICA */}
+                    {/* GALERÍA DINÁMICA */}
                     <div className="lg:col-span-8 space-y-6">
                         <div className="relative rounded-xl overflow-hidden bg-zinc-100 aspect-[16/10] border border-gray-100">
-                            <img
-                                src={selectedImage}
-                                className="w-full h-full object-cover transition-all duration-500"
-                                alt="Vista principal"
-                            />
+                            {selectedImage && (
+                                <img
+                                    src={selectedImage}
+                                    className="w-full h-full object-cover transition-all duration-500"
+                                    alt="Vista principal"
+                                />
+                            )}
                         </div>
 
                         <div className="grid grid-cols-6 gap-3">
-                            {car.images.map((img: string, i: number) => (
+                            {car.images?.map((img: string, i: number) => (
                                 <div
                                     key={i}
                                     onClick={() => setSelectedImage(img)}
