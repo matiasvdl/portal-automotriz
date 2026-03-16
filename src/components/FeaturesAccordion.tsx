@@ -11,12 +11,12 @@ export default function FeaturesAccordion({ features }: { features: FeatureGroup
     const [openIndex, setOpenIndex] = useState<number | null>(0)
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-0.5"> {/* Reducido espacio entre grupos */}
             {features.map((group, index) => (
                 <div key={index} className="border-b border-gray-100 last:border-0">
                     <button
                         onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                        className="w-full py-4 flex justify-between items-center group transition-all"
+                        className="w-full py-3 flex justify-between items-center group transition-all" // py-4 a 3
                     >
                         <div className="flex items-center gap-4">
                             {group.icon && <span className="text-xl">{group.icon}</span>}
@@ -33,9 +33,9 @@ export default function FeaturesAccordion({ features }: { features: FeatureGroup
                     </button>
 
                     {openIndex === index && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 pb-6 animate-in fade-in slide-in-from-top-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 pb-4 animate-in fade-in slide-in-from-top-2"> {/* gap-y-4 a 2 y pb-6 a 4 */}
                             {group.items.map((item, i) => (
-                                <div key={i} className="flex justify-between border-b border-gray-50 pb-1.5">
+                                <div key={i} className="flex justify-between border-b border-gray-50 pb-1">
                                     <span className="text-[11px] text-gray-500 font-medium uppercase tracking-tight">{item.label}</span>
                                     <span className="text-[11px] text-black font-bold uppercase tracking-tight">{item.value}</span>
                                 </div>

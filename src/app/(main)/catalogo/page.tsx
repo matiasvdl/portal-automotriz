@@ -18,6 +18,8 @@ async function getCars() {
     color,
     drivetrain,
     location,
+    category,
+    engine,
     "slug": slug.current,
     "imageUrl": images[0].asset->url
   }`

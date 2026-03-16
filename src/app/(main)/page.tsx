@@ -16,6 +16,8 @@ async function getData() {
       fuel, 
       transmission, 
       mileage,
+      category, 
+      engine,
       "slug": slug.current,
       "imageUrl": images[0].asset->url
     },
