@@ -126,6 +126,7 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                         </div>
 
                         <div className="pt-8 border-t border-gray-100">
+                            {/* DESCRIPCIÓN */}
                             <div className="mb-10">
                                 <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-4 text-black">Descripción</h3>
                                 <p className="text-sm font-medium leading-relaxed text-zinc-600 max-w-2xl">
@@ -133,16 +134,25 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                                 </p>
                             </div>
 
+                            {/* SECCIÓN CARACTERÍSTICAS */}
                             <div className="pt-8 border-t border-gray-100">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-black mb-6">Características</h3>
 
                                 <div className="space-y-2">
                                     {(car.exteriorImages?.length > 0 || car.interiorImages?.length > 0) && (
                                         <div className="border-b border-gray-100">
-                                            <button onClick={() => setShowDetails(!showDetails)} className="w-full py-4 flex justify-between items-center group transition-all">
-                                                <span className="font-bold uppercase text-[10px] tracking-[0.15em] text-gray-800 group-hover:text-black transition-colors">Detalles del Vehículo</span>
-                                                <svg className={`w-3 h-3 transition-transform duration-300 ${showDetails ? 'rotate-180 text-black' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                            <button
+                                                onClick={() => setShowDetails(!showDetails)}
+                                                className="w-full py-4 flex justify-between items-center group transition-all"
+                                            >
+                                                <span className="font-bold uppercase text-[10px] tracking-[0.15em] text-gray-800 group-hover:text-black transition-colors">
+                                                    Detalles del Vehículo
+                                                </span>
+                                                <svg className={`w-3 h-3 transition-transform duration-300 ${showDetails ? 'rotate-180 text-black' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
                                             </button>
+
                                             {showDetails && (
                                                 <div className="pb-8 animate-in fade-in slide-in-from-top-2">
                                                     <div className="flex gap-2 mb-6">
@@ -152,20 +162,24 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                                                     </div>
                                                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                                                         {[...(detailFilter === 'all' || detailFilter === 'exterior' ? (car.exteriorImages || []) : []), ...(detailFilter === 'all' || detailFilter === 'interior' ? (car.interiorImages || []) : [])].map((img: string, i: number) => (
-                                                            <button key={i} onClick={() => openModalWithImage(img)} className="aspect-square rounded-2xl overflow-hidden bg-zinc-50 border border-gray-100 cursor-zoom-in group relative"><img src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="detalle" /></button>
+                                                            <button key={i} onClick={() => openModalWithImage(img)} className="aspect-square rounded-2xl overflow-hidden bg-zinc-50 border border-gray-100 cursor-zoom-in group relative">
+                                                                <img src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="detalle" />
+                                                            </button>
                                                         ))}
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
                                     )}
+
                                     <FeaturesAccordion features={carFeatures} />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="lg:col-span-4">
+                    {/* COLUMNA DERECHA */}
+                    <aside className="lg:col-span-4">
                         <div className="sticky top-32 space-y-4">
                             <div className="bg-[#FBFBFB] rounded-2xl p-6 border border-gray-100 flex justify-between items-center shadow-sm">
                                 <div><p className="text-[9px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-1">Precio Lista</p><p className="text-lg font-bold tracking-tighter text-gray-400 line-through">${car.listPrice?.toLocaleString('es-CL')}</p></div>
@@ -180,17 +194,18 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                                     <DataRow label="Marca" value={car.make} /><DataRow label="Modelo" value={car.model} /><DataRow label="Año" value={car.year} /><DataRow label="Kilometraje" value={`${car.mileage?.toLocaleString('es-CL')} KM`} /><DataRow label="Combustible" value={car.fuel} /><DataRow label="Transmisión" value={car.transmission} /><DataRow label="Ubicación" value="Santiago" />
                                 </div>
                                 <div className="text-center">
-                                    {/* AGREGADO: Texto de cotización vía WhatsApp */}
+                                    {/* TEXTO COTIZACIÓN AGREGADO AQUÍ */}
                                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">Cotiza en línea vía WhatsApp</p>
                                     <a href="#" className="block w-full bg-black text-white text-center font-bold text-[10px] uppercase tracking-[0.15em] py-4 rounded-xl hover:bg-zinc-800 transition-all shadow-sm">CONSULTAR STOCK</a>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </aside>
                 </div>
 
-                <section className="mt-16 pt-10 border-t border-gray-100">
-                    <div className="mb-8">
+                {/* RECOMENDADOS */}
+                <section className="mt-16 pt-8 border-t border-gray-100">
+                    <div className="mb-6">
                         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">Más opciones</p>
                         <h2 className="text-xl font-black uppercase tracking-tighter">Vehículos Recomendados</h2>
                     </div>
@@ -202,6 +217,7 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                 </section>
             </div>
 
+            {/* MODAL LIGHTBOX */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 md:p-10 transition-opacity duration-300" onClick={() => setIsModalOpen(false)}>
                     <button className="absolute top-5 right-5 z-50 text-white bg-white/10 p-3 rounded-full hover:bg-white/20 transition-colors" onClick={(e) => { e.stopPropagation(); setIsModalOpen(false); }}><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>

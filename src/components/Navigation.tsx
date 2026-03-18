@@ -4,6 +4,7 @@ import Link from 'next/link'
 
 /**
  * Header dinámico y compacto fiel al diseño original de la Home.
+ * Actualizado para redirigir a la página de inicio de sesión (/ingresar).
  */
 export default function Navigation({ config }: { config?: any }) {
     // Si no hay links en Sanity, usamos los básicos por defecto
@@ -35,9 +36,9 @@ export default function Navigation({ config }: { config?: any }) {
                     ))}
                 </div>
 
-                {/* 3. Botón Derecha - Diseño "Ingresar" Original */}
+                {/* 3. Botón Derecha - Ahora apunta a /ingresar */}
                 <Link
-                    href="/admin"
+                    href="/ingresar"
                     className="bg-black text-white text-[12px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-800 transition-colors"
                 >
                     Ingresar
