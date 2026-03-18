@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 /**
  * PÁGINA DE ACCESO MINIMALISTA PREMIUM - VERSIÓN SPLIT FINAL
- * Ajuste: Grises con mayor contraste para mejor legibilidad.
+ * Ajuste: Texto de inputs en gris oscuro (zinc-700) para suavizar el contraste.
  */
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -72,8 +72,8 @@ export default function LoginPage() {
                                     onChange={(e) => { setEmail(e.target.value); if (error) setError(false); }}
                                     placeholder="Ingrese su correo o usuario"
                                     required
-                                    // Placeholder ajustado a zinc-400 para contraste
-                                    className="w-full bg-[#F7F7F7] border border-gray-200 px-6 py-3 rounded-xl text-[11px] font-black text-black focus:outline-none focus:border-black transition-colors placeholder:text-zinc-400"
+                                    // Cambio: text-zinc-600 en lugar de text-black
+                                    className="w-full bg-[#F7F7F7] border border-gray-200 px-6 py-3 rounded-xl text-[11px] font-black text-zinc-600 focus:outline-none focus:border-black transition-colors placeholder:text-zinc-400"
                                 />
                             </div>
 
@@ -88,7 +88,8 @@ export default function LoginPage() {
                                     onChange={(e) => { setPassword(e.target.value); if (error) setError(false); }}
                                     placeholder="••••••••"
                                     required
-                                    className={`w-full bg-[#F7F7F7] border ${error ? 'border-red-500' : 'border-gray-200'} px-6 py-3 rounded-xl text-[11px] font-black text-black focus:outline-none focus:border-black transition-colors placeholder:text-zinc-400 placeholder:normal-case`}
+                                    // Cambio: text-zinc-600 en lugar de text-black
+                                    className={`w-full bg-[#F7F7F7] border ${error ? 'border-red-500' : 'border-gray-200'} px-6 py-3 rounded-xl text-[11px] font-black text-zinc-600 focus:outline-none focus:border-black transition-colors placeholder:text-zinc-400 placeholder:normal-case`}
                                 />
                                 {error && <p className="text-[9px] text-red-500 font-black uppercase tracking-widest ml-1 animate-pulse italic mt-2 text-center">Credenciales Incorrectas</p>}
                             </div>
