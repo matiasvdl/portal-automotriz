@@ -47,18 +47,18 @@ export default async function HomePage() {
           alt="Hero Banner"
         />
         <div className="relative z-10 text-center text-white px-4 max-w-3xl">
-          <h1 className="text-5xl font-extrabold tracking-tight mb-4 leading-tight uppercase">
+          <h1 className="text-5xl font-extrabold tracking-tight mb-1 leading-tight uppercase">
             Transforma tu camino
           </h1>
-          <p className="text-lg font-medium opacity-80 mb-8">
+          <p className="text-lg font-medium opacity-80 mb-5">
             Comprar y vender un auto nunca fue tan simple.
           </p>
 
-          <div className="bg-white p-2 rounded-xl flex max-w-xl mx-auto border border-gray-200 shadow-sm">
+          <div className="bg-white p-1 rounded-xl flex max-w-xl mx-auto border border-gray-200 shadow-sm">
             <input
               type="text"
               placeholder="Busca por marca o modelo..."
-              className="flex-grow bg-transparent text-black py-3 px-6 outline-none text-sm font-medium placeholder:text-gray-400"
+              className="flex-grow bg-transparent text-black py-3 px-4 outline-none text-sm font-medium placeholder:text-gray-400"
             />
             <button className="bg-black text-white px-8 py-3 rounded-lg text-sm font-bold uppercase hover:bg-zinc-800 transition-colors">
               Buscar

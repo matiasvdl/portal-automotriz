@@ -29,17 +29,17 @@ export default function Navigation({ config }: { config?: any }) {
                         <Link
                             key={i}
                             href={link.path || '#'}
-                            className="text-[12px] font-bold uppercase tracking-widest text-[#4A5568] hover:text-black transition-colors"
+                            className="text-[11px] font-bold uppercase tracking-widest text-[#4A5568] hover:text-black transition-colors"
                         >
                             {link.title}
                         </Link>
                     ))}
                 </div>
 
-                {/* 3. Botón Derecha - Ahora apunta a /ingresar */}
+                {/* 3. Botón Derecha - Ahora apunta a /admin */}
                 <Link
-                    href="/ingresar"
-                    className="bg-black text-white text-[12px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-800 transition-colors"
+                    href="/admin/ingresar"
+                    className="bg-black text-white text-[10px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-800 transition-colors"
                 >
                     Ingresar
                 </Link>

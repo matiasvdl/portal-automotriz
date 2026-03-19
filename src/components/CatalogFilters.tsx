@@ -109,7 +109,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                         <input
                             type="text"
                             placeholder="Busca por marca o modelo"
-                            className="w-full bg-[#F7F8F9] border-none rounded-lg pl-11 pr-4 py-3.5 text-sm font-medium placeholder:text-zinc-400 outline-none focus:ring-1 focus:ring-black transition-all leading-none"
+                            className="w-full bg-[#F7F8F9] border-none rounded-lg pl-11 pr-4 py-3 text-sm font-medium placeholder:text-zinc-400 outline-none focus:ring-1 focus:ring-black transition-all leading-none"
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
@@ -121,7 +121,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                 <aside className="w-full md:w-64 shrink-0">
                     <div className="sticky top-44 space-y-2">
                         <div className="flex items-center justify-between mb-6 leading-none">
-                            <h2 className="text-[15px] font-black text-black uppercase tracking-tight">Filtros</h2>
+                            <h2 className="text-[12px] font-black text-black uppercase tracking-tight">Filtros</h2>
                             {hasActiveFilters && (
                                 <button
                                     onClick={() => setFilters({ make: '', model: '', body: '', transmission: '', fuel: '', minYear: '', maxYear: '', minPrice: '', maxPrice: '', minKm: '', maxKm: '' })}
@@ -213,7 +213,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
 
                 {/* 3. GRILLA DE RESULTADOS */}
                 <div className="flex-grow">
-                    <div className="mb-8 flex justify-between items-center border-b border-gray-50 pb-5 leading-none">
+                    <div className="mb-6 flex justify-between items-center border-b border-gray-50 pb-5 leading-none">
                         <h3 className="text-zinc-800 text-[11px] font-black uppercase tracking-widest leading-none">
                             {filteredCars.length} {filteredCars.length === 1 ? 'Vehículo encontrado' : 'Vehículos encontrados'}
                         </h3>
