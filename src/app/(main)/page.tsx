@@ -47,7 +47,7 @@ export default async function HomePage() {
           alt="Hero Banner"
         />
         <div className="relative z-10 text-center text-white px-4 max-w-3xl">
-          <h1 className="text-5xl font-extrabold tracking-tight mb-1 leading-tight uppercase">
+          <h1 className="text-4xl font-extrabold tracking-tight mb-1 leading-tight uppercase">
             Transforma tu camino
           </h1>
           <p className="text-lg font-medium opacity-80 mb-5">
@@ -60,7 +60,7 @@ export default async function HomePage() {
               placeholder="Busca por marca o modelo..."
               className="flex-grow bg-transparent text-black py-3 px-4 outline-none text-sm font-medium placeholder:text-gray-400"
             />
-            <button className="bg-black text-white px-8 py-3 rounded-lg text-sm font-bold uppercase hover:bg-zinc-800 transition-colors">
+            <button className="bg-black text-white px-8 py-3 rounded-lg text-[11px] font-bold uppercase hover:bg-zinc-950 transition-colors">
               Buscar
             </button>
           </div>
@@ -74,7 +74,7 @@ export default async function HomePage() {
             <h2 className="text-xl font-black tracking-tight text-black uppercase">Recién llegados</h2>
             <div className="h-1 w-12 bg-black"></div>
           </div>
-          <Link href="/catalogo" className="text-[11px] font-bold text-gray-400 hover:text-black uppercase tracking-[0.2em] transition-colors">
+          <Link href="/catalogo" className="text-[11px] font-bold text-[#666666] hover:text-black uppercase tracking-[0.15em] transition-colors">
             Ver todos los autos
           </Link>
         </div>

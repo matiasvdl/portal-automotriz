@@ -19,8 +19,8 @@ export default function Navigation({ config }: { config?: any }) {
             <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
 
                 {/* 1. Logo */}
-                <Link href="/" className="text-2xl font-black tracking-tighter uppercase flex items-center text-black">
-                    VDL<span className="font-light">MOTORS</span>
+                <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
+                    VDL<span className="font-light text-zinc-700">MOTORS</span>
                 </Link>
 
                 {/* 2. Menú Central Dinámico (Desktop) */}
@@ -29,7 +29,7 @@ export default function Navigation({ config }: { config?: any }) {
                         <Link
                             key={i}
                             href={link.path || '#'}
-                            className="text-[11px] font-bold uppercase tracking-widest text-[#4A5568] hover:text-black transition-colors"
+                            className="text-[11px] font-bold uppercase tracking-widest text-[#333333] hover:text-black transition-colors"
                         >
                             {link.title}
                         </Link>
@@ -39,7 +39,7 @@ export default function Navigation({ config }: { config?: any }) {
                 {/* 3. Botón Derecha - Ahora apunta a /admin */}
                 <Link
                     href="/admin/ingresar"
-                    className="bg-black text-white text-[10px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-800 transition-colors"
+                    className="bg-black text-white text-[10px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-950 transition-colors"
                 >
                     Ingresar
                 </Link>

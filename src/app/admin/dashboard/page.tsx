@@ -33,11 +33,11 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-[#FBFBFB] text-black font-sans antialiased">
 
             {/* Header con Menú de Usuario Desplegable */}
-            <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-16 flex items-center">
+            <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none text-left font-sans">
                 <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
 
-                    <Link href="/" className="text-xl font-black tracking-tighter uppercase flex items-center text-black">
-                        VDL<span className="font-light">MOTORS</span>
+                    <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
+                        VDL<span className="font-light text-zinc-700">MOTORS</span>
                     </Link>
 
                     {/* Menú de Usuario Compacto */}
