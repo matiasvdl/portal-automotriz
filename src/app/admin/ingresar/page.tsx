@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image' // Importamos el componente Image de Next.js
 import { useRouter } from 'next/navigation'
 
 /**
  * PÁGINA DE ACCESO MINIMALISTA PREMIUM - VERSIÓN SPLIT FINAL
- * Alineación: Todo cargado a la izquierda (Logo y Textos).
+ * Alineación: Todo cargado a la izquierda.
+ * Cambio: Logo de texto en bloque NEGRO (izquierdo) reemplazado por imagen.
+ * Nota: Se requiere que la imagen sea apta para fondo oscuro (ej. logo blanco con fondo transparente).
  */
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -34,21 +37,18 @@ export default function LoginPage() {
             <div className="hidden lg:flex lg:w-[60%] h-full bg-black relative flex-col p-8 justify-between">
                 <Link href="/" className="z-20 inline-block transition-opacity hover:opacity-100">
                     <p className="text-2xl font-black tracking-tighter uppercase text-white italic leading-none">
-                        VDL<span className="font-light text-zinc-500">MOTORS</span>
+                        VDL<span className="font-light text-zinc-500">GROUP</span>
                     </p>
                 </Link>
-
-                <div className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center bg-zinc-950">
-                    <span className="text-white font-black text-lg italic">N</span>
-                </div>
             </div>
 
             {/* LADO DERECHO: FORMULARIO (40%) */}
+            {/* Mantenemos el header de texto aquí para contraste con el fondo blanco */}
             <div className="w-full lg:w-[40%] h-full flex items-center justify-center bg-white relative">
 
-                <div className="max-w-[340px] w-full px-0 lg:px-0 space-y-5">
+                <div className="max-w-[340px] w-full px-6 lg:px-0 space-y-5">
 
-                    {/* Header con LOGO NEGRO y Textos alineados a la izquierda */}
+                    {/* Header con textos alineados a la izquierda */}
                     <header className="text-left space-y-5">
                         <Link href="/" className="z-20 inline-block transition-opacity hover:opacity-100">
                             <p className="text-2xl font-black tracking-tighter uppercase text-black italic leading-none">
@@ -57,7 +57,7 @@ export default function LoginPage() {
                         </Link>
 
                         <div className="space-y-1">
-                            <h1 className="text-xl font-black uppercase tracking-tighter text-black italic leading-none">
+                            <h1 className="text-xl font-black uppercase tracking-tighter text-black leading-none">
                                 Panel Administrativo
                             </h1>
                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em]">
@@ -77,7 +77,7 @@ export default function LoginPage() {
                                 onChange={(e) => { setEmail(e.target.value); if (error) setError(false); }}
                                 placeholder="Ingrese su correo o usuario"
                                 required
-                                className="w-full bg-[#F7F7F7] border border-gray-200 px-4 py-3 rounded-xl text-[11px] font-black text-zinc-600 focus:outline-none focus:border-black transition-colors placeholder:text-zinc-400"
+                                className="w-full bg-[#F7F7F7] border border-gray-200 px-4 py-3 rounded-xl text-[9px] font-black text-zinc-600 focus:outline-none focus:border-black uppercase transition-colors placeholder:text-zinc-400"
                             />
                         </div>
 
@@ -109,8 +109,8 @@ export default function LoginPage() {
                     </form>
                 </div>
 
-                {/* Copyright - Gris más definido (zinc-500) */}
-                <div className="absolute bottom-6 right-7 z-18">
+                {/* Copyright - Ajustado a la izquierda en móvil */}
+                <div className="absolute bottom-6 left-6 lg:left-auto lg:right-7 z-18">
                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
                         © VDL Group SpA
                     </p>
