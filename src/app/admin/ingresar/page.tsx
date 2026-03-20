@@ -37,7 +37,7 @@ export default function LoginPage() {
             <div className="hidden lg:flex lg:w-[60%] h-full bg-black relative flex-col p-8 justify-between">
                 <Link href="/" className="z-20 inline-block transition-opacity hover:opacity-100">
                     <p className="text-2xl font-black tracking-tighter uppercase text-white italic leading-none">
-                        VDL<span className="font-light text-zinc-500">GROUP</span>
+                        VDL<span className="font-light text-zinc-400">GROUP</span>
                     </p>
                 </Link>
             </div>
