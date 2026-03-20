@@ -49,7 +49,16 @@ export default function LoginPage() {
             <div className="w-full lg:w-[40%] h-full flex items-center justify-center bg-white relative">
 
                 <div className="max-w-[340px] w-full px-0 space-y-5">
-                    <header className="text-center lg:text-left">
+
+                    {/* Header con LOGO NEGRO insertado arriba */}
+                    <header className="text-center lg:text-left space-y-1">
+                        {/* Logo Negro (Mismo estilo que el de la izquierda pero en negro) */}
+                        <Link href="/" className="z-20 inline-block transition-opacity hover:opacity-100 lg:ml-1">
+                            <p className="text-2xl font-black tracking-tighter uppercase text-black italic leading-none">
+                                VDL<span className="font-light text-zinc-400">MOTORS</span>
+                            </p>
+                        </Link>
+
                         <div className="space-y-2">
                             <h1 className="text-xl font-black uppercase tracking-tighter text-black italic leading-none">
                                 Panel Administrativo
