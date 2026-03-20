@@ -52,7 +52,7 @@ export default function LoginPage() {
                     <header className="text-left space-y-5">
                         <Link href="/" className="z-20 inline-block transition-opacity hover:opacity-100">
                             <p className="text-2xl font-black tracking-tighter uppercase text-black italic leading-none">
-                                VDL<span className="font-light text-zinc-400">MOTORS</span>
+                                VDL<span className="font-light text-zinc-700">MOTORS</span>
                             </p>
                         </Link>
 
