@@ -48,9 +48,6 @@ export default function LoginPage() {
                         VDL<span className="font-light text-zinc-400">GROUP</span>
                     </p>
                 </Link>
-                <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em] text-left">
-                    © VDL Group SpA
-                </p>
             </div>
 
             {/* LADO DERECHO: FORMULARIO */}
@@ -156,6 +153,13 @@ export default function LoginPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Copyright - Gris más definido (zinc-500) */}
+                <div className="absolute bottom-6 right-7 z-18">
+                    <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                        © VDL Group SpA
+                    </p>
+                </div>
             </div>
         </div>
     )
