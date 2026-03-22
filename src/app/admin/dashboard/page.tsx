@@ -73,8 +73,8 @@ export default function DashboardPage() {
 
                 <header className="flex justify-between items-center">
                     <div className="space-y-1">
-                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.4em] ml-1">Administración</p>
-                        <h1 className="text-2xl font-black uppercase tracking-tighter italic leading-none text-black">Gestión de Stock</h1>
+                        <p className="text-[9px] font-black text-zinc-400 uppercase italic tracking-[0.4em] ml-1">Administración</p>
+                        <h1 className="text-2xl font-black uppercase tracking-tighter leading-none text-black">Gestión de Stock</h1>
                     </div>
 
                     <Link href="/admin/nuevo" className="bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-lg hover:bg-zinc-800 transition-all shadow-md shadow-black/5">
