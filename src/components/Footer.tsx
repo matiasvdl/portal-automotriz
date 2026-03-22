@@ -44,7 +44,7 @@ export default function Footer({ config }: { config?: any }) {
             <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
                 <p>© 2026 VDL MOTORS SPA | TODOS LOS DERECHOS RESERVADOS</p>
                 <p className="italic font-medium text-white uppercase tracking-normal">
-                    {config?.footerTagline || "TRANSFORMA TU CAMINO"}
+                    {config?.footerTagline || ""}
                 </p>
             </div>
         </footer>
