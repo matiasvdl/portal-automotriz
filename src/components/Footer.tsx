@@ -41,9 +41,11 @@ export default function Footer({ config }: { config?: any }) {
             </div>
 
             {/* 4. Barra final: Copyright y frase dinámica en cursiva */}
-            <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
-                <p>© 2026 VDL MOTORS SPA | TODOS LOS DERECHOS RESERVADOS</p>
-                <p className="italic font-medium text-white uppercase tracking-normal">
+            <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] gap-4">
+                <p className="text-center md:text-left">© 2026 VDL MOTORS SPA | TODOS LOS DERECHOS RESERVADOS</p>
+
+                {/* Texto dinámico: Oculto en móvil (hidden) y visible en PC (md:block) */}
+                <p className="hidden md:block italic font-medium text-white uppercase tracking-normal">
                     {config?.footerTagline || ""}
                 </p>
             </div>
