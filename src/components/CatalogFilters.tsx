@@ -71,7 +71,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
             const matchMinYear = filters.minYear === '' || carYear >= parseInt(filters.minYear)
             const matchMaxYear = filters.maxYear === '' || carYear <= parseInt(filters.maxYear)
 
-            const price = car.price
+            const price = car.listPrice // Usamos listPrice que es el campo real de Sanity
             const matchMinPrice = filters.minPrice === '' || price >= parseInt(filters.minPrice)
             const matchMaxPrice = filters.maxPrice === '' || price <= parseInt(filters.maxPrice)
 
@@ -84,8 +84,8 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                 matchMaxPrice && matchMinKm && matchMaxKm
         })
 
-        if (sortBy === 'precio-menor') result.sort((a, b) => a.price - b.price)
-        if (sortBy === 'precio-mayor') result.sort((a, b) => b.price - a.price)
+        if (sortBy === 'precio-menor') result.sort((a, b) => (a.financedPrice || a.listPrice) - (b.financedPrice || b.listPrice))
+        if (sortBy === 'precio-mayor') result.sort((a, b) => (b.financedPrice || b.listPrice) - (a.financedPrice || a.listPrice))
         if (sortBy === 'año-nuevo') result.sort((a, b) => b.year - a.year)
         if (sortBy === 'km-menor') result.sort((a, b) => a.mileage - b.mileage)
 
@@ -97,9 +97,9 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
 
     return (
         <div className="bg-white min-h-screen text-left">
-            {/* 1. BUSCADOR SUPERIOR */}
+            {/* 1. BUSCADOR SUPERIOR - Ajustado a max-w-7xl */}
             <div className="border-b border-gray-100 bg-white sticky top-20 z-30 leading-none">
-                <div className="max-w-[1400px] mx-auto px-6 py-5">
+                <div className="max-w-7xl mx-auto px-6 py-5">
                     <div className="relative">
                         <span className="absolute inset-y-0 left-4 flex items-center text-zinc-400">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,8 +116,10 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                 </div>
             </div>
 
-            <div className="max-w-[1400px] mx-auto px-6 py-10 flex flex-col md:flex-row gap-12 leading-none">
-                {/* 2. BARRA LATERAL */}
+            {/* 2. CONTENIDO PRINCIPAL - Ajustado a max-w-7xl y gap-12 */}
+            <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row gap-12 leading-none">
+                
+                {/* BARRA LATERAL */}
                 <aside className="w-full md:w-64 shrink-0">
                     <div className="sticky top-44 space-y-2">
                         <div className="flex items-center justify-between mb-6 leading-none">
@@ -133,7 +135,6 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                         </div>
 
                         <div className="flex flex-col">
-                            {/* PRECIO, CARROCERÍA, MARCA, ETC (Mismo código de antes) */}
                             <FilterSection title="Precio">
                                 <div className="flex gap-2 items-center px-1">
                                     <input type="number" placeholder="Desde" className="w-full border border-gray-200 rounded p-2 text-xs outline-none" onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })} />
@@ -211,7 +212,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                     </div>
                 </aside>
 
-                {/* 3. GRILLA DE RESULTADOS */}
+                {/* 3. GRILLA DE RESULTADOS - Ajustado gap-8 e igualado tamaño visual */}
                 <div className="flex-grow">
                     <div className="mb-6 flex justify-between items-center border-b border-gray-50 pb-5 leading-none">
                         <h3 className="text-zinc-800 text-[11px] font-black uppercase tracking-widest leading-none">
@@ -229,7 +230,6 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                                 {SORT_OPTIONS.find(opt => opt.key === sortBy)?.label}
                             </button>
 
-                            {/* MENÚ DROPDOWN REDONDEADO Y ELEGANTE */}
                             {isSortMenuOpen && (
                                 <div className="absolute right-0 mt-3 w-56 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-zinc-200/50 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                     <div className="py-2">
@@ -252,7 +252,8 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* GRID DE 3 COLUMNAS: Al tener filtros al lado, 3 columnas equivalen al tamaño de 4 en el inicio */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredCars.map((car) => (
                             <CarCard key={car._id} car={car} />
                         ))}
