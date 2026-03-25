@@ -51,7 +51,7 @@ export default function DashboardPage() {
             <main className="max-w-7xl mx-auto px-6 py-8">
                 <header className="flex justify-between items-end mb-9 gap-4">
                     <div className="text-left flex-1">
-                        <p className="text-[8px] font-black text-zinc-300 uppercase tracking-[0.3em] mb-0.5 italic leading-none">
+                        <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">
                             Gestión de stock
                         </p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
