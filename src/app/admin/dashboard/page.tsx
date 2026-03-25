@@ -54,8 +54,8 @@ export default function DashboardPage() {
                         <p className="text-[8px] font-black text-zinc-300 uppercase tracking-[0.3em] mb-0.5 italic leading-none">
                             Gestión de stock
                         </p>
-                        <h1 className="text-2xl font-black uppercase tracking-tighter italic leading-none">
-                            Inventario
+                        <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
+                            Vehiculos Disponibles
                         </h1>
                     </div>
 
