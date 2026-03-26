@@ -288,7 +288,7 @@ export default function NuevoVehiculoPage() {
 
                         <div className="space-y-2.5 pt-4 text-left">
                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Descripción</label>
-                            <textarea value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={6} className="w-full bg-[#F7F8FA] border-none rounded-2xl p-15 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed" />
+                            <textarea value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={6} className="w-full bg-[#F7F8FA] border-none rounded-2xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed" />
                         </div>
                     </div>
                 </form>
