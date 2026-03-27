@@ -8,7 +8,6 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="antialiased">
-        {/* AQUÍ NO VA NADA MÁS QUE CHILDREN */}
         {children}
       </body>
     </html>

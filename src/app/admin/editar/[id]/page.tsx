@@ -45,11 +45,13 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     const [tags, setTags] = useState<string[]>([])
     const [currentTag, setCurrentTag] = useState('')
 
+    // --- ESTADO PARA EL MENÚ DE PERFIL ---
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+
     const mainImagesRef = useRef<HTMLInputElement>(null)
     const exteriorImagesRef = useRef<HTMLInputElement>(null)
     const interiorImagesRef = useRef<HTMLInputElement>(null)
 
-    // ESTADO CON LOS 46 CAMPOS COMPLETOS
     const [formData, setFormData] = useState<CarFormData>({
         make: '', model: '', slug: '', year: new Date().getFullYear(),
         category: 'Seminuevo', listPrice: 0, financedPrice: 0, mileage: 0,
@@ -66,7 +68,6 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         images: [], exteriorImages: [], interiorImages: []
     })
 
-    // --- CARGAR DATOS EXISTENTES ---
     useEffect(() => {
         const fetchCar = async () => {
             try {
@@ -144,7 +145,6 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         fetchCar()
     }, [id])
 
-    // --- MANEJADORES ---
     const handleChange = (field: keyof CarFormData, value: string | number) => {
         setFormData(prev => ({ ...prev, [field]: value }))
     }
@@ -225,17 +225,47 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-40 text-left">
-            <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none">
+            <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center shadow-none">
                 <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center relative">
                     <Link href="/admin/dashboard" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
                         VDL<span className="font-light text-zinc-700">MOTORS</span>
                     </Link>
-                    <div className="flex items-center gap-3">
-                        <div className="text-right hidden sm:block leading-none">
-                            <p className="text-[11px] font-black uppercase tracking-widest text-black leading-none">Matías</p>
-                            <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
+
+                    {/* --- SECCIÓN DE PERFIL CON MENÚ --- */}
+                    <div className="relative">
+                        <div
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            className="flex items-center gap-3 cursor-pointer select-none group"
+                        >
+                            <div className="text-right hidden sm:block leading-none">
+                                <p className="text-[11px] font-black uppercase tracking-widest leading-none text-black group-hover:text-zinc-600 transition-colors">Matías</p>
+                                <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
+                            </div>
+                            <div className="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black group-hover:bg-zinc-800 transition-all shadow-none">M</div>
                         </div>
-                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black leading-none">M</div>
+
+                        {isUserMenuOpen && (
+                            <>
+                                {/* Overlay para cerrar el menú al hacer clic fuera */}
+                                <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)}></div>
+
+                                <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-black/5 z-20 overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <button className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors">
+                                        Mi cuenta
+                                    </button>
+                                    <button className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors">
+                                        Preferencias
+                                    </button>
+                                    <div className="h-[1px] bg-gray-50 mx-4 my-1"></div>
+                                    <button
+                                        onClick={() => router.push('/')}
+                                        className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors"
+                                    >
+                                        Cerrar sesión
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </nav>
@@ -243,11 +273,11 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
             <main className="max-w-7xl mx-auto px-6 py-8">
                 <header className="flex justify-between items-end mb-9 gap-4">
                     <div className="text-left flex-1">
-                        <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">Gestión de vehículos</p>
+                        <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">Editor de inventario</p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Editar Vehículo</h1>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Link href="/admin/dashboard" className="text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 border border-zinc-200 rounded-xl hover:border-black transition-all">Volver al panel</Link>
+                        <Link href="/admin/dashboard" className="text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 border border-zinc-200 rounded-xl hover:border-black transition-all">Cancelar</Link>
                         <button
                             onClick={handleDelete}
                             disabled={isSubmitting}
@@ -255,7 +285,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         >
                             Eliminar Vehículo
                         </button>
-                        <button onClick={handleSubmit} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50">
+                        <button onClick={handleSubmit} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 disabled:opacity-50 transition-all active:scale-95">
                             {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
                     </div>
@@ -266,20 +296,20 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Identidad y Comercial</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7">
-                            <FormGroup label="Marca" value={formData.make} onChange={(v) => handleChange('make', v)} />
-                            <FormGroup label="Modelo" value={formData.model} onChange={(v) => handleChange('model', v)} />
+                            <FormGroup label="Marca" value={formData.make} onChange={(v: string) => handleChange('make', v)} />
+                            <FormGroup label="Modelo" value={formData.model} onChange={(v: string) => handleChange('model', v)} />
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Enlace (Slug)</label>
                                 <div className="flex gap-2 h-[42px]">
                                     <input value={formData.slug} onChange={(e) => handleChange('slug', e.target.value)} className="flex-1 bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black" />
-                                    <button type="button" onClick={generateSlug} className="bg-[#F0F2F5] px-4 rounded-xl text-[9px] font-black uppercase hover:bg-black hover:text-white transition-all h-full flex items-center justify-center">Generar</button>
+                                    <button type="button" onClick={generateSlug} className="bg-[#F0F2F5] px-4 rounded-xl text-[9px] font-black uppercase hover:bg-black hover:text-white transition-all h-full">Generar</button>
                                 </div>
                             </div>
-                            <FormGroup label="Año" type="number" value={formData.year} onChange={(v) => handleChange('year', parseInt(v) || 0)} />
-                            <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reserva Online', 'Garantía VDL', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(v) => handleChange('category', v)} />
-                            <FormGroup label="Precio Lista" type="number" value={formData.listPrice} onChange={(v) => handleChange('listPrice', parseInt(v) || 0)} />
-                            <FormGroup label="Precio Financiado" type="number" value={formData.financedPrice} onChange={(v) => handleChange('financedPrice', parseInt(v) || 0)} />
-                            <FormGroup label="Kilometraje" type="number" value={formData.mileage} onChange={(v) => handleChange('mileage', parseInt(v) || 0)} />
+                            <FormGroup label="Año" type="number" value={formData.year} onChange={(v: string) => handleChange('year', parseInt(v) || 0)} />
+                            <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reserva Online', 'Garantía VDL', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(v: string) => handleChange('category', v)} />
+                            <FormGroup label="Precio Lista" type="number" value={formData.listPrice} onChange={(v: string) => handleChange('listPrice', parseInt(v) || 0)} />
+                            <FormGroup label="Precio Financiado" type="number" value={formData.financedPrice} onChange={(v: string) => handleChange('financedPrice', parseInt(v) || 0)} />
+                            <FormGroup label="Kilometraje" type="number" value={formData.mileage} onChange={(v: string) => handleChange('mileage', parseInt(v) || 0)} />
                         </div>
                     </div>
 
@@ -305,15 +335,15 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: General</h3>
-                            <FormGroup label="Cilindrada" value={formData.specsGeneral?.cilindrada} onChange={(v) => handleNestedChange('specsGeneral', 'cilindrada', v)} />
-                            <FormGroup label="Cilindros" value={formData.specsGeneral?.cilindros} onChange={(v) => handleNestedChange('specsGeneral', 'cilindros', v)} />
-                            <FormGroup label="Potencia" value={formData.specsGeneral?.potencia} onChange={(v) => handleNestedChange('specsGeneral', 'potencia', v)} />
+                            <FormGroup label="Cilindrada" value={formData.specsGeneral?.cilindrada} onChange={(v: string) => handleNestedChange('specsGeneral', 'cilindrada', v)} />
+                            <FormGroup label="Cilindros" value={formData.specsGeneral?.cilindros} onChange={(v: string) => handleNestedChange('specsGeneral', 'cilindros', v)} />
+                            <FormGroup label="Potencia" value={formData.specsGeneral?.potencia} onChange={(v: string) => handleNestedChange('specsGeneral', 'potencia', v)} />
                         </div>
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: Historial</h3>
-                            <FormGroup label="Dueños" value={formData.specsHistory?.duenos} onChange={(v) => handleNestedChange('specsHistory', 'duenos', v)} />
-                            <FormGroup label="Mantenciones" value={formData.specsHistory?.mantenciones} onChange={(v) => handleNestedChange('specsHistory', 'mantenciones', v)} />
-                            <FormGroup label="Historial Autofact" value={formData.specsHistory?.historial} onChange={(v) => handleNestedChange('specsHistory', 'historial', v)} />
+                            <FormGroup label="Dueños" value={formData.specsHistory?.duenos} onChange={(v: string) => handleNestedChange('specsHistory', 'duenos', v)} />
+                            <FormGroup label="Mantenciones" value={formData.specsHistory?.mantenciones} onChange={(v: string) => handleNestedChange('specsHistory', 'mantenciones', v)} />
+                            <FormGroup label="Historial Autofact" value={formData.specsHistory?.historial} onChange={(v: string) => handleNestedChange('specsHistory', 'historial', v)} />
                         </div>
                     </div>
 
@@ -322,16 +352,16 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Exterior</h3>
                             <div className="grid grid-cols-2 gap-7">
-                                <FormGroup label="Número de Puertas" value={formData.specsExterior.puertas} onChange={(v) => handleNestedChange('specsExterior', 'puertas', v)} />
-                                <FormGroup label="Diámetro de Rin" value={formData.specsExterior.rin} onChange={(v) => handleNestedChange('specsExterior', 'rin', v)} />
-                                <FormGroup label="Tipo de Rin" value={formData.specsExterior.tipoRin} onChange={(v) => handleNestedChange('specsExterior', 'tipoRin', v)} />
-                                <FormGroup label="Tipo de Luces" value={formData.specsExterior.luces} onChange={(v) => handleNestedChange('specsExterior', 'luces', v)} />
+                                <FormGroup label="Número de Puertas" value={formData.specsExterior.puertas} onChange={(v: string) => handleNestedChange('specsExterior', 'puertas', v)} />
+                                <FormGroup label="Diámetro de Rin" value={formData.specsExterior.rin} onChange={(v: string) => handleNestedChange('specsExterior', 'rin', v)} />
+                                <FormGroup label="Tipo de Rin" value={formData.specsExterior.tipoRin} onChange={(v: string) => handleNestedChange('specsExterior', 'tipoRin', v)} />
+                                <FormGroup label="Tipo de Luces" value={formData.specsExterior.luces} onChange={(v: string) => handleNestedChange('specsExterior', 'luces', v)} />
                             </div>
                         </div>
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Interior</h3>
-                            <FormGroup label="Número de Pasajeros" value={formData.specsInterior.pasajeros} onChange={(v) => handleNestedChange('specsInterior', 'pasajeros', v)} />
-                            <FormGroup label="Material Asientos" value={formData.specsInterior.materialAsientos} onChange={(v) => handleNestedChange('specsInterior', 'materialAsientos', v)} />
+                            <FormGroup label="Número de Pasajeros" value={formData.specsInterior.pasajeros} onChange={(v: string) => handleNestedChange('specsInterior', 'pasajeros', v)} />
+                            <FormGroup label="Material Asientos" value={formData.specsInterior.materialAsientos} onChange={(v: string) => handleNestedChange('specsInterior', 'materialAsientos', v)} />
                         </div>
                     </div>
 
@@ -450,7 +480,7 @@ function ImageUploadPlaceholder({ label, images, field, onClick, onRemove }: any
             {images?.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 mt-2">
                     {images.map((img: any, i: number) => (
-                        <div key={img._key || i} className="relative aspect-video group">
+                        <div key={img._key || i} className="relative aspect-video group leading-none">
                             <img src={urlFor(img).width(200).url()} className="w-full h-full object-cover rounded-2xl border border-zinc-100" alt="Preview" />
                             <button
                                 type="button"

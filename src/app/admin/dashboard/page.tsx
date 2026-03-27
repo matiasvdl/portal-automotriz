@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { client, writeClient } from '@/sanity/lib/client'
 
 export default function DashboardPage() {
     const [cars, setCars] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const router = useRouter()
+
+    // ESTADO PARA EL MENÚ DE PERFIL
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
     const fetchCars = async () => {
         try {
@@ -48,17 +53,55 @@ export default function DashboardPage() {
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased">
 
-            <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none">
+            {/* NAVEGACIÓN CON MENÚ DESPLEGABLE FUNCIONAL */}
+            <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center shadow-none">
                 <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center relative">
                     <Link href="/admin/dashboard" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
-                        VDL<span className="font-light text-zinc-700">Motors</span>
+                        VDL<span className="font-light text-zinc-700">MOTORS</span>
                     </Link>
-                    <div className="flex items-center gap-3">
-                        <div className="text-right hidden sm:block leading-none">
-                            <p className="text-[11px] font-black uppercase tracking-widest leading-none text-black">Matías</p>
-                            <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
+
+                    <div className="relative">
+                        {/* Botón activador del menú */}
+                        <div
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            className="flex items-center gap-3 cursor-pointer select-none group"
+                        >
+                            <div className="text-right hidden sm:block leading-none">
+                                <p className="text-[11px] font-black uppercase tracking-widest leading-none text-black group-hover:text-zinc-600 transition-colors">Matías</p>
+                                <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
+                            </div>
+                            <div className="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black group-hover:bg-zinc-800 transition-all shadow-none">M</div>
                         </div>
-                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black">M</div>
+
+                        {/* Menú Desplegable */}
+                        {isUserMenuOpen && (
+                            <>
+                                {/* Overlay invisible para cerrar al hacer clic fuera */}
+                                <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)}></div>
+
+                                <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-black/10 z-20 overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <button
+                                        onClick={() => { setIsUserMenuOpen(false); router.push('/admin/cuenta'); }}
+                                        className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors"
+                                    >
+                                        Mi Cuenta
+                                    </button>
+                                    <button
+                                        onClick={() => { setIsUserMenuOpen(false); router.push('/admin/preferencias'); }}
+                                        className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors"
+                                    >
+                                        Preferencias
+                                    </button>
+                                    <div className="h-[1px] bg-gray-50 mx-4 my-1"></div>
+                                    <button
+                                        onClick={() => router.push('/')}
+                                        className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors"
+                                    >
+                                        Cerrar Sesión
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </nav>
@@ -67,7 +110,7 @@ export default function DashboardPage() {
                 <header className="flex justify-between items-end mb-9 gap-4">
                     <div className="text-left flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">
-                            Panel de Administración
+                            Gestión de stock
                         </p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
                             Vehiculos Disponibles
@@ -169,7 +212,6 @@ function AdminCarCard({ car }: { car: any }) {
                         </p>
                     </div>
 
-                    {/* BOTÓN FLECHA: Solo negro en hover directo sobre el círculo */}
                     <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 shrink-0 transition-colors hover:bg-black hover:text-white hover:border-black shadow-none cursor-pointer">
                         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current translate-x-[0.5px]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
