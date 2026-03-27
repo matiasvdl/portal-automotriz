@@ -3,169 +3,381 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { writeClient } from '@/sanity/lib/client'
+import { client, writeClient } from '@/sanity/lib/client'
+
+// --- INTERFACES ---
+interface NavItem {
+    _key: string;
+    title: string;
+    path: string;
+}
+
+interface RutaOption {
+    title: string;
+    value: string;
+}
 
 export default function PreferenciasPage() {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+    const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas'>('general')
 
-    // ESTADO PARA CONFIGURACIONES GLOBALES
+    const RUTAS_NAV: RutaOption[] = [
+        { title: 'Inicio', value: '/' },
+        { title: 'Comprar un Auto', value: '/comprar' },
+        { title: 'Vende tu Auto', value: '/vender' },
+        { title: 'Financiamiento', value: '/financia' },
+        { title: 'Sedes', value: '/sedes' },
+        { title: 'Preguntas Frecuentes', value: '/faq' },
+        { title: 'Contacto', value: '/contacto' }
+    ]
+
+    const RUTAS_FOOTER: RutaOption[] = [
+        { title: 'Inicio', value: '/' },
+        { title: 'Compra un auto', value: '/comprar' },
+        { title: 'Sedes', value: '/sedes' },
+        { title: 'Preguntas frecuentes', value: '/faq' },
+        { title: 'Contacto', value: '/contacto' }
+    ]
+
     const [settings, setSettings] = useState({
+        _id: '',
         siteName: 'VDL MOTORS',
-        contactEmail: 'contacto@vdlmotors.cl',
-        whatsappNumber: '+56 9 1234 5678',
-        instagramUrl: 'https://instagram.com/vdlmotors',
-        facebookUrl: 'https://facebook.com/vdlmotors',
-        address: 'Santiago, Región Metropolitana',
+        footerDescription: '',
+        footerTagline: '',
+        navMenu: [] as NavItem[],
+        footerLinks: [] as NavItem[],
         maintenanceMode: false
     })
 
-    const SETTINGS_DOC_ID = 'site-settings-config'
+    const [allReviews, setAllReviews] = useState<any[]>([])
+    const [newReview, setNewReview] = useState({
+        name: '',
+        date: new Date().toISOString().split('T')[0],
+        rating: 5,
+        comment: '',
+        badge: 'Comprador Satisfecho'
+    })
 
+    const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
+    const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
+
+    // CARGA DE DATOS
     useEffect(() => {
-        const fetchSettings = async () => {
-            const data = await writeClient.fetch(`*[_id == $id][0]`, { id: SETTINGS_DOC_ID })
-            if (data) {
-                setSettings({
-                    siteName: data.siteName || 'VDL MOTORS',
-                    contactEmail: data.contactEmail || 'contacto@vdlmotors.cl',
-                    whatsappNumber: data.whatsappNumber || '+56 9 1234 5678',
-                    instagramUrl: data.instagramUrl || '',
-                    facebookUrl: data.facebookUrl || '',
-                    address: data.address || '',
-                    maintenanceMode: data.maintenanceMode || false
-                })
-            }
+        const fetchSanityData = async () => {
+            try {
+                const config = await client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' })
+                const reviews = await client.fetch(`*[_type == "review"] | order(date desc)`, {}, { cache: 'no-store' })
+                if (config) {
+                    setSettings({
+                        _id: config._id,
+                        siteName: config.siteName || 'VDL MOTORS',
+                        footerDescription: config.footerDescription || '',
+                        footerTagline: config.footerTagline || '',
+                        navMenu: config.navMenu || [],
+                        footerLinks: config.footerLinks || [],
+                        maintenanceMode: config.maintenanceMode || false
+                    })
+                }
+                if (reviews) setAllReviews(reviews)
+            } catch (error) { console.error(error) }
         }
-        fetchSettings()
-    }, [])
+        fetchSanityData()
+    }, [activeTab])
 
-    const handleSave = async () => {
+    // FUNCIONES NAVEGACIÓN
+    const handleAddNavItem = (target: 'navMenu' | 'footerLinks') => {
+        const newItem = { _key: Math.random().toString(36).substr(2, 9), title: 'Nuevo Enlace', path: '/' }
+        setSettings({ ...settings, [target]: [...settings[target], newItem] })
+    }
+
+    const handleUpdateNavItem = (target: 'navMenu' | 'footerLinks', index: number, field: string, value: string) => {
+        const updated = [...settings[target]]
+        updated[index] = { ...updated[index], [field]: value }
+        setSettings({ ...settings, [target]: updated })
+    }
+
+    const handleMoveNavItem = (target: 'navMenu' | 'footerLinks', index: number, direction: 'up' | 'down') => {
+        const newIndex = direction === 'up' ? index - 1 : index + 1
+        if (newIndex < 0 || newIndex >= settings[target].length) return
+        const updated = [...settings[target]]
+        const [movedItem] = updated.splice(index, 1)
+        updated.splice(newIndex, 0, movedItem)
+        setSettings({ ...settings, [target]: updated })
+    }
+
+    // FUNCIONES RESEÑAS
+    const handleAddReview = async () => {
+        if (!newReview.name || !newReview.comment) return alert("Faltan datos")
         setIsSubmitting(true)
         try {
-            await writeClient.createOrReplace({
-                _id: SETTINGS_DOC_ID,
-                _type: 'siteSettings',
-                ...settings
-            })
-            alert('Preferencias actualizadas con éxito')
-        } catch (error) {
-            console.error(error)
-            alert('Error al guardar las preferencias.')
-        } finally {
-            setIsSubmitting(false)
+            const result = await writeClient.create({ _type: 'review', ...newReview })
+            setAllReviews([result, ...allReviews])
+            setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
+            alert("Reseña publicada")
+        } finally { setIsSubmitting(false) }
+    }
+
+    const handleDeleteReview = async (id: string) => {
+        if (confirm("¿Eliminar reseña?")) {
+            await writeClient.delete(id)
+            setAllReviews(allReviews.filter(r => r._id !== id))
         }
     }
 
+    const handleUpdateReview = async () => {
+        if (!editingReviewId) return
+        setIsSubmitting(true)
+        try {
+            await writeClient.patch(editingReviewId).set(editForm).commit()
+            setAllReviews(allReviews.map(r => r._id === editingReviewId ? { ...r, ...editForm } : r))
+            setEditingReviewId(null)
+            alert("Cambios guardados")
+        } finally { setIsSubmitting(false) }
+    }
+
+    const handleSaveGlobal = async () => {
+        if (!settings._id) return
+        setIsSubmitting(true)
+        try {
+            await writeClient.patch(settings._id).set({
+                siteName: settings.siteName,
+                footerDescription: settings.footerDescription,
+                footerTagline: settings.footerTagline,
+                navMenu: settings.navMenu,
+                footerLinks: settings.footerLinks,
+                maintenanceMode: settings.maintenanceMode
+            }).commit()
+            alert('Ajustes sincronizados')
+        } finally { setIsSubmitting(false) }
+    }
+
     return (
-        <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-40 text-left">
+        <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-40 text-left no-scrollbar">
+            {/* BLOQUEO DE SCROLL FORZADO */}
+            <style jsx global>{`
+                ::-webkit-scrollbar { display: none !important; }
+                body { overflow: hidden !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
+                .main-scroll { height: 100vh; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+                .main-scroll::-webkit-scrollbar { display: none; }
+            `}</style>
 
-            {/* NAVEGACIÓN */}
-            <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center shadow-none">
-                <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center relative">
-                    <Link href="/admin/dashboard" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
-                        VDL<span className="font-light text-zinc-700">MOTORS</span>
-                    </Link>
-
-                    <div className="relative">
-                        <div onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-3 cursor-pointer select-none group">
-                            <div className="text-right hidden sm:block leading-none">
-                                <p className="text-[11px] font-black uppercase tracking-widest leading-none text-black group-hover:text-zinc-600 transition-colors">Matías</p>
-                                <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
-                            </div>
-                            <div className="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black group-hover:bg-zinc-800 transition-all">M</div>
-                        </div>
-
-                        {isUserMenuOpen && (
-                            <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)}></div>
-                                <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-black/10 z-20 overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <button onClick={() => { setIsUserMenuOpen(false); router.push('/admin/cuenta'); }} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors">Mi cuenta</button>
-                                    <button onClick={() => setIsUserMenuOpen(false)} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 bg-[#F7F8FA]">Preferencias</button>
-                                    <div className="h-[1px] bg-gray-50 mx-4 my-1"></div>
-                                    <button onClick={() => router.push('/')} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors">Cerrar sesión</button>
+            <div className="main-scroll no-scrollbar">
+                <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center">
+                    <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center">
+                        <Link href="/admin/dashboard" className="text-2xl font-black italic uppercase">VDL<span className="font-light text-zinc-700">MOTORS</span></Link>
+                        <div className="relative">
+                            <div onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-3 cursor-pointer select-none group">
+                                <div className="text-right hidden sm:block leading-none">
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-black group-hover:text-zinc-600 transition-none">{settings.siteName.split(' ')[0]}</p>
+                                    <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
                                 </div>
-                            </>
+                                <div className="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black">M</div>
+                            </div>
+                            {isUserMenuOpen && (
+                                <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-2xl shadow-2xl z-20 py-2">
+                                    <button onClick={() => router.push('/admin/cuenta')} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase text-zinc-700 hover:bg-[#F7F8FA] transition-none">Mi cuenta</button>
+                                    <button onClick={() => setIsUserMenuOpen(false)} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase text-zinc-700 bg-[#F7F8FA]">Preferencias</button>
+                                    <button onClick={() => router.push('/')} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase text-red-500 hover:bg-red-50">Cerrar sesión</button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </nav>
+
+                <main className="max-w-7xl mx-auto px-6 py-8 no-scrollbar">
+                    <header className="flex justify-between items-end mb-9">
+                        <div className="text-left flex-1">
+                            <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">Configuración</p>
+                            <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Preferencias</h1>
+                        </div>
+                        {activeTab !== 'resenas' && (
+                            <button onClick={handleSaveGlobal} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3 rounded-xl shadow-xl shadow-black/10">{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</button>
+                        )}
+                    </header>
+
+                    <div className="flex gap-3 mb-4">
+                        {['general', 'navegacion', 'resenas'].map((tab) => (
+                            <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-none ${activeTab === tab ? 'bg-black text-white shadow-lg' : 'bg-white text-zinc-400 border border-gray-100'}`}>
+                                {tab === 'general' ? 'General' : tab === 'navegacion' ? 'Navegación' : 'Reseñas'}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* CONTENIDO DE PESTAÑAS */}
+                    <div className="no-scrollbar">
+                        {/* --- NAVEGACIÓN --- */}
+                        {activeTab === 'navegacion' && (
+                            <div className="space-y-8">
+                                {[
+                                    { title: 'Navbar (Header)', target: 'navMenu', opts: RUTAS_NAV },
+                                    { title: 'Enlaces Footer', target: 'footerLinks', opts: RUTAS_FOOTER }
+                                ].map((menu) => (
+                                    <div key={menu.target} className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                        <div className="flex justify-between items-center border-b border-gray-50 pb-2 mb-5">
+                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">{menu.title}</h3>
+                                            <button onClick={() => handleAddNavItem(menu.target as any)} className="bg-black text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase transition-none">añadir ruta</button>
+                                        </div>
+                                        <div className="space-y-5">
+                                            {settings[menu.target as 'navMenu' | 'footerLinks'].map((item: NavItem, i: number) => (
+                                                <div key={item._key} className="grid grid-cols-[1fr,1fr,auto] gap-4 items-center bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 group">
+                                                    <div className="flex flex-col gap-2 text-left leading-none">
+                                                        <label className="text-[8px] font-black uppercase text-zinc-400">Título</label>
+                                                        <input value={item.title} onChange={(e) => handleUpdateNavItem(menu.target as any, i, 'title', e.target.value)} className="bg-white rounded-xl h-9 px-4 text-[11px] font-bold outline-none border-none shadow-none" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-2 text-left leading-none">
+                                                        <label className="text-[8px] font-black uppercase text-zinc-400">Ruta</label>
+                                                        <select value={item.path} onChange={(e) => handleUpdateNavItem(menu.target as any, i, 'path', e.target.value)} className="bg-white rounded-xl h-9 px-4 text-[10px] font-black uppercase outline-none border-none cursor-pointer appearance-none">
+                                                            {menu.opts.map((r: RutaOption) => <option key={r.value} value={r.value}>{r.title}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button onClick={() => handleMoveNavItem(menu.target as any, i, 'up')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M5 15l7-7 7 7" /></svg></button>
+                                                        <button onClick={() => handleMoveNavItem(menu.target as any, i, 'down')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M19 9l-7 7-7-7" /></svg></button>
+                                                        <button onClick={() => setSettings({ ...settings, [menu.target]: settings[menu.target as 'navMenu' | 'footerLinks'].filter((_, idx) => idx !== i) })} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* --- TAB RESEÑAS --- */}
+                        {activeTab === 'resenas' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start text-left no-scrollbar">
+                                {/* Nueva Reseña (Panel Izquierdo) */}
+                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Nueva Reseña</h3>
+                                    <PrefInput label="Nombre" value={newReview.name} onChange={(v) => setNewReview({ ...newReview, name: v })} />
+                                    <PrefInput label="Fecha" type="date" value={newReview.date} onChange={(v) => setNewReview({ ...newReview, date: v })} />
+
+                                    <div className="flex flex-col space-y-2 leading-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Etiqueta</label>
+                                        <select value={newReview.badge} onChange={(e) => setNewReview({ ...newReview, badge: e.target.value })} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none cursor-pointer appearance-none">
+                                            <option value="Comprador Satisfecho">Comprador Satisfecho</option>
+                                            <option value="Vendedor Satisfecho">Vendedor Satisfecho</option>
+                                            <option value="Cliente Verificado">Cliente Verificado</option>
+                                            <option value="Opinión Real de Cliente">Opinión Real de Cliente</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="flex flex-col space-y-2 leading-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Estrellas (1-5)</label>
+                                        <input type="number" min="1" max="5" value={newReview.rating} onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) })} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none" />
+                                    </div>
+
+                                    <div className="flex flex-col space-y-2 leading-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Comentario</label>
+                                        <textarea value={newReview.comment} onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })} className="w-full bg-[#F7F8FA] rounded-xl p-5 text-[11px] font-bold outline-none min-h-[100px] resize-none" />
+                                    </div>
+
+                                    <button onClick={handleAddReview} disabled={isSubmitting} className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none">{isSubmitting ? 'Publicando...' : 'Publicar Reseña'}</button>
+                                </div>
+
+                                {/* Lista de Reseñas (Grid Derecho) */}
+                                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 no-scrollbar">
+                                    {allReviews.map(rev => (
+                                        <div key={rev._id} className={`bg-white border border-gray-200 rounded-3xl text-left h-full relative transition-none shadow-none ${editingReviewId === rev._id ? 'p-4' : 'p-6'}`}>
+                                            {/* ICONOS DE ACCIÓN */}
+                                            <div className="absolute top-4 right-4 flex gap-1 items-center bg-white/80 p-1 rounded-full border border-gray-100 z-10">
+                                                {editingReviewId === rev._id ? (
+                                                    <>
+                                                        <button onClick={handleUpdateReview} className="text-emerald-500 p-1.5 rounded-full hover:bg-emerald-50 transition-none"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg></button>
+                                                        <button onClick={() => setEditingReviewId(null)} className="text-zinc-500 p-1.5 rounded-full hover:bg-gray-100 transition-none"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button onClick={() => { setEditingReviewId(rev._id); setEditForm({ ...rev }) }} className="p-1 text-zinc-400 hover:text-black rounded-full transition-none hover:bg-gray-50"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                                                        <button onClick={() => handleDeleteReview(rev._id)} className="p-1 text-zinc-400 hover:text-red-500 rounded-full transition-none hover:bg-red-50"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {editingReviewId === rev._id ? (
+                                                /* MODO EDICIÓN COMPACTA*/
+                                                <div className="space-y-3 pt-2">
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" placeholder="Nombre" />
+                                                            <input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {/* w-full agregado aquí */}
+                                                            <select value={editForm.badge} onChange={(e) => setEditForm({ ...editForm, badge: e.target.value })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[9px] font-black uppercase border-none appearance-none">
+                                                                <option value="Comprador Satisfecho">Comprador Satisfecho</option>
+                                                                <option value="Vendedor Satisfecho">Vendedor Satisfecho</option>
+                                                                <option value="Cliente Verificado">Cliente Verificado</option>
+                                                                <option value="Opinión Real de Cliente">Opinión Real de Cliente</option>
+                                                            </select>
+                                                            {/* w-full agregado aquí */}
+                                                            <input type="number" min="1" max="5" value={editForm.rating} onChange={(e) => setEditForm({ ...editForm, rating: parseInt(e.target.value) })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
+                                                        </div>
+                                                    </div>
+                                                    <textarea value={editForm.comment} onChange={(e) => setEditForm({ ...editForm, comment: e.target.value })} className="w-full bg-gray-50 rounded-xl p-2 text-[10.5px] font-medium min-h-[60px] resize-none border-none" placeholder="Comentario" />
+                                                </div>
+                                            ) : (
+                                                /* VISTA PÚBLICA PIXEL PERFECT */
+                                                <div className="space-y-4 transition-none">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0 text-base leading-none">{rev.name?.charAt(0)}</div>
+                                                        <div className="flex flex-col gap-0.5 leading-none">
+                                                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-0.5 leading-none">{rev.badge || 'Comprador'}</span>
+                                                            <div className="flex items-center gap-1.5 transition-none">
+                                                                <h4 className="font-extrabold text-black uppercase text-sm tracking-tighter leading-none">{rev.name}</h4>
+                                                                <div className="w-3.5 h-3.5 bg-zinc-900 rounded-full flex items-center justify-center shrink-0 transition-none"><svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-current" stroke="currentColor" strokeWidth="4"><path d="M20 6L9 17L4 12" fill="none" /></svg></div>
+                                                            </div>
+                                                            <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5 leading-none">{rev.date}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-0.5 transition-none">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <svg key={i} className={`w-3 h-3 ${i < rev.rating ? 'text-zinc-800' : 'text-zinc-200'} fill-current transition-none`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-[12px] text-zinc-700 leading-relaxed font-medium italic transition-none">"{rev.comment}"</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'general' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none mb-5">Identidad</h3>
+                                    <PrefInput label="Nombre del Sitio (SEO)" value={settings.siteName} onChange={(v) => setSettings({ ...settings, siteName: v })} />
+                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Descripción Footer</label>
+                                        <textarea value={settings.footerDescription} onChange={(e) => setSettings({ ...settings, footerDescription: e.target.value })} className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
+                                    </div>
+                                    <PrefInput label="Frase final Footer" value={settings.footerTagline} onChange={(v) => setSettings({ ...settings, footerTagline: v })} />
+                                </div>
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none text-left">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none mb-5 transition-none">Sistema</h3>
+                                    <div className="flex items-center justify-between bg-[#F7F8FA] p-5 rounded-2xl border border-gray-100 gap-4">
+                                        <div className="leading-tight flex-1 transition-none"><p className="text-[10px] font-black uppercase leading-none">Modo Mantenimiento</p><p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1.5 leading-none">Oculta el sitio al público general</p></div>
+                                        <button onClick={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })} className={`w-12 h-6 rounded-full transition-none relative ${settings.maintenanceMode ? 'bg-black' : 'bg-zinc-200'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-none ${settings.maintenanceMode ? 'left-7' : 'left-1'}`}></div></button>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
-                </div>
-            </nav>
-
-            <main className="max-w-7xl mx-auto px-6 py-8">
-                <header className="flex justify-between items-end mb-9 gap-4 relative">
-                    <div className="text-left flex-1">
-                        <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">Ajustes generales</p>
-                        <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Preferencias</h1>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button onClick={handleSave} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-10 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 disabled:opacity-50 transition-all active:scale-95">
-                            {isSubmitting ? 'Guardando...' : 'Guardar Ajustes'}
-                        </button>
-                    </div>
-                </header>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-
-                    {/* BLOQUE: INFORMACIÓN DE CONTACTO */}
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Contacto y Soporte</h3>
-                        <div className="grid grid-cols-1 gap-7">
-                            <PrefInput label="Email Público" value={settings.contactEmail} onChange={(v) => setSettings({ ...settings, contactEmail: v })} />
-                            <PrefInput label="WhatsApp de Ventas" value={settings.whatsappNumber} onChange={(v) => setSettings({ ...settings, whatsappNumber: v })} />
-                            <PrefInput label="Dirección Física / Oficina" value={settings.address} onChange={(v) => setSettings({ ...settings, address: v })} />
-                        </div>
-                    </div>
-
-                    {/* BLOQUE: REDES SOCIALES */}
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Redes Sociales</h3>
-                        <div className="grid grid-cols-1 gap-7">
-                            <PrefInput label="Instagram (URL)" value={settings.instagramUrl} onChange={(v) => setSettings({ ...settings, instagramUrl: v })} />
-                            <PrefInput label="Facebook (URL)" value={settings.facebookUrl} onChange={(v) => setSettings({ ...settings, facebookUrl: v })} />
-                        </div>
-                    </div>
-
-                    {/* BLOQUE: SISTEMA */}
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none lg:col-span-2">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Configuración del Sitio</h3>
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex-1 w-full">
-                                <PrefInput label="Nombre del Sitio (SEO)" value={settings.siteName} onChange={(v) => setSettings({ ...settings, siteName: v })} />
-                            </div>
-                            <div className="flex items-center gap-4 bg-[#F7F8FA] p-5 rounded-2xl border border-gray-100 w-full md:w-auto">
-                                <div className="leading-tight">
-                                    <p className="text-[10px] font-black uppercase tracking-widest">Modo Mantenimiento</p>
-                                    <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter">Oculta el sitio al público</p>
-                                </div>
-                                <button
-                                    onClick={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })}
-                                    className={`w-12 h-6 rounded-full transition-all relative ${settings.maintenanceMode ? 'bg-black' : 'bg-zinc-200'}`}
-                                >
-                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.maintenanceMode ? 'left-7' : 'left-1'}`}></div>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     )
 }
 
-// COMPONENTE AUXILIAR
-interface PIProps { label: string; value: string; onChange: (v: string) => void; }
-function PrefInput({ label, value, onChange }: PIProps) {
+function PrefInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string; }) {
     return (
-        <div className="flex flex-col space-y-2.5 text-left leading-none">
+        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
-            <input
-                type="text"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
-            />
+            <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-none shadow-none" />
         </div>
     )
 }

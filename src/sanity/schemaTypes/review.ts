@@ -1,3 +1,4 @@
+// sanity/schemaTypes/review.ts
 export const review = {
     name: 'review',
     title: 'Reseñas de Clientes',
@@ -7,7 +8,6 @@ export const review = {
         { name: 'date', title: 'Fecha', type: 'date' },
         { name: 'rating', title: 'Estrellas', type: 'number' },
         { name: 'comment', title: 'Comentario', type: 'text' },
-        // NUEVO CAMPO: Selector de etiquetas
         {
             name: 'badge',
             title: 'Etiqueta de Verificación',

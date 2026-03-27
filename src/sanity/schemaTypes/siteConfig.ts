@@ -1,8 +1,25 @@
+// sanity/schemaTypes/siteConfig.ts
+
 export const siteConfig = {
     name: 'siteConfig',
     title: 'Configuración del Sitio',
     type: 'document',
     fields: [
+        // --- CAMPO AGREGADO: Nombre del Sitio ---
+        {
+            name: 'siteName',
+            title: 'Nombre del Sitio (SEO)',
+            type: 'string',
+            initialValue: 'VDL MOTORS'
+        },
+        // --- CAMPO AGREGADO: Modo Mantenimiento ---
+        {
+            name: 'maintenanceMode',
+            title: 'Modo Mantenimiento',
+            type: 'boolean',
+            description: 'Si está activo, el sitio mostrará una página de mantenimiento',
+            initialValue: false
+        },
         {
             name: 'footerDescription',
             title: 'Descripción bajo el Logo (Footer)',
@@ -65,7 +82,6 @@ export const siteConfig = {
                 }
             ]
         },
-        // NUEVO CAMPO PARA EL TEXTO FINAL
         {
             name: 'footerTagline',
             title: 'Frase final del Footer',
