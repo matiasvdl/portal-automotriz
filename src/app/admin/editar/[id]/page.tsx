@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { writeClient } from '@/sanity/lib/client'
 import imageUrlBuilder from '@sanity/image-url'
+import AdminNavigation from '@/components/AdminNavigation'
 
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 const builder = imageUrlBuilder(writeClient)

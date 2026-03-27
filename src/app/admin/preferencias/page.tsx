@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { client, writeClient } from '@/sanity/lib/client'
+import AdminNavigation from '@/components/AdminNavigation'
 
 // --- INTERFACES ---
 interface NavItem {
@@ -18,9 +17,7 @@ interface RutaOption {
 }
 
 export default function PreferenciasPage() {
-    const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
     const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas'>('general')
 
     const RUTAS_NAV: RutaOption[] = [
@@ -86,7 +83,6 @@ export default function PreferenciasPage() {
         fetchSanityData()
     }, [activeTab])
 
-    // FUNCIONES NAVEGACIÓN
     const handleAddNavItem = (target: 'navMenu' | 'footerLinks') => {
         const newItem = { _key: Math.random().toString(36).substr(2, 9), title: 'Nuevo Enlace', path: '/' }
         setSettings({ ...settings, [target]: [...settings[target], newItem] })
@@ -107,7 +103,6 @@ export default function PreferenciasPage() {
         setSettings({ ...settings, [target]: updated })
     }
 
-    // FUNCIONES RESEÑAS
     const handleAddReview = async () => {
         if (!newReview.name || !newReview.comment) return alert("Faltan datos")
         setIsSubmitting(true)
@@ -155,7 +150,6 @@ export default function PreferenciasPage() {
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-40 text-left no-scrollbar">
-            {/* BLOQUEO DE SCROLL FORZADO */}
             <style jsx global>{`
                 ::-webkit-scrollbar { display: none !important; }
                 body { overflow: hidden !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
@@ -164,27 +158,9 @@ export default function PreferenciasPage() {
             `}</style>
 
             <div className="main-scroll no-scrollbar">
-                <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center">
-                    <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center">
-                        <Link href="/admin/dashboard" className="text-2xl font-black italic uppercase">VDL<span className="font-light text-zinc-700">MOTORS</span></Link>
-                        <div className="relative">
-                            <div onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-3 cursor-pointer select-none group">
-                                <div className="text-right hidden sm:block leading-none">
-                                    <p className="text-[11px] font-black uppercase tracking-widest text-black group-hover:text-zinc-600 transition-none">{settings.siteName.split(' ')[0]}</p>
-                                    <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
-                                </div>
-                                <div className="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black">M</div>
-                            </div>
-                            {isUserMenuOpen && (
-                                <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-2xl shadow-2xl z-20 py-2">
-                                    <button onClick={() => router.push('/admin/cuenta')} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase text-zinc-700 hover:bg-[#F7F8FA] transition-none">Mi cuenta</button>
-                                    <button onClick={() => setIsUserMenuOpen(false)} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase text-zinc-700 bg-[#F7F8FA]">Preferencias</button>
-                                    <button onClick={() => router.push('/')} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase text-red-500 hover:bg-red-50">Cerrar sesión</button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </nav>
+
+                {/* NAV CENTRALIZADO - Carga el nombre solo desde el componente */}
+                <AdminNavigation />
 
                 <main className="max-w-7xl mx-auto px-6 py-8 no-scrollbar">
                     <header className="flex justify-between items-end mb-9">
@@ -192,9 +168,9 @@ export default function PreferenciasPage() {
                             <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">Configuración</p>
                             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Preferencias</h1>
                         </div>
-                        {activeTab !== 'resenas' && (
-                            <button onClick={handleSaveGlobal} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3 rounded-xl shadow-xl shadow-black/10">{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</button>
-                        )}
+                        <button onClick={handleSaveGlobal} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3 rounded-xl shadow-xl shadow-black/10">
+                            {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
+                        </button>
                     </header>
 
                     <div className="flex gap-3 mb-4">
@@ -205,9 +181,7 @@ export default function PreferenciasPage() {
                         ))}
                     </div>
 
-                    {/* CONTENIDO DE PESTAÑAS */}
                     <div className="no-scrollbar">
-                        {/* --- NAVEGACIÓN --- */}
                         {activeTab === 'navegacion' && (
                             <div className="space-y-8">
                                 {[
@@ -245,16 +219,14 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
-                        {/* --- TAB RESEÑAS --- */}
                         {activeTab === 'resenas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start text-left no-scrollbar">
-                                {/* Nueva Reseña (Panel Izquierdo) */}
-                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Nueva Reseña</h3>
+                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-8 space-y-5 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Reseña</h3>
                                     <PrefInput label="Nombre" value={newReview.name} onChange={(v) => setNewReview({ ...newReview, name: v })} />
                                     <PrefInput label="Fecha" type="date" value={newReview.date} onChange={(v) => setNewReview({ ...newReview, date: v })} />
 
-                                    <div className="flex flex-col space-y-2 leading-none">
+                                    <div className="flex flex-col space-y- leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Etiqueta</label>
                                         <select value={newReview.badge} onChange={(e) => setNewReview({ ...newReview, badge: e.target.value })} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none cursor-pointer appearance-none">
                                             <option value="Comprador Satisfecho">Comprador Satisfecho</option>
@@ -277,11 +249,9 @@ export default function PreferenciasPage() {
                                     <button onClick={handleAddReview} disabled={isSubmitting} className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none">{isSubmitting ? 'Publicando...' : 'Publicar Reseña'}</button>
                                 </div>
 
-                                {/* Lista de Reseñas (Grid Derecho) */}
                                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 no-scrollbar">
                                     {allReviews.map(rev => (
                                         <div key={rev._id} className={`bg-white border border-gray-200 rounded-3xl text-left h-full relative transition-none shadow-none ${editingReviewId === rev._id ? 'p-4' : 'p-6'}`}>
-                                            {/* ICONOS DE ACCIÓN */}
                                             <div className="absolute top-4 right-4 flex gap-1 items-center bg-white/80 p-1 rounded-full border border-gray-100 z-10">
                                                 {editingReviewId === rev._id ? (
                                                     <>
@@ -297,7 +267,6 @@ export default function PreferenciasPage() {
                                             </div>
 
                                             {editingReviewId === rev._id ? (
-                                                /* MODO EDICIÓN COMPACTA*/
                                                 <div className="space-y-3 pt-2">
                                                     <div className="grid grid-cols-1 gap-2">
                                                         <div className="grid grid-cols-2 gap-2">
@@ -305,21 +274,18 @@ export default function PreferenciasPage() {
                                                             <input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-2">
-                                                            {/* w-full agregado aquí */}
                                                             <select value={editForm.badge} onChange={(e) => setEditForm({ ...editForm, badge: e.target.value })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[9px] font-black uppercase border-none appearance-none">
                                                                 <option value="Comprador Satisfecho">Comprador Satisfecho</option>
                                                                 <option value="Vendedor Satisfecho">Vendedor Satisfecho</option>
                                                                 <option value="Cliente Verificado">Cliente Verificado</option>
                                                                 <option value="Opinión Real de Cliente">Opinión Real de Cliente</option>
                                                             </select>
-                                                            {/* w-full agregado aquí */}
                                                             <input type="number" min="1" max="5" value={editForm.rating} onChange={(e) => setEditForm({ ...editForm, rating: parseInt(e.target.value) })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
                                                         </div>
                                                     </div>
                                                     <textarea value={editForm.comment} onChange={(e) => setEditForm({ ...editForm, comment: e.target.value })} className="w-full bg-gray-50 rounded-xl p-2 text-[10.5px] font-medium min-h-[60px] resize-none border-none" placeholder="Comentario" />
                                                 </div>
                                             ) : (
-                                                /* VISTA PÚBLICA PIXEL PERFECT */
                                                 <div className="space-y-4 transition-none">
                                                     <div className="flex items-start gap-3">
                                                         <div className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0 text-base leading-none">{rev.name?.charAt(0)}</div>
@@ -357,8 +323,8 @@ export default function PreferenciasPage() {
                                     </div>
                                     <PrefInput label="Frase final Footer" value={settings.footerTagline} onChange={(v) => setSettings({ ...settings, footerTagline: v })} />
                                 </div>
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none text-left">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none mb-5 transition-none">Sistema</h3>
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none text-left">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5 transition-none">Sistema</h3>
                                     <div className="flex items-center justify-between bg-[#F7F8FA] p-5 rounded-2xl border border-gray-100 gap-4">
                                         <div className="leading-tight flex-1 transition-none"><p className="text-[10px] font-black uppercase leading-none">Modo Mantenimiento</p><p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1.5 leading-none">Oculta el sitio al público general</p></div>
                                         <button onClick={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })} className={`w-12 h-6 rounded-full transition-none relative ${settings.maintenanceMode ? 'bg-black' : 'bg-zinc-200'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-none ${settings.maintenanceMode ? 'left-7' : 'left-1'}`}></div></button>

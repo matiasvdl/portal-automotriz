@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { client, writeClient } from '@/sanity/lib/client'
+import AdminNavigation from '@/components/AdminNavigation'
 
 export default function DashboardPage() {
     const [cars, setCars] = useState<any[]>([])
