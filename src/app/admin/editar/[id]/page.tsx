@@ -278,7 +278,6 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Editar Vehículo</h1>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Link href="/admin/dashboard" className="text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 border border-zinc-200 rounded-xl hover:border-black transition-all">Cancelar</Link>
                         <button
                             onClick={handleDelete}
                             disabled={isSubmitting}
@@ -286,6 +285,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         >
                             Eliminar Vehículo
                         </button>
+                        <Link href="/admin/dashboard" className="text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 border border-zinc-200 rounded-xl hover:border-black transition-all">Cancelar</Link>
                         <button onClick={handleSubmit} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 disabled:opacity-50 transition-all active:scale-95">
                             {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
