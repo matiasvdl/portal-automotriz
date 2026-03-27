@@ -2,41 +2,56 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { client } from '@/sanity/lib/client'
+import { client, writeClient } from '@/sanity/lib/client'
 
 export default function DashboardPage() {
     const [cars, setCars] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        const fetchCars = async () => {
-            try {
-                const query = `*[_type == "car"] | order(_createdAt desc) {
-                    _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage, category, engine,
-                    "slug": slug.current,
-                    "imageUrl": images[0].asset->url
-                }`
-                const data = await client.fetch(query)
-                setCars(data || [])
-            } catch (error) {
-                console.error("Error fetching stock:", error)
-            } finally {
-                setLoading(false)
-            }
+    const fetchCars = async () => {
+        try {
+            const query = `*[_type == "car"] | order(_createdAt desc) {
+                _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage, category, engine,
+                "slug": slug.current,
+                "imageUrl": images[0].asset->url
+            }`
+            const data = await client.fetch(query)
+            setCars(data || [])
+        } catch (error) {
+            console.error("Error fetching stock:", error)
+        } finally {
+            setLoading(false)
         }
+    }
+
+    useEffect(() => {
         fetchCars()
     }, [])
+
+    const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (confirm(`¿Estás seguro de que deseas eliminar el ${name} permanentemente?`)) {
+            try {
+                await writeClient.delete(id)
+                setCars(cars.filter(car => car._id !== id))
+            } catch (error) {
+                console.error("Error eliminando:", error)
+                alert("No se pudo eliminar el vehículo.")
+            }
+        }
+    }
 
     if (loading) return <div className="min-h-screen bg-[#F7F8FA]" />
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased">
 
-            {/* Nav con límite de ancho idéntico a las páginas públicas */}
             <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none">
                 <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center relative">
                     <Link href="/admin/dashboard" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
-                        VDL<span className="font-light text-zinc-700">MOTORS</span>
+                        VDL<span className="font-light text-zinc-700">Motors</span>
                     </Link>
                     <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block leading-none">
@@ -52,7 +67,7 @@ export default function DashboardPage() {
                 <header className="flex justify-between items-end mb-9 gap-4">
                     <div className="text-left flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">
-                            Gestión de stock
+                            Panel de Administración
                         </p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
                             Vehiculos Disponibles
@@ -67,11 +82,20 @@ export default function DashboardPage() {
                     </Link>
                 </header>
 
-                {/* Grid controlado: tarjetas alineadas a la izquierda y con ancho máximo */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-40">
                     {cars.map((car) => (
-                        <div key={car._id} className="w-full max-w-[310px] relative">
-                            <Link href={`/admin/editar/${car._id}`} className="group flex flex-col h-full">
+                        <div key={car._id} className="w-full max-w-[310px] relative group">
+                            {/* BOTÓN ELIMINAR: NEGRO CON ZOOM AL HOVER */}
+                            <button
+                                onClick={(e) => handleDelete(e, car._id, `${car.make} ${car.model}`)}
+                                className="absolute top-3 right-3 z-30 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 active:scale-95"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+
+                            <Link href={`/admin/editar/${car._id}`} className="flex flex-col h-full">
                                 <AdminCarCard car={car} />
                             </Link>
                         </div>
@@ -89,12 +113,12 @@ function AdminCarCard({ car }: { car: any }) {
     return (
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col h-full transition-all">
 
-            {/* IMAGEN Y BADGE */}
+            {/* IMAGEN CON ZOOM */}
             <div className="aspect-[4/3] relative bg-gray-50 border-b border-gray-100 overflow-hidden">
                 <img
                     src={car.imageUrl || 'https://via.placeholder.com/600x450?text=Sin+Imagen'}
                     alt={`${car.make} ${car.model}`}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute top-0 left-0 bg-black text-white text-[9px] font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-br-lg z-10 pointer-events-none leading-none">
                     {car.category || 'Stock'}
@@ -111,7 +135,6 @@ function AdminCarCard({ car }: { car: any }) {
                         {car.make} {car.model}
                     </h4>
 
-                    {/* SPECS EN 3 COLUMNAS CON GAP FIJO */}
                     <div className="flex items-start">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Kilómetros</span>
@@ -136,7 +159,6 @@ function AdminCarCard({ car }: { car: any }) {
                     </div>
                 </div>
 
-                {/* PRECIO Y ACCIÓN */}
                 <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                     <div className="flex flex-col text-left">
                         <span className="text-[8px] font-black text-gray-300 uppercase mb-0.5 leading-none line-through italic">
@@ -147,8 +169,8 @@ function AdminCarCard({ car }: { car: any }) {
                         </p>
                     </div>
 
-                    {/* BOTÓN DE ACCIÓN (FLECHA) - Efecto Negro en Hover */}
-                    <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 shrink-0 transition-colors group-hover:bg-black group-hover:text-white group-hover:border-black shadow-none">
+                    {/* BOTÓN FLECHA: Solo negro en hover directo sobre el círculo */}
+                    <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 shrink-0 transition-colors hover:bg-black hover:text-white hover:border-black shadow-none cursor-pointer">
                         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current translate-x-[0.5px]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>
