@@ -1,13 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-
-/**
- * Centralización del número de contacto para VDL Motors
- */
-const WHATSAPP_NUMBER = "569XXXXXXXX"
+import { useSettings } from '@/context/SettingsContext' // Importamos el hook sincronizado
 
 export default function VenderAutoPage() {
+    const { contact } = useSettings() // Obtenemos la información de Sanity
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const [formData, setFormData] = useState({
@@ -38,6 +35,9 @@ export default function VenderAutoPage() {
         e.preventDefault()
         setIsSubmitting(true)
 
+        // Sincronización: Usamos el número de Sanity
+        const destinationNumber = contact.whatsapp || "569XXXXXXXX"
+
         const message = `Hola VDL Motors! Me interesa vender mi auto.%0A` +
             `- Cliente: ${formData.firstName} ${formData.lastName}%0A` +
             `- Vehículo: ${formData.make} ${formData.model} (${formData.year})%0A` +
@@ -46,7 +46,7 @@ export default function VenderAutoPage() {
             `- Estado: ${formData.condition}%0A` +
             `- Detalles: ${formData.additionalDetails || 'Sin detalles adicionales'}`
 
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank')
+        window.open(`https://wa.me/${destinationNumber}?text=${message}`, '_blank')
 
         setTimeout(() => setIsSubmitting(false), 2000)
     }
@@ -130,7 +130,7 @@ export default function VenderAutoPage() {
                                 </div>
                             </section>
 
-                            <div className="pt-2">
+                            <div className="pt-0">
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}

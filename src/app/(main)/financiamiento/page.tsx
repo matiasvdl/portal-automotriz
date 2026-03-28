@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { client } from '@/sanity/lib/client'
-
-/**
- * Centralización del número de contacto
- */
-const WHATSAPP_NUMBER = "569XXXXXXXX"
+import { useSettings } from '@/context/SettingsContext' // Importamos el hook global
 
 export default function FinanciamientoPage() {
+    const { contact } = useSettings() // Obtenemos la información sincronizada
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [availableCars, setAvailableCars] = useState<string[]>(['Cargando stock...'])
 
@@ -26,7 +23,7 @@ export default function FinanciamientoPage() {
         carInterest: '',
         downPayment: '',
         termMonths: '36 meses',
-        additionalInquiries: '' // Nuevo campo
+        additionalInquiries: ''
     })
 
     // FETCH DINÁMICO DE VEHÍCULOS
@@ -52,7 +49,10 @@ export default function FinanciamientoPage() {
         e.preventDefault()
         setIsSubmitting(true)
 
-        // Estructura del mensaje de WhatsApp incluyendo las consultas
+        // Sincronización: Usamos el número de Sanity. 
+        // Si aún no carga o no existe, usamos uno de respaldo.
+        const destinationNumber = contact.whatsapp || "569XXXXXXXX"
+
         const message = `Hola VDL Motors! Solicito evaluación de crédito automotriz.%0A` +
             `- Cliente: ${formData.firstName} ${formData.lastName}%0A` +
             `- RUT: ${formData.rut}%0A` +
@@ -61,7 +61,7 @@ export default function FinanciamientoPage() {
             `- Plazo: ${formData.termMonths}%0A` +
             `- Consultas: ${formData.additionalInquiries || 'Sin consultas adicionales'}`
 
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank')
+        window.open(`https://wa.me/${destinationNumber}?text=${message}`, '_blank')
 
         setTimeout(() => setIsSubmitting(false), 2000)
     }
@@ -134,7 +134,7 @@ export default function FinanciamientoPage() {
                                 </div>
                             </section>
 
-                            {/* NUEVA SECCIÓN: CONSULTAS ADICIONALES */}
+                            {/* 04. CONSULTAS ADICIONALES */}
                             <section className="space-y-6">
                                 <h3 className="text-[9px] font-black uppercase tracking-widest text-black border-b border-gray-50 pb-4 leading-none">
                                     04. Consultas Adicionales
@@ -152,7 +152,7 @@ export default function FinanciamientoPage() {
                                 </div>
                             </section>
 
-                            <div className="pt-2">
+                            <div className="pt-0">
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
