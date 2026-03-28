@@ -1,138 +1,224 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 
-export default function VendeTuAutoPage() {
+/**
+ * Centralización del número de contacto para VDL Motors
+ */
+const WHATSAPP_NUMBER = "569XXXXXXXX"
+
+export default function VenderAutoPage() {
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const [formData, setFormData] = useState({
+        // 01. Contacto
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+
+        // 02. Vehículo
+        make: '',
+        model: '',
+        year: '',
+        mileage: '',
+
+        // 03. Estado
+        transmission: 'Automática',
+        fuel: 'Bencina',
+        condition: 'Excelente',
+        additionalDetails: ''
+    })
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value })
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsSubmitting(true)
+
+        const message = `Hola VDL Motors! Me interesa vender mi auto.%0A` +
+            `- Cliente: ${formData.firstName} ${formData.lastName}%0A` +
+            `- Vehículo: ${formData.make} ${formData.model} (${formData.year})%0A` +
+            `- KM: ${formData.mileage}%0A` +
+            `- Transmisión: ${formData.transmission}%0A` +
+            `- Estado: ${formData.condition}%0A` +
+            `- Detalles: ${formData.additionalDetails || 'Sin detalles adicionales'}`
+
+        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank')
+
+        setTimeout(() => setIsSubmitting(false), 2000)
+    }
+
     return (
-        <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-20 no-scrollbar">
-            <style jsx global>{`
-                ::-webkit-scrollbar { display: none !important; }
-                .main-scroll { height: 100vh; overflow-y: auto; scrollbar-width: none; }
-            `}</style>
+        <div className="min-h-screen bg-[#F7F8FA] antialiased text-black font-sans">
 
-            <div className="main-scroll no-scrollbar">
+            <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
 
-                <main className="max-w-6xl mx-auto px-6 py-12 md:py-16">
+                <header className="mb-8 text-left">
+                    <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">
+                        Tasación inmediata
+                    </p>
+                    <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
+                        Vende tu vehículo
+                    </h1>
+                </header>
 
-                    {/* Header Alineado a la Izquierda */}
-                    <header className="mb-12 text-left">
-                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-1 italic leading-none">Gestión de Ventas</p>
-                        <h1 className="text-3xl font-black uppercase tracking-tighter leading-none text-black">
-                            Vende tu vehículo
-                        </h1>
-                        <p className="mt-4 text-[13px] text-zinc-500 font-medium max-w-xl leading-relaxed">
-                            Completa los detalles de tu auto y nos pondremos en contacto contigo para una tasación oficial.
-                        </p>
-                    </header>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    {/* FORMULARIO */}
+                    <form onSubmit={handleSubmit} className="lg:col-span-7 order-2 lg:order-1">
+                        <div className="bg-white rounded-[25px] border border-gray-100 p-7 space-y-9 shadow-none">
 
-                        {/* Formulario Principal */}
-                        <div className="lg:col-span-2 bg-white rounded-[30px] border border-gray-100 p-8 md:p-10 space-y-10">
-
-                            {/* Sección 1 */}
-                            <div className="space-y-6">
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-800 border-b border-gray-50 pb-4 leading-none">1. Información del Auto</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <VenderInput label="Marca" placeholder="Ej: BMW" />
-                                    <VenderInput label="Modelo" placeholder="Ej: X5" />
-                                    <VenderInput label="Año" placeholder="2024" />
-                                    <VenderInput label="Kilometraje" placeholder="10.000" />
-                                    <VenderInput label="Versión / Motor" placeholder="xDrive 40i" />
-                                    <VenderInput label="Patente" placeholder="ABCD12" />
+                            {/* 01. DATOS DE CONTACTO */}
+                            <section className="space-y-6">
+                                <h3 className="text-[9px] font-black uppercase tracking-widest text-black border-b border-gray-50 pb-4 leading-none">
+                                    01. Datos de Contacto
+                                </h3>
+                                <div className="space-y-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <InputField label="Nombre" name="firstName" placeholder="Juan" value={formData.firstName} onChange={handleChange} />
+                                        <InputField label="Apellido" name="lastName" placeholder="Pérez" value={formData.lastName} onChange={handleChange} />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <InputField label="Teléfono / WhatsApp" name="phone" placeholder="+56 9" value={formData.phone} onChange={handleChange} />
+                                        <InputField label="Correo Electrónico" name="email" placeholder="ejemplo@correo.com" value={formData.email} onChange={handleChange} />
+                                    </div>
                                 </div>
-                            </div>
+                            </section>
 
-                            {/* Sección 2 */}
-                            <div className="space-y-6">
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-800 border-b border-gray-50 pb-4 leading-none">2. Tus Datos</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <VenderInput label="Nombre Completo" placeholder="Matías Vidal" />
-                                    <VenderInput label="WhatsApp" placeholder="+56 9..." />
+                            {/* 02. DATOS DEL VEHÍCULO */}
+                            <section className="space-y-6">
+                                <h3 className="text-[9px] font-black uppercase tracking-widest text-black border-b border-gray-50 pb-4 leading-none">
+                                    02. Información del Vehículo
+                                </h3>
+                                <div className="space-y-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <InputField label="Marca" name="make" placeholder="Ej: Mercedes Benz" value={formData.make} onChange={handleChange} />
+                                        <InputField label="Modelo" name="model" placeholder="Ej: G63 AMG" value={formData.model} onChange={handleChange} />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <InputField label="Año" name="year" placeholder="Ej: 2021" value={formData.year} onChange={handleChange} />
+                                        <InputField label="Kilometraje" name="mileage" placeholder="Ej: 45.000" value={formData.mileage} onChange={handleChange} />
+                                    </div>
                                 </div>
-                            </div>
+                            </section>
 
-                            <button className="w-full bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl shadow-black/5 hover:bg-zinc-900 transition-all active:scale-[0.99]">
-                                Enviar Datos de Venta
-                            </button>
+                            {/* 03. ESTADO Y DETALLES */}
+                            <section className="space-y-6">
+                                <h3 className="text-[9px] font-black uppercase tracking-widest text-black border-b border-gray-50 pb-4 leading-none">
+                                    03. Estado y Consultas
+                                </h3>
+                                <div className="space-y-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                        <FormSelect label="Transmisión" name="transmission" value={formData.transmission} options={['Automática', 'Manual']} onChange={handleChange} />
+                                        <FormSelect label="Combustible" name="fuel" value={formData.fuel} options={['Bencina', 'Diésel', 'Híbrido', 'Eléctrico']} onChange={handleChange} />
+                                        <FormSelect label="Condición" name="condition" value={formData.condition} options={['Excelente', 'Bueno', 'Regular']} onChange={handleChange} />
+                                    </div>
+                                    <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1">Detalles adicionales o expectativas de precio</label>
+                                        <textarea
+                                            name="additionalDetails"
+                                            value={formData.additionalDetails}
+                                            onChange={handleChange}
+                                            placeholder="Cuéntanos sobre mantenciones, dueños o si tiene algún detalle estético."
+                                            rows={4}
+                                            className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed transition-all placeholder:text-zinc-300"
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <div className="pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="w-full bg-black text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Enviando...' : 'Solicitar Tasación'}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    {/* BARRA LATERAL: PROCESO */}
+                    <aside className="lg:col-span-5 order-1 lg:order-2 space-y-6">
+                        <div className="bg-white rounded-[25px] p-8 border border-gray-100 shadow-none">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-6 italic leading-none">
+                                ¿Cómo funciona?
+                            </h4>
+                            <div className="space-y-6">
+                                <FeatureItem title="1. Envía tus datos" desc="Completa el formulario con la información básica de tu vehículo." />
+                                <FeatureItem title="2. Tasación en línea" desc="Nuestros ejecutivos analizarán los datos para darte una oferta preliminar." />
+                                <FeatureItem title="3. Inspección física" desc="Coordinamos una revisión rápida en nuestras sucursales o domicilio." />
+                                <FeatureItem title="4. Pago inmediato" desc="Si estás de acuerdo, cerramos el contrato y recibes tu pago al instante." />
+                            </div>
                         </div>
 
-                        {/* Sidebar de Beneficios - Versión Minimalista y Sobria */}
-                        <aside className="space-y-6">
-                            <div className="bg-white rounded-[35px] border border-gray-100 p-10 shadow-none">
-
-                                {/* Título Principal Actualizado (Sin efecto) */}
-                                <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-700 leading-none pb-4 border-b border-gray-50 mb-10">
-                                    ¿Por qué vender con nosotros?
-                                </h4>
-
-                                {/* Estructura Limpia de Texto */}
-                                <div className="space-y-10">
-                                    <div>
-                                        <p className="text-[13px] font-black uppercase tracking-tighter text-black mb-2">
-                                            Tasación Rápida
-                                        </p>
-                                        <p className="text-[11px] font-medium text-zinc-500 leading-relaxed">
-                                            Respuesta en menos de <span className="text-black font-bold">24 horas hábiles</span> con una oferta real.
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-[13px] font-black uppercase tracking-tighter text-black mb-2">
-                                            Pago Inmediato
-                                        </p>
-                                        <p className="text-[11px] font-medium text-zinc-500 leading-relaxed">
-                                            Transferencia directa y segura a tu cuenta una vez que el vehículo sea revisado.
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-[13px] font-black uppercase tracking-tighter text-black mb-2">
-                                            Sin Trámites
-                                        </p>
-                                        <p className="text-[11px] font-medium text-zinc-500 leading-relaxed">
-                                            Gestión documental completa. Nosotros nos encargamos de todo el <span className="text-black font-bold">papeleo legal</span>.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Separación y Call to Action Sutil al final */}
-                                <div className="mt-12 pt-8 border-t border-gray-50 flex flex-col items-center text-center">
-                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Atención Directa</p>
-                                    <button className="text-[11px] font-black uppercase tracking-tighter border-b-2 border-black pb-1 hover:text-zinc-600 hover:border-zinc-300 transition-all">
-                                        Cotiza vía WhatsApp →
-                                    </button>
-                                </div>
+                        <div className="bg-zinc-900 rounded-[25px] p-6 text-white shadow-none flex items-center gap-4">
+                            <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center shrink-0">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                             </div>
-                        </aside>
-
-                    </div>
-                </main>
-
-            </div>
+                            <div className="leading-tight">
+                                <p className="text-[10px] font-black uppercase tracking-widest">Compra Segura</p>
+                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter mt-0.5">Pagamos al contado y de forma segura</p>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </main>
         </div>
     )
 }
 
-function VenderInput({ label, placeholder }: { label: string; placeholder: string }) {
+/** * COMPONENTES DE INTERFAZ REUTILIZADOS
+ */
+function InputField({ label, name, placeholder, value, onChange, type = "text" }: any) {
     return (
-        <div className="flex flex-col space-y-2 text-left">
-            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1">{label}</label>
+        <div className="flex flex-col space-y-2.5 text-left leading-none">
+            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
             <input
-                type="text"
+                type={type}
+                name={name}
+                value={value}
+                onChange={onChange}
                 placeholder={placeholder}
-                className="w-full h-[48px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all text-black placeholder:text-zinc-300"
+                required
+                className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all placeholder:text-zinc-300 placeholder:font-normal"
             />
         </div>
     )
 }
 
-function InfoItem({ title, desc }: { title: string; desc: string }) {
+function FormSelect({ label, name, value, options, onChange }: any) {
     return (
-        <div className="leading-tight">
-            <p className="text-[11px] font-black uppercase text-black mb-1 leading-none">{title}</p>
-            <p className="text-[10px] font-medium text-zinc-500 leading-normal">{desc}</p>
+        <div className="flex flex-col space-y-2.5 text-left leading-none">
+            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
+            <div className="relative leading-none">
+                <select
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer leading-none"
+                >
+                    {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function FeatureItem({ title, desc }: { title: string, desc: string }) {
+    return (
+        <div className="space-y-1 text-left leading-tight">
+            <p className="text-[10px] font-black uppercase text-black tracking-tighter">{title}</p>
+            <p className="text-[10px] font-medium text-zinc-500">{desc}</p>
         </div>
     )
 }
