@@ -18,8 +18,8 @@ interface RutaOption {
 
 export default function PreferenciasPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    // 1. Añadimos 'contacto' a los tabs
-    const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas' | 'contacto'>('general')
+    // 1. Añadimos 'preguntas' a los tabs
+    const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas' | 'contacto' | 'preguntas'>('general')
 
     const RUTAS_NAV: RutaOption[] = [
         { title: 'Inicio', value: '/' },
@@ -49,9 +49,8 @@ export default function PreferenciasPage() {
         maintenanceMode: false
     })
 
-    // 2. Nuevo estado para Contacto
     const [contact, setContact] = useState({
-        _id: 'global-contact', // ID fijo para Singleton
+        _id: 'global-contact',
         whatsapp: '',
         instagram: '',
         facebook: '',
@@ -60,6 +59,11 @@ export default function PreferenciasPage() {
     })
 
     const [allReviews, setAllReviews] = useState<any[]>([])
+
+    // ESTADOS PARA PREGUNTAS (NUEVO)
+    const [faqs, setFaqs] = useState<any[]>([])
+    const [newFaq, setNewFaq] = useState({ question: '', answer: '', order: 0 })
+
     const [newReview, setNewReview] = useState({
         name: '',
         date: new Date().toISOString().split('T')[0],
@@ -77,8 +81,9 @@ export default function PreferenciasPage() {
             try {
                 const config = await client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' })
                 const reviews = await client.fetch(`*[_type == "review"] | order(date desc)`, {}, { cache: 'no-store' })
-                // Carga de contacto
                 const contactData = await client.fetch(`*[_type == "contactSettings"][0]`, {}, { cache: 'no-store' })
+                // Carga de FAQs (NUEVO)
+                const faqData = await client.fetch(`*[_type == "faq"] | order(order asc)`, {}, { cache: 'no-store' })
 
                 if (config) {
                     setSettings({
@@ -92,6 +97,7 @@ export default function PreferenciasPage() {
                     })
                 }
                 if (reviews) setAllReviews(reviews)
+                if (faqData) setFaqs(faqData)
                 if (contactData) {
                     setContact({
                         _id: contactData._id || 'global-contact',
@@ -106,8 +112,6 @@ export default function PreferenciasPage() {
         }
         fetchSanityData()
     }, [activeTab])
-
-    // ... (Funciones handleAddNavItem, handleUpdateNavItem, handleMoveNavItem se mantienen igual)
 
     const handleAddNavItem = (target: 'navMenu' | 'footerLinks') => {
         const newItem = { _key: Math.random().toString(36).substr(2, 9), title: 'Nuevo Enlace', path: '/' }
@@ -127,6 +131,25 @@ export default function PreferenciasPage() {
         const [movedItem] = updated.splice(index, 1)
         updated.splice(newIndex, 0, movedItem)
         setSettings({ ...settings, [target]: updated })
+    }
+
+    // FUNCIONES PARA PREGUNTAS (NUEVO)
+    const handleAddFaq = async () => {
+        if (!newFaq.question || !newFaq.answer) return alert("Completa los campos")
+        setIsSubmitting(true)
+        try {
+            const result = await writeClient.create({ _type: 'faq', ...newFaq })
+            setFaqs([...faqs, result])
+            setNewFaq({ question: '', answer: '', order: faqs.length + 1 })
+            alert("Pregunta agregada")
+        } finally { setIsSubmitting(false) }
+    }
+
+    const handleDeleteFaq = async (id: string) => {
+        if (confirm("¿Eliminar esta pregunta?")) {
+            await writeClient.delete(id)
+            setFaqs(faqs.filter(f => f._id !== id))
+        }
     }
 
     const handleAddReview = async () => {
@@ -158,11 +181,9 @@ export default function PreferenciasPage() {
         } finally { setIsSubmitting(false) }
     }
 
-    // 3. Modificamos handleSaveGlobal para que guarde ambos documentos
     const handleSaveGlobal = async () => {
         setIsSubmitting(true)
         try {
-            // Guardar Configuración del Sitio
             if (settings._id) {
                 await writeClient.patch(settings._id).set({
                     siteName: settings.siteName,
@@ -174,7 +195,6 @@ export default function PreferenciasPage() {
                 }).commit()
             }
 
-            // Guardar Configuración de Contacto
             await writeClient.createOrReplace({
                 _id: contact._id,
                 _type: 'contactSettings',
@@ -217,16 +237,51 @@ export default function PreferenciasPage() {
 
                     {/* TABS ACTUALIZADOS */}
                     <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
-                        {['general', 'navegacion', 'contacto', 'resenas'].map((tab) => (
+                        {['general', 'navegacion', 'contacto', 'preguntas', 'resenas'].map((tab) => (
                             <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-none shrink-0 ${activeTab === tab ? 'bg-black text-white shadow-lg' : 'bg-white text-zinc-400 border border-gray-100'}`}>
-                                {tab === 'general' ? 'General' : tab === 'navegacion' ? 'Navegación' : tab === 'contacto' ? 'Contacto' : 'Reseñas'}
+                                {tab === 'general' ? 'General' : tab === 'navegacion' ? 'Navegación' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : 'Reseñas'}
                             </button>
                         ))}
                     </div>
 
                     <div className="no-scrollbar">
 
-                        {/* PESTAÑA CONTACTO (NUEVA) */}
+                        {/* PESTAÑA PREGUNTAS (NUEVA) */}
+                        {activeTab === 'preguntas' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start no-scrollbar">
+                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-8 space-y-5 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Pregunta</h3>
+                                    <div className="flex flex-col space-y-4">
+                                        <PrefInput label="Pregunta" value={newFaq.question} onChange={(v) => setNewFaq({ ...newFaq, question: v })} />
+                                        <div className="flex flex-col space-y-2.5 leading-none">
+                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Respuesta</label>
+                                            <textarea value={newFaq.answer} onChange={(e) => setNewFaq({ ...newFaq, answer: e.target.value })} className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none min-h-[120px] resize-none" />
+                                        </div>
+                                        <PrefInput label="Orden" type="number" value={newFaq.order.toString()} onChange={(v) => setNewFaq({ ...newFaq, order: parseInt(v) || 0 })} />
+                                        <button onClick={handleAddFaq} disabled={isSubmitting} className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none">
+                                            {isSubmitting ? 'Guardando...' : 'Agregar Pregunta'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-2 space-y-4">
+                                    {faqs.map(f => (
+                                        <div key={f._id} className="bg-white border border-gray-100 rounded-3xl p-6 flex justify-between items-center group shadow-none">
+                                            <div className="text-left">
+                                                <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nivel {f.order || 0}</p>
+                                                <h4 className="text-[11px] font-black uppercase tracking-tight text-black">{f.question}</h4>
+                                                <p className="text-[10px] text-zinc-500 font-medium mt-1 line-clamp-2 italic leading-relaxed">"{f.answer}"</p>
+                                            </div>
+                                            <button onClick={() => handleDeleteFaq(f._id)} className="p-2 text-zinc-300 hover:text-red-500 transition-colors">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PESTAÑA CONTACTO */}
                         {activeTab === 'contacto' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
@@ -246,7 +301,6 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
-                        {/* ... (Pestañas navegación, resenas y general se mantienen igual) */}
                         {activeTab === 'navegacion' && (
                             <div className="space-y-8">
                                 {[

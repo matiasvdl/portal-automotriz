@@ -1,34 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react' // Importamos useEffect
 import { useSettings } from '@/context/SettingsContext'
+import { client } from '@/sanity/lib/client' // Importamos el cliente de Sanity
 
 export default function FAQPage() {
     const { contact } = useSettings()
     const [openIndex, setOpenIndex] = useState<number | null>(0)
+    const [faqs, setFaqs] = useState<any[]>([]) // Estado para las preguntas dinámicas
 
-    const faqs = [
-        {
-            question: "¿Cuáles son los requisitos para el financiamiento?",
-            answer: "Los requisitos básicos incluyen ser mayor de 24 años, contar con al menos 1 año de antigüedad laboral, una renta líquida desde $500.000 y no tener deudas comerciales vigentes (Dicom)."
-        },
-        {
-            question: "¿Reciben autos en parte de pago?",
-            answer: "Sí, recibimos vehículos en parte de pago previa tasación. El auto debe estar en buen estado mecánico y con su documentación al día."
-        },
-        {
-            question: "¿Cuánto demora el proceso de compra?",
-            answer: "Si la compra es al contado, la transferencia puede quedar lista en el mismo día. En caso de financiamiento, la aprobación suele demorar entre 30 minutos a 2 horas hábiles."
-        },
-        {
-            question: "¿Los autos cuentan con garantía?",
-            answer: "Todos nuestros vehículos pasan por una rigurosa inspección de 150 puntos y cuentan con garantía mecánica legal. También ofrecemos opciones de extensión de garantía."
-        },
-        {
-            question: "¿Realizan envíos a regiones?",
-            answer: "Sí, coordinamos el despacho de vehículos a todo Chile a través de empresas de transporte especializadas. El costo varía según la ciudad de destino."
+    // FETCH DE PREGUNTAS DESDE SANITY
+    useEffect(() => {
+        const fetchFaqs = async () => {
+            try {
+                const data = await client.fetch(`*[_type == "faq"] | order(order asc)`)
+                if (data) setFaqs(data)
+            } catch (error) {
+                console.error("Error cargando FAQs:", error)
+            }
         }
-    ]
+        fetchFaqs()
+    }, [])
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] antialiased text-black font-sans">
@@ -46,37 +38,43 @@ export default function FAQPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                    {/* SECCIÓN DE ACORDEONES */}
+                    {/* SECCIÓN DE ACORDEONES DINÁMICOS */}
                     <div className="lg:col-span-7 space-y-4 order-2 lg:order-1">
-                        {faqs.map((faq, index) => (
-                            <div
-                                key={index}
-                                className="bg-white rounded-[25px] border border-gray-100 overflow-hidden transition-all shadow-none"
-                            >
-                                <button
-                                    onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                                    className="w-full p-6 text-left flex justify-between items-center group"
-                                >
-                                    <span className="text-[11px] font-black uppercase tracking-wider text-black group-hover:text-zinc-500 transition-colors leading-tight">
-                                        {faq.question}
-                                    </span>
-                                    <svg
-                                        className={`w-4 h-4 text-zinc-300 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`}
-                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-
+                        {faqs.length > 0 ? (
+                            faqs.map((faq, index) => (
                                 <div
-                                    className={`transition-all duration-300 ease-in-out ${openIndex === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+                                    key={faq._id || index}
+                                    className="bg-white rounded-[25px] border border-gray-100 overflow-hidden transition-all shadow-none"
                                 >
-                                    <div className="px-6 pb-6 text-[12px] font-medium text-zinc-500 leading-relaxed italic">
-                                        "{faq.answer}"
+                                    <button
+                                        onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                                        className="w-full p-6 text-left flex justify-between items-center group"
+                                    >
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-black group-hover:text-zinc-500 transition-colors leading-tight">
+                                            {faq.question}
+                                        </span>
+                                        <svg
+                                            className={`w-4 h-4 text-zinc-300 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`}
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    <div
+                                        className={`transition-all duration-300 ease-in-out ${openIndex === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+                                    >
+                                        <div className="px-6 pb-6 text-[12px] font-medium text-zinc-500 leading-relaxed italic">
+                                            "{faq.answer}"
+                                        </div>
                                     </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="bg-white rounded-[25px] p-10 text-center border border-gray-50">
+                                <p className="text-[10px] font-black uppercase text-zinc-300 tracking-widest">Cargando preguntas frecuentes...</p>
                             </div>
-                        ))}
+                        )}
                     </div>
 
                     {/* BARRA LATERAL INFORMATIVA */}
@@ -99,7 +97,7 @@ export default function FAQPage() {
                                 </a>
                                 <div className="text-center">
                                     <p className="text-[8px] font-bold text-zinc-300 uppercase tracking-[0.1em]">Tiempo medio de respuesta</p>
-                                    <p className="text-[10px] font-black text-black uppercase mt-1 leading-none">Menos de 15 minutos</p>
+                                    <p className="text-[10px] font-black text-black uppercase mt-1 leading-none">Menos de 2 horas</p>
                                 </div>
                             </div>
                         </div>
