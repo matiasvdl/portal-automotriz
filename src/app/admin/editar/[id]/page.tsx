@@ -296,7 +296,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     {/* BLOQUE 1: IDENTIDAD (8 CAMPOS) */}
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Identidad y Comercial</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                             <FormGroup label="Marca" value={formData.make} onChange={(v: string) => handleChange('make', v)} />
                             <FormGroup label="Modelo" value={formData.model} onChange={(v: string) => handleChange('model', v)} />
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
@@ -317,7 +317,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     {/* BLOQUE 2: FICHA TÉCNICA (7 CAMPOS) */}
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Ficha Técnica</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                             <div className="md:col-span-2">
                                 <FormGroup label="Motor (Cilindrada/Potencia)" value={formData.engine} onChange={(v) => handleChange('engine', v)} />
                             </div>
@@ -369,7 +369,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     {/* BLOQUE 5: DETALLES ADICIONALES (14 CAMPOS) */}
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Detalles Técnicos Adicionales</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div className="space-y-6">
                                 <p className="text-[9px] font-black text-zinc-600 uppercase leading-none ml-1">Confort</p>
                                 <FormGroup label="Botón de Encendido" value={formData.specsComfort.encendido} onChange={(v) => handleNestedChange('specsComfort', 'encendido', v)} />
@@ -415,13 +415,13 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         <input type="file" multiple className="hidden" ref={exteriorImagesRef} onChange={(e) => handleImageUpload(e, 'exteriorImages')} />
                         <input type="file" multiple className="hidden" ref={interiorImagesRef} onChange={(e) => handleImageUpload(e, 'interiorImages')} />
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-7 leading-none pt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 leading-none pt-1">
                             <ImageUploadPlaceholder label="Imágenes Principales" images={formData.images} field="images" onRemove={removeImage} onClick={() => mainImagesRef.current?.click()} />
                             <ImageUploadPlaceholder label="Fotos Detalles Exterior" images={formData.exteriorImages} field="exteriorImages" onRemove={removeImage} onClick={() => exteriorImagesRef.current?.click()} />
                             <ImageUploadPlaceholder label="Fotos Detalles Interior" images={formData.interiorImages} field="interiorImages" onRemove={removeImage} onClick={() => interiorImagesRef.current?.click()} />
                         </div>
 
-                        <div className="space-y-2.5 pt-4 text-left">
+                        <div className="space-y-2.5 pt-2 text-left">
                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Descripción</label>
                             <textarea value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={6} className="w-full bg-[#F7F8FA] border-none rounded-2xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed" />
                         </div>
