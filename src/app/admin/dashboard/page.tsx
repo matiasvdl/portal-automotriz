@@ -11,7 +11,6 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true)
     const router = useRouter()
 
-    // ESTADO PARA EL MENÚ DE PERFIL
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
     const fetchCars = async () => {
@@ -54,61 +53,10 @@ export default function DashboardPage() {
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased">
 
-            {/* NAVEGACIÓN CON MENÚ DESPLEGABLE FUNCIONAL */}
-            <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center shadow-none">
-                <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center relative">
-                    <Link href="/admin/dashboard" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
-                        VDL<span className="font-light text-zinc-700">MOTORS</span>
-                    </Link>
+            <AdminNavigation />
 
-                    <div className="relative">
-                        {/* Botón activador del menú */}
-                        <div
-                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className="flex items-center gap-3 cursor-pointer select-none group"
-                        >
-                            <div className="text-right hidden sm:block leading-none">
-                                <p className="text-[11px] font-black uppercase tracking-widest leading-none text-black group-hover:text-zinc-600 transition-colors">Matías</p>
-                                <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
-                            </div>
-                            <div className="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black group-hover:bg-zinc-800 transition-all shadow-none">M</div>
-                        </div>
-
-                        {/* Menú Desplegable */}
-                        {isUserMenuOpen && (
-                            <>
-                                {/* Overlay invisible para cerrar al hacer clic fuera */}
-                                <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)}></div>
-
-                                <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-black/10 z-20 overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <button
-                                        onClick={() => { setIsUserMenuOpen(false); router.push('/admin/cuenta'); }}
-                                        className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors"
-                                    >
-                                        Mi Cuenta
-                                    </button>
-                                    <button
-                                        onClick={() => { setIsUserMenuOpen(false); router.push('/admin/preferencias'); }}
-                                        className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors"
-                                    >
-                                        Preferencias
-                                    </button>
-                                    <div className="h-[1px] bg-gray-50 mx-4 my-1"></div>
-                                    <button
-                                        onClick={() => router.push('/')}
-                                        className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors"
-                                    >
-                                        Cerrar Sesión
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </nav>
-
-            <main className="max-w-7xl mx-auto px-6 py-8">
-                <header className="flex justify-between items-end mb-9 gap-4">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+                <header className="flex justify-between items-end mb-9 gap-4 px-1 sm:px-0">
                     <div className="text-left flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">
                             Gestión de stock
@@ -126,10 +74,10 @@ export default function DashboardPage() {
                     </Link>
                 </header>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-40">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 pb-40">
                     {cars.map((car) => (
-                        <div key={car._id} className="w-full max-w-[310px] relative group">
-                            {/* BOTÓN ELIMINAR: NEGRO CON ZOOM AL HOVER */}
+                        <div key={car._id} className="w-full relative group">
+                            {/* BOTÓN ELIMINAR: Aparece solo en hover gracias a group-hover:opacity-100 */}
                             <button
                                 onClick={(e) => handleDelete(e, car._id, `${car.make} ${car.model}`)}
                                 className="absolute top-3 right-3 z-30 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 active:scale-95"
@@ -157,7 +105,6 @@ function AdminCarCard({ car }: { car: any }) {
     return (
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col h-full transition-all">
 
-            {/* IMAGEN CON ZOOM */}
             <div className="aspect-[4/3] relative bg-gray-50 border-b border-gray-100 overflow-hidden">
                 <img
                     src={car.imageUrl || 'https://via.placeholder.com/600x450?text=Sin+Imagen'}
@@ -169,7 +116,6 @@ function AdminCarCard({ car }: { car: any }) {
                 </div>
             </div>
 
-            {/* INFORMACIÓN */}
             <div className="p-5 flex-grow flex flex-col justify-between space-y-4 text-left">
                 <div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 italic leading-none">
@@ -179,21 +125,26 @@ function AdminCarCard({ car }: { car: any }) {
                         {car.make} {car.model}
                     </h4>
 
-                    <div className="flex items-start">
+                    {/* CARACTERÍSTICAS: Alineadas a la izquierda con gap exacto */}
+                    <div className="flex items-start gap-5">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Kilómetros</span>
                             <span className="text-[11px] font-bold text-zinc-700 italic leading-none whitespace-nowrap">
-                                {car.mileage?.toLocaleString('es-CL')} KM
+                                {car.mileage ? car.mileage.toLocaleString('es-CL') : '0'} KM
                             </span>
                         </div>
-                        <div className="h-6 w-[1px] bg-gray-100 shrink-0 mx-4"></div>
+
+                        <div className="h-6 w-[1px] bg-gray-100 shrink-0"></div>
+
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Motor</span>
                             <span className="text-[11px] font-bold text-zinc-700 uppercase italic leading-none whitespace-nowrap">
                                 {car.engine ? `${car.engine}L` : '-'}
                             </span>
                         </div>
-                        <div className="h-6 w-[1px] bg-gray-100 shrink-0 mx-4"></div>
+
+                        <div className="h-6 w-[1px] bg-gray-100 shrink-0"></div>
+
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Combustible</span>
                             <span className="text-[11px] font-bold text-zinc-700 uppercase italic leading-none whitespace-nowrap">
@@ -204,7 +155,7 @@ function AdminCarCard({ car }: { car: any }) {
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <div className="flex flex-col text-left">
+                    <div className="flex flex-col text-left leading-none">
                         <span className="text-[8px] font-black text-gray-300 uppercase mb-0.5 leading-none line-through italic">
                             ${oldPrice.toLocaleString('es-CL')}
                         </span>
@@ -213,7 +164,7 @@ function AdminCarCard({ car }: { car: any }) {
                         </p>
                     </div>
 
-                    <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 shrink-0 transition-colors hover:bg-black hover:text-white hover:border-black shadow-none cursor-pointer">
+                    <div className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 shrink-0 transition-colors hover:bg-black hover:text-white hover:border-black">
                         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current translate-x-[0.5px]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>

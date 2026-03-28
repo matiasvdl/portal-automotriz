@@ -229,7 +229,7 @@ export default function NuevoVehiculoPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: General</h3>
-                            <div className="grid grid-cols-1 gap-7">
+                            <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Cilindrada" value={formData.specsGeneral.cilindrada} onChange={(v) => handleNestedChange('specsGeneral', 'cilindrada', v)} />
                                 <FormGroup label="Cilindros" value={formData.specsGeneral.cilindros} onChange={(v) => handleNestedChange('specsGeneral', 'cilindros', v)} />
                                 <FormGroup label="Potencia" value={formData.specsGeneral.potencia} onChange={(v) => handleNestedChange('specsGeneral', 'potencia', v)} />
@@ -237,7 +237,7 @@ export default function NuevoVehiculoPage() {
                         </div>
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: Historial</h3>
-                            <div className="grid grid-cols-1 gap-7">
+                            <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Dueños" value={formData.specsHistory.duenos} onChange={(v) => handleNestedChange('specsHistory', 'duenos', v)} />
                                 <FormGroup label="Mantenciones" value={formData.specsHistory.mantenciones} onChange={(v) => handleNestedChange('specsHistory', 'mantenciones', v)} />
                                 <FormGroup label="Historial Autofact" value={formData.specsHistory.historial} onChange={(v) => handleNestedChange('specsHistory', 'historial', v)} />
@@ -249,7 +249,7 @@ export default function NuevoVehiculoPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Exterior</h3>
-                            <div className="grid grid-cols-2 gap-7">
+                            <div className="grid grid-cols-2 gap-5">
                                 <FormGroup label="Nº Puertas" value={formData.specsExterior.puertas} onChange={(v) => handleNestedChange('specsExterior', 'puertas', v)} />
                                 <FormGroup label="Diámetro Rin" value={formData.specsExterior.rin} onChange={(v) => handleNestedChange('specsExterior', 'rin', v)} />
                                 <FormGroup label="Tipo Rin" value={formData.specsExterior.tipoRin} onChange={(v) => handleNestedChange('specsExterior', 'tipoRin', v)} />
@@ -258,7 +258,7 @@ export default function NuevoVehiculoPage() {
                         </div>
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Interior</h3>
-                            <div className="grid grid-cols-1 gap-7">
+                            <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Nº Pasajeros" value={formData.specsInterior.pasajeros} onChange={(v) => handleNestedChange('specsInterior', 'pasajeros', v)} />
                                 <FormGroup label="Material Asientos" value={formData.specsInterior.materialAsientos} onChange={(v) => handleNestedChange('specsInterior', 'materialAsientos', v)} />
                             </div>

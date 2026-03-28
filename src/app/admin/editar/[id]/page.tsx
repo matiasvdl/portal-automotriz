@@ -352,7 +352,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Exterior</h3>
-                            <div className="grid grid-cols-2 gap-7">
+                            <div className="grid grid-cols-2 gap-5">
                                 <FormGroup label="Número de Puertas" value={formData.specsExterior.puertas} onChange={(v: string) => handleNestedChange('specsExterior', 'puertas', v)} />
                                 <FormGroup label="Diámetro de Rin" value={formData.specsExterior.rin} onChange={(v: string) => handleNestedChange('specsExterior', 'rin', v)} />
                                 <FormGroup label="Tipo de Rin" value={formData.specsExterior.tipoRin} onChange={(v: string) => handleNestedChange('specsExterior', 'tipoRin', v)} />
