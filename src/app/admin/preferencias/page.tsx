@@ -18,7 +18,8 @@ interface RutaOption {
 
 export default function PreferenciasPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas'>('general')
+    // 1. Añadimos 'contacto' a los tabs
+    const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas' | 'contacto'>('general')
 
     const RUTAS_NAV: RutaOption[] = [
         { title: 'Inicio', value: '/' },
@@ -48,6 +49,16 @@ export default function PreferenciasPage() {
         maintenanceMode: false
     })
 
+    // 2. Nuevo estado para Contacto
+    const [contact, setContact] = useState({
+        _id: 'global-contact', // ID fijo para Singleton
+        whatsapp: '',
+        instagram: '',
+        facebook: '',
+        email: '',
+        address: ''
+    })
+
     const [allReviews, setAllReviews] = useState<any[]>([])
     const [newReview, setNewReview] = useState({
         name: '',
@@ -66,6 +77,9 @@ export default function PreferenciasPage() {
             try {
                 const config = await client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' })
                 const reviews = await client.fetch(`*[_type == "review"] | order(date desc)`, {}, { cache: 'no-store' })
+                // Carga de contacto
+                const contactData = await client.fetch(`*[_type == "contactSettings"][0]`, {}, { cache: 'no-store' })
+
                 if (config) {
                     setSettings({
                         _id: config._id,
@@ -78,10 +92,22 @@ export default function PreferenciasPage() {
                     })
                 }
                 if (reviews) setAllReviews(reviews)
+                if (contactData) {
+                    setContact({
+                        _id: contactData._id || 'global-contact',
+                        whatsapp: contactData.whatsapp || '',
+                        instagram: contactData.instagram || '',
+                        facebook: contactData.facebook || '',
+                        email: contactData.email || '',
+                        address: contactData.address || ''
+                    })
+                }
             } catch (error) { console.error(error) }
         }
         fetchSanityData()
     }, [activeTab])
+
+    // ... (Funciones handleAddNavItem, handleUpdateNavItem, handleMoveNavItem se mantienen igual)
 
     const handleAddNavItem = (target: 'navMenu' | 'footerLinks') => {
         const newItem = { _key: Math.random().toString(36).substr(2, 9), title: 'Nuevo Enlace', path: '/' }
@@ -132,19 +158,37 @@ export default function PreferenciasPage() {
         } finally { setIsSubmitting(false) }
     }
 
+    // 3. Modificamos handleSaveGlobal para que guarde ambos documentos
     const handleSaveGlobal = async () => {
-        if (!settings._id) return
         setIsSubmitting(true)
         try {
-            await writeClient.patch(settings._id).set({
-                siteName: settings.siteName,
-                footerDescription: settings.footerDescription,
-                footerTagline: settings.footerTagline,
-                navMenu: settings.navMenu,
-                footerLinks: settings.footerLinks,
-                maintenanceMode: settings.maintenanceMode
-            }).commit()
-            alert('Ajustes sincronizados')
+            // Guardar Configuración del Sitio
+            if (settings._id) {
+                await writeClient.patch(settings._id).set({
+                    siteName: settings.siteName,
+                    footerDescription: settings.footerDescription,
+                    footerTagline: settings.footerTagline,
+                    navMenu: settings.navMenu,
+                    footerLinks: settings.footerLinks,
+                    maintenanceMode: settings.maintenanceMode
+                }).commit()
+            }
+
+            // Guardar Configuración de Contacto
+            await writeClient.createOrReplace({
+                _id: contact._id,
+                _type: 'contactSettings',
+                whatsapp: contact.whatsapp,
+                instagram: contact.instagram,
+                facebook: contact.facebook,
+                email: contact.email,
+                address: contact.address
+            })
+
+            alert('Ajustes sincronizados correctamente')
+        } catch (error) {
+            console.error(error)
+            alert('Error al sincronizar datos')
         } finally { setIsSubmitting(false) }
     }
 
@@ -158,8 +202,6 @@ export default function PreferenciasPage() {
             `}</style>
 
             <div className="main-scroll no-scrollbar">
-
-                {/* NAV CENTRALIZADO - Carga el nombre solo desde el componente */}
                 <AdminNavigation />
 
                 <main className="max-w-7xl mx-auto px-6 py-8 no-scrollbar">
@@ -168,20 +210,43 @@ export default function PreferenciasPage() {
                             <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">Configuración</p>
                             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Preferencias</h1>
                         </div>
-                        <button onClick={handleSaveGlobal} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3 rounded-xl shadow-xl shadow-black/10">
+                        <button onClick={handleSaveGlobal} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3 rounded-xl shadow-xl shadow-black/10 transition-all active:scale-95">
                             {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
                         </button>
                     </header>
 
-                    <div className="flex gap-3 mb-4">
-                        {['general', 'navegacion', 'resenas'].map((tab) => (
-                            <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-none ${activeTab === tab ? 'bg-black text-white shadow-lg' : 'bg-white text-zinc-400 border border-gray-100'}`}>
-                                {tab === 'general' ? 'General' : tab === 'navegacion' ? 'Navegación' : 'Reseñas'}
+                    {/* TABS ACTUALIZADOS */}
+                    <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
+                        {['general', 'navegacion', 'contacto', 'resenas'].map((tab) => (
+                            <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-none shrink-0 ${activeTab === tab ? 'bg-black text-white shadow-lg' : 'bg-white text-zinc-400 border border-gray-100'}`}>
+                                {tab === 'general' ? 'General' : tab === 'navegacion' ? 'Navegación' : tab === 'contacto' ? 'Contacto' : 'Reseñas'}
                             </button>
                         ))}
                     </div>
 
                     <div className="no-scrollbar">
+
+                        {/* PESTAÑA CONTACTO (NUEVA) */}
+                        {activeTab === 'contacto' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Redes y WhatsApp</h3>
+                                    <PrefInput label="WhatsApp de Ventas" placeholder="56912345678" value={contact.whatsapp} onChange={(v) => setContact({ ...contact, whatsapp: v })} />
+                                    <PrefInput label="Instagram (URL)" placeholder="https://instagram.com/..." value={contact.instagram} onChange={(v) => setContact({ ...contact, instagram: v })} />
+                                    <PrefInput label="Facebook (URL)" placeholder="https://facebook.com/..." value={contact.facebook} onChange={(v) => setContact({ ...contact, facebook: v })} />
+                                </div>
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Información Corporativa</h3>
+                                    <PrefInput label="Correo Electrónico" placeholder="ventas@vdlmotors.cl" value={contact.email} onChange={(v) => setContact({ ...contact, email: v })} />
+                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección Física</label>
+                                        <textarea value={contact.address} onChange={(e) => setContact({ ...contact, address: e.target.value })} placeholder="Ej: Av. Las Condes 123, Santiago" className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ... (Pestañas navegación, resenas y general se mantienen igual) */}
                         {activeTab === 'navegacion' && (
                             <div className="space-y-8">
                                 {[
@@ -209,7 +274,7 @@ export default function PreferenciasPage() {
                                                     <div className="flex items-center gap-1">
                                                         <button onClick={() => handleMoveNavItem(menu.target as any, i, 'up')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M5 15l7-7 7 7" /></svg></button>
                                                         <button onClick={() => handleMoveNavItem(menu.target as any, i, 'down')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M19 9l-7 7-7-7" /></svg></button>
-                                                        <button onClick={() => setSettings({ ...settings, [menu.target]: settings[menu.target as 'navMenu' | 'footerLinks'].filter((_, idx) => idx !== i) })} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                        <button onClick={() => setSettings({ ...settings, [menu.target as 'navMenu' | 'footerLinks']: settings[menu.target as 'navMenu' | 'footerLinks'].filter((_, idx) => idx !== i) })} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
                                                     </div>
                                                 </div>
                                             ))}
@@ -225,7 +290,6 @@ export default function PreferenciasPage() {
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Reseña</h3>
                                     <PrefInput label="Nombre" value={newReview.name} onChange={(v) => setNewReview({ ...newReview, name: v })} />
                                     <PrefInput label="Fecha" type="date" value={newReview.date} onChange={(v) => setNewReview({ ...newReview, date: v })} />
-
                                     <div className="flex flex-col space-y- leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Etiqueta</label>
                                         <select value={newReview.badge} onChange={(e) => setNewReview({ ...newReview, badge: e.target.value })} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none cursor-pointer appearance-none">
@@ -235,20 +299,16 @@ export default function PreferenciasPage() {
                                             <option value="Opinión Real de Cliente">Opinión Real de Cliente</option>
                                         </select>
                                     </div>
-
                                     <div className="flex flex-col space-y-2 leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Estrellas (1-5)</label>
                                         <input type="number" min="1" max="5" value={newReview.rating} onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) })} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none" />
                                     </div>
-
                                     <div className="flex flex-col space-y-2 leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Comentario</label>
                                         <textarea value={newReview.comment} onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })} className="w-full bg-[#F7F8FA] rounded-xl p-5 text-[11px] font-bold outline-none min-h-[100px] resize-none" />
                                     </div>
-
                                     <button onClick={handleAddReview} disabled={isSubmitting} className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none">{isSubmitting ? 'Publicando...' : 'Publicar Reseña'}</button>
                                 </div>
-
                                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 no-scrollbar">
                                     {allReviews.map(rev => (
                                         <div key={rev._id} className={`bg-white border border-gray-200 rounded-3xl text-left h-full relative transition-none shadow-none ${editingReviewId === rev._id ? 'p-4' : 'p-6'}`}>
@@ -265,7 +325,6 @@ export default function PreferenciasPage() {
                                                     </>
                                                 )}
                                             </div>
-
                                             {editingReviewId === rev._id ? (
                                                 <div className="space-y-3 pt-2">
                                                     <div className="grid grid-cols-1 gap-2">
@@ -339,11 +398,11 @@ export default function PreferenciasPage() {
     )
 }
 
-function PrefInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string; }) {
+function PrefInput({ label, value, onChange, type = "text", placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; }) {
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
-            <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-none shadow-none" />
+            <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-none shadow-none placeholder:text-zinc-300 placeholder:font-normal" />
         </div>
     )
 }
