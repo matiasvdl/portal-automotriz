@@ -22,9 +22,9 @@ export default function PreferenciasPage() {
 
     const RUTAS_NAV: RutaOption[] = [
         { title: 'Inicio', value: '/' },
-        { title: 'Comprar un Auto', value: '/comprar' },
+        { title: 'Comprar un Auto', value: '/catalogo' },
         { title: 'Vende tu Auto', value: '/vender' },
-        { title: 'Financiamiento', value: '/financia' },
+        { title: 'Financiamiento', value: '/financiamiento' },
         { title: 'Sedes', value: '/sedes' },
         { title: 'Preguntas Frecuentes', value: '/faq' },
         { title: 'Contacto', value: '/contacto' }
@@ -32,7 +32,7 @@ export default function PreferenciasPage() {
 
     const RUTAS_FOOTER: RutaOption[] = [
         { title: 'Inicio', value: '/' },
-        { title: 'Compra un auto', value: '/comprar' },
+        { title: 'Compra un auto', value: '/catalogo' },
         { title: 'Sedes', value: '/sedes' },
         { title: 'Preguntas frecuentes', value: '/faq' },
         { title: 'Contacto', value: '/contacto' }

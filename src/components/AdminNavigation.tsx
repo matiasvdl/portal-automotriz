@@ -4,16 +4,13 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
-interface AdminNavProps {
-    siteName?: string;
-}
-
-export default function AdminNavigation({ siteName }: AdminNavProps) {
+export default function AdminNavigation({ siteName }: { siteName?: string }) {
     const pathname = usePathname()
     const router = useRouter()
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
 
+    // Evita errores de hidratación sincronizando cliente/servidor
     useEffect(() => {
         setMounted(true)
     }, [])
@@ -40,41 +37,25 @@ export default function AdminNavigation({ siteName }: AdminNavProps) {
                         className="flex items-center gap-4 cursor-pointer select-none group"
                     >
                         <div className="text-right hidden sm:block leading-none">
-                            <p className="text-[11px] font-black uppercase tracking-widest text-black group-hover:text-zinc-600 transition-none">
+                            <p className="text-[11px] font-black uppercase tracking-widest text-black group-hover:text-zinc-600">
                                 {displayName}
                             </p>
                             <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
                         </div>
 
+                        {/* Círculo M - NEGRO */}
                         <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black shrink-0">
                             M
                         </div>
                     </div>
 
-                    {/* Menú Desplegable: SOLO Cuenta, Preferencias y Cerrar Sesión */}
+                    {/* Menú Desplegable */}
                     {isUserMenuOpen && (
-                        <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-[25px] shadow-2xl z-20 py-3 overflow-hidden">
-                            <button
-                                onClick={() => { setIsUserMenuOpen(false); router.push('/admin/cuenta') }}
-                                className="w-full text-left px-6 py-3 text-[10px] font-black uppercase text-zinc-700 hover:bg-[#F7F8FA] transition-none"
-                            >
-                                Mi cuenta
-                            </button>
-                            <button
-                                onClick={() => { setIsUserMenuOpen(false); router.push('/admin/preferencias') }}
-                                className="w-full text-left px-6 py-3 text-[10px] font-black uppercase text-zinc-700 hover:bg-[#F7F8FA] transition-none"
-                            >
-                                Preferencias
-                            </button>
-
+                        <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-[25px] shadow-2xl z-20 py-3 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                            <button onClick={() => { setIsUserMenuOpen(false); router.push('/admin/cuenta') }} className="w-full text-left px-6 py-3 text-[10px] font-black uppercase text-zinc-700 hover:bg-[#F7F8FA] transition-none">Mi cuenta</button>
+                            <button onClick={() => { setIsUserMenuOpen(false); router.push('/admin/preferencias') }} className="w-full text-left px-6 py-3 text-[10px] font-black uppercase text-zinc-700 hover:bg-[#F7F8FA]">Preferencias</button>
                             <div className="h-[1px] bg-gray-50 mx-6 my-2"></div>
-
-                            <button
-                                onClick={() => { setIsUserMenuOpen(false); router.push('/') }}
-                                className="w-full text-left px-6 py-3 text-[10px] font-black uppercase text-red-500 hover:bg-red-50 transition-none"
-                            >
-                                Cerrar sesión
-                            </button>
+                            <button onClick={() => { setIsUserMenuOpen(false); router.push('/') }} className="w-full text-left px-6 py-3 text-[10px] font-black uppercase text-red-500 hover:bg-red-50">Cerrar sesión</button>
                         </div>
                     )}
                 </div>

@@ -2,15 +2,11 @@
 
 import Link from 'next/link'
 
-/**
- * Header dinámico y compacto fiel al diseño original de la Home.
- * Actualizado para redirigir a la página de inicio de sesión (/ingresar).
- */
 export default function Navigation({ config }: { config?: any }) {
-    // Si no hay links en Sanity, usamos los básicos por defecto
-    const menuItems = config?.navMenu || [
+    // Usamos las rutas que ya tienes establecidas en tu proyecto por defecto
+    const menuItems = config?.navMenu?.length > 0 ? config.navMenu : [
         { title: 'Comprar un auto', path: '/catalogo' },
-        { title: 'Vende tu auto', path: '/vende-tu-auto' },
+        { title: 'Vende tu auto', path: '/vender' },
         { title: 'Financiamiento', path: '/financiamiento' }
     ];
 
@@ -19,30 +15,34 @@ export default function Navigation({ config }: { config?: any }) {
             <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
 
                 {/* 1. Logo */}
-                <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
-                    VDL<span className="font-light text-zinc-700">MOTORS</span>
-                </Link>
+                <div className="flex items-center">
+                    <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
+                        VDL<span className="font-light text-zinc-700">MOTORS</span>
+                    </Link>
+                </div>
 
-                {/* 2. Menú Central Dinámico (Desktop) */}
-                <div className="hidden lg:flex gap-10">
+                {/* 2. Menú Central Dinámico */}
+                <div className="hidden lg:flex gap-12">
                     {menuItems.map((link: any, i: number) => (
                         <Link
                             key={i}
                             href={link.path || '#'}
-                            className="text-[11px] font-bold uppercase tracking-widest text-[#333333] hover:text-black transition-colors"
+                            className="text-[10px] font-black uppercase tracking-[0.2em] text-[#333333] hover:text-black transition-colors"
                         >
                             {link.title}
                         </Link>
                     ))}
                 </div>
 
-                {/* 3. Botón Derecha - Ahora apunta a /admin */}
-                <Link
-                    href="/admin/ingresar"
-                    className="bg-black text-white text-[10px] font-bold uppercase tracking-[0.15em] px-7 py-3 rounded-xl hover:bg-zinc-950 transition-colors"
-                >
-                    Ingresar
-                </Link>
+                {/* 3. Botón Ingresar */}
+                <div className="flex items-center">
+                    <Link
+                        href="/admin/ingresar"
+                        className="bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] px-8 py-3.5 rounded-full hover:bg-zinc-800 transition-all active:scale-95"
+                    >
+                        Ingresar
+                    </Link>
+                </div>
             </div>
         </nav>
     )

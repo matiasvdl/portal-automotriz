@@ -1,161 +1,138 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
-/**
- * BUENA PRÁCTICA: Componentización interna para mantener el DRY (Don't Repeat Yourself).
- * Usamos InputField para asegurar que todos los campos sigan el diseño exacto de VDL.
- */
 export default function VendeTuAutoPage() {
-    const [formData, setFormData] = useState({
-        make: '',
-        model: '',
-        year: '',
-        mileage: '',
-        name: '',
-        phone: '',
-        email: ''
-    })
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value })
-    }
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-        // BUENA PRÁCTICA: Codificar URI para evitar errores con caracteres especiales en WhatsApp.
-        const message = `Hola VDL Motors! Quiero vender mi auto: ${formData.make} ${formData.model} (${formData.year}). Kilometraje: ${formData.mileage} KM. Mi contacto es ${formData.name}, Tel: ${formData.phone}`
-        window.open(`https://wa.me/569XXXXXXXX?text=${encodeURIComponent(message)}`, '_blank')
-    }
-
     return (
-        <div className="bg-white min-h-screen pt-20 pb-10 antialiased text-black font-sans">
-            <div className="max-w-4xl mx-auto px-6">
+        <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-20 no-scrollbar">
+            <style jsx global>{`
+                ::-webkit-scrollbar { display: none !important; }
+                .main-scroll { height: 100vh; overflow-y: auto; scrollbar-width: none; }
+            `}</style>
 
-                {/* HEADER: Siguiendo el estilo de los títulos del detalle */}
-                <header className="mb-12">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1 italic">
-                        Tasación Profesional
-                    </p>
-                    <h1 className="text-4xl font-black uppercase tracking-tighter leading-tight">
-                        Vende tu <span className="font-light text-zinc-400">Auto</span>
-                    </h1>
-                </header>
+            <div className="main-scroll no-scrollbar">
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <main className="max-w-6xl mx-auto px-6 py-12 md:py-16">
 
-                    {/* FORMULARIO: Estructura similar a la columna izquierda del detalle */}
-                    <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-10">
+                    {/* Header Alineado a la Izquierda */}
+                    <header className="mb-12 text-left">
+                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-1 italic leading-none">Gestión de Ventas</p>
+                        <h1 className="text-3xl font-black uppercase tracking-tighter leading-none text-black">
+                            Vende tu vehículo
+                        </h1>
+                        <p className="mt-4 text-[13px] text-zinc-500 font-medium max-w-xl leading-relaxed">
+                            Completa los detalles de tu auto y nos pondremos en contacto contigo para una tasación oficial.
+                        </p>
+                    </header>
 
-                        {/* BLOQUE 1: VEHÍCULO */}
-                        <section className="space-y-6">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-black border-b border-gray-100 pb-3">
-                                01. Información del Vehículo
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <InputField label="Marca" name="make" placeholder="Ej: Mercedes Benz" value={formData.make} onChange={handleChange} />
-                                <InputField label="Modelo" name="model" placeholder="Ej: G63 AMG" value={formData.model} onChange={handleChange} />
-                                <InputField label="Año" name="year" placeholder="Ej: 2021" value={formData.year} onChange={handleChange} />
-                                <InputField label="Kilometraje" name="mileage" placeholder="Ej: 45.000" value={formData.mileage} onChange={handleChange} />
-                            </div>
-                        </section>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-                        {/* BLOQUE 2: CONTACTO */}
-                        <section className="space-y-6">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-black border-b border-gray-100 pb-3">
-                                02. Tus Datos de Contacto
-                            </h3>
-                            <div className="space-y-5">
-                                <InputField label="Nombre Completo" name="name" placeholder="Tu nombre" value={formData.name} onChange={handleChange} />
+                        {/* Formulario Principal */}
+                        <div className="lg:col-span-2 bg-white rounded-[30px] border border-gray-100 p-8 md:p-10 space-y-10">
+
+                            {/* Sección 1 */}
+                            <div className="space-y-6">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-800 border-b border-gray-50 pb-4 leading-none">1. Información del Auto</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <InputField label="WhatsApp" name="phone" placeholder="+56 9" value={formData.phone} onChange={handleChange} />
-                                    <InputField label="Email" name="email" type="email" placeholder="correo@ejemplo.cl" value={formData.email} onChange={handleChange} />
+                                    <VenderInput label="Marca" placeholder="Ej: BMW" />
+                                    <VenderInput label="Modelo" placeholder="Ej: X5" />
+                                    <VenderInput label="Año" placeholder="2024" />
+                                    <VenderInput label="Kilometraje" placeholder="10.000" />
+                                    <VenderInput label="Versión / Motor" placeholder="xDrive 40i" />
+                                    <VenderInput label="Patente" placeholder="ABCD12" />
                                 </div>
                             </div>
-                        </section>
 
-                        <div className="pt-4">
-                            <button
-                                type="submit"
-                                className="w-full bg-black text-white text-center font-bold text-[12px] uppercase tracking-[0.15em] py-5 rounded-2xl hover:bg-zinc-800 transition-all shadow-sm active:scale-[0.98]"
-                            >
-                                Iniciar Tasación Online
+                            {/* Sección 2 */}
+                            <div className="space-y-6">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-800 border-b border-gray-50 pb-4 leading-none">2. Tus Datos</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <VenderInput label="Nombre Completo" placeholder="Matías Vidal" />
+                                    <VenderInput label="WhatsApp" placeholder="+56 9..." />
+                                </div>
+                            </div>
+
+                            <button className="w-full bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl shadow-black/5 hover:bg-zinc-900 transition-all active:scale-[0.99]">
+                                Enviar Datos de Venta
                             </button>
                         </div>
-                    </form>
 
-                    {/* BARRA LATERAL INFORMATIVA: Estilo idéntico a la barra de precios/specs */}
-                    <aside className="lg:col-span-5">
-                        <div className="sticky top-32 space-y-5">
-                            <div className="bg-[#FBFBFB] rounded-2xl p-8 border border-gray-100 shadow-sm">
-                                <h4 className="text-[12px] font-black uppercase tracking-[0.2em] text-black mb-6">
-                                    ¿Por qué VDL Motors?
+                        {/* Sidebar de Beneficios - Versión Minimalista y Sobria */}
+                        <aside className="space-y-6">
+                            <div className="bg-white rounded-[35px] border border-gray-100 p-10 shadow-none">
+
+                                {/* Título Principal Actualizado (Sin efecto) */}
+                                <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-700 leading-none pb-4 border-b border-gray-50 mb-10">
+                                    ¿Por qué vender con nosotros?
                                 </h4>
-                                <div className="space-y-6">
-                                    <FeatureItem
-                                        title="Evaluación Virtual"
-                                        desc="Tasamos tu auto sin que salgas de casa mediante fotos y video."
-                                    />
-                                    <FeatureItem
-                                        title="Pago Inmediato"
-                                        desc="Una vez acordado el precio, el pago es mediante transferencia directa."
-                                    />
-                                    <FeatureItem
-                                        title="Gestión Documental"
-                                        desc="Nos encargamos de todo el papeleo y trámites notariales."
-                                    />
+
+                                {/* Estructura Limpia de Texto */}
+                                <div className="space-y-10">
+                                    <div>
+                                        <p className="text-[13px] font-black uppercase tracking-tighter text-black mb-2">
+                                            Tasación Rápida
+                                        </p>
+                                        <p className="text-[11px] font-medium text-zinc-500 leading-relaxed">
+                                            Respuesta en menos de <span className="text-black font-bold">24 horas hábiles</span> con una oferta real.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-[13px] font-black uppercase tracking-tighter text-black mb-2">
+                                            Pago Inmediato
+                                        </p>
+                                        <p className="text-[11px] font-medium text-zinc-500 leading-relaxed">
+                                            Transferencia directa y segura a tu cuenta una vez que el vehículo sea revisado.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-[13px] font-black uppercase tracking-tighter text-black mb-2">
+                                            Sin Trámites
+                                        </p>
+                                        <p className="text-[11px] font-medium text-zinc-500 leading-relaxed">
+                                            Gestión documental completa. Nosotros nos encargamos de todo el <span className="text-black font-bold">papeleo legal</span>.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="mt-10 pt-8 border-t border-gray-100 text-center">
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                        Cotiza en línea vía WhatsApp
-                                    </p>
-                                    <p className="text-[11px] font-black text-black uppercase">Atención Inmediata</p>
+
+                                {/* Separación y Call to Action Sutil al final */}
+                                <div className="mt-12 pt-8 border-t border-gray-50 flex flex-col items-center text-center">
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Atención Directa</p>
+                                    <button className="text-[11px] font-black uppercase tracking-tighter border-b-2 border-black pb-1 hover:text-zinc-600 hover:border-zinc-300 transition-all">
+                                        Cotiza vía WhatsApp →
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    </aside>
-                </div>
+                        </aside>
+
+                    </div>
+                </main>
+
             </div>
         </div>
     )
 }
 
-/**
- * COMPONENTE: InputField
- * Reutiliza el diseño de los bloques de specs del detalle.
- */
-function InputField({ label, name, placeholder, value, onChange, type = "text" }: any) {
+function VenderInput({ label, placeholder }: { label: string; placeholder: string }) {
     return (
-        <div className="flex flex-col space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-tight text-gray-400 ml-1">
-                {label}
-            </label>
+        <div className="flex flex-col space-y-2 text-left">
+            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1">{label}</label>
             <input
-                type={type}
-                name={name}
-                value={value}
-                onChange={onChange}
+                type="text"
                 placeholder={placeholder}
-                required
-                className="bg-[#FBFBFB] border border-gray-100 px-5 py-4 rounded-2xl text-[13px] font-bold uppercase tracking-tight focus:outline-none focus:border-black transition-colors placeholder:text-zinc-300 placeholder:font-normal placeholder:normal-case"
+                className="w-full h-[48px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all text-black placeholder:text-zinc-300"
             />
         </div>
     )
 }
 
-/**
- * COMPONENTE: FeatureItem
- * Mantiene la jerarquía visual de la marca.
- */
-function FeatureItem({ title, desc }: { title: string, desc: string }) {
+function InfoItem({ title, desc }: { title: string; desc: string }) {
     return (
-        <div className="space-y-1">
-            <p className="text-[11px] font-black uppercase text-black tracking-tight italic">
-                {title}
-            </p>
-            <p className="text-[11px] font-medium text-gray-500 leading-relaxed">
-                {desc}
-            </p>
+        <div className="leading-tight">
+            <p className="text-[11px] font-black uppercase text-black mb-1 leading-none">{title}</p>
+            <p className="text-[10px] font-medium text-zinc-500 leading-normal">{desc}</p>
         </div>
     )
 }
