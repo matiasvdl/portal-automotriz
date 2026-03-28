@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { writeClient } from '@/sanity/lib/client'
 import imageUrlBuilder from '@sanity/image-url'
+import AdminNavigation from '@/components/AdminNavigation'
 
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 const builder = imageUrlBuilder(writeClient)
@@ -43,9 +44,6 @@ export default function NuevoVehiculoPage() {
     const [tags, setTags] = useState<string[]>([])
     const [currentTag, setCurrentTag] = useState('')
 
-    // --- ESTADO PARA EL MENÚ DE PERFIL ---
-    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-
     // Referencias para inputs de archivos
     const mainImagesRef = useRef<HTMLInputElement>(null)
     const exteriorImagesRef = useRef<HTMLInputElement>(null)
@@ -76,7 +74,7 @@ export default function NuevoVehiculoPage() {
     const handleNestedChange = (group: keyof CarFormData, field: string, value: string) => {
         setFormData(prev => ({
             ...prev,
-            [group]: { ...(prev[group] as any), [field]: value }
+            [group]: { ...(prev[group] as Record<string, any>), [field]: value }
         }))
     }
 
@@ -102,7 +100,7 @@ export default function NuevoVehiculoPage() {
             setFormData(prev => ({ ...prev, [field]: [...prev[field], ...uploadedImages] }))
         } catch (error) {
             console.error(error)
-            alert("Error al subir. Revisa los permisos de tu Token.")
+            alert("Error al subir imagen.")
         } finally { setIsSubmitting(false) }
     }
 
@@ -120,8 +118,8 @@ export default function NuevoVehiculoPage() {
         }
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault()
         setIsSubmitting(true)
         try {
             const doc = {
@@ -134,46 +132,13 @@ export default function NuevoVehiculoPage() {
             router.push('/admin/dashboard')
         } catch (error) {
             console.error(error)
-            alert('Error al publicar. Revisa los permisos de escritura.')
+            alert('Error al publicar.')
         } finally { setIsSubmitting(false) }
     }
 
     return (
-        <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-40 text-left">
-
-            {/* --- NAVEGACIÓN CON MENÚ --- */}
-            <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center shadow-none">
-                <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center relative">
-                    <Link href="/admin/dashboard" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
-                        VDL<span className="font-light text-zinc-700">MOTORS</span>
-                    </Link>
-
-                    <div className="relative">
-                        <div
-                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className="flex items-center gap-3 cursor-pointer select-none group"
-                        >
-                            <div className="text-right hidden sm:block leading-none">
-                                <p className="text-[11px] font-black uppercase tracking-widest leading-none text-black group-hover:text-zinc-600 transition-colors">Matías</p>
-                                <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Admin</p>
-                            </div>
-                            <div className="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black group-hover:bg-zinc-800 transition-all shadow-none">M</div>
-                        </div>
-
-                        {isUserMenuOpen && (
-                            <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)}></div>
-                                <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-black/5 z-20 overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <button className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors">Mi cuenta</button>
-                                    <button className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-700 hover:bg-[#F7F8FA] transition-colors">Preferencias</button>
-                                    <div className="h-[1px] bg-gray-50 mx-4 my-1"></div>
-                                    <button onClick={() => router.push('/')} className="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors">Cerrar sesión</button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </nav>
+        <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-32 sm:pb-40 text-left">
+            <AdminNavigation />
 
             <main className="max-w-7xl mx-auto px-6 py-8">
                 <header className="flex justify-between items-end mb-9 gap-4">
@@ -181,9 +146,10 @@ export default function NuevoVehiculoPage() {
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">Gestión de vehículos</p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Nuevo Vehículo</h1>
                     </div>
-                    <div className="flex items-center gap-3 mb-0.5">
+                    {/* ACCIONES DESKTOP */}
+                    <div className="hidden sm:flex items-center gap-3 mb-0.5">
                         <Link href="/admin/dashboard" className="text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 border border-zinc-200 rounded-xl hover:border-black transition-all whitespace-nowrap">volver</Link>
-                        <button type="submit" form="car-form" onClick={handleSubmit} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap disabled:opacity-50">
+                        <button onClick={() => handleSubmit()} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap disabled:opacity-50">
                             {isSubmitting ? 'Guardando...' : 'Publicar Vehículo'}
                         </button>
                     </div>
@@ -326,11 +292,25 @@ export default function NuevoVehiculoPage() {
                     </div>
                 </form>
             </main>
+
+            {/* BARRA DE ACCIONES MÓVIL */}
+            <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-4 z-[110] flex items-center gap-3">
+                <Link href="/admin/dashboard" className="flex-1 h-12 flex items-center justify-center border border-zinc-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    Cancelar
+                </Link>
+                <button
+                    onClick={() => handleSubmit()}
+                    disabled={isSubmitting}
+                    className="flex-[2] h-12 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-black/20"
+                >
+                    {isSubmitting ? '...' : 'Publicar Vehículo'}
+                </button>
+            </div>
         </div>
     )
 }
 
-// --- AUXILIARES CON TIPADO ESTRICTO ---
+// --- AUXILIARES ---
 interface FGProps { label: string; value: string | number | undefined; onChange: (v: string) => void; type?: string; placeholder?: string; }
 function FormGroup({ label, value, onChange, type = "text", placeholder = "" }: FGProps) {
     return (
