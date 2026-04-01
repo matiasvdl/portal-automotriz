@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { client } from '@/sanity/lib/client'
+import { createContext, useContext, ReactNode } from 'react'
 
+// 1. Definimos qué datos va a repartir el contexto a todo el sitio
 interface SettingsContextType {
     contact: {
         whatsapp: string
@@ -11,45 +11,40 @@ interface SettingsContextType {
         email: string
         address: string
     }
-    loading: boolean
+    config: any      // Aquí viven los menús y SEO
+    appearance: any  // Aquí vive el LOGO y el nombre de la marca (VDL GROUP)
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
-export function SettingsProvider({ children }: { children: ReactNode }) {
-    const [contact, setContact] = useState({
-        whatsapp: '',
-        instagram: '',
-        facebook: '',
-        email: '',
-        address: ''
-    })
-    const [loading, setLoading] = useState(true)
+// 2. El Provider ahora recibe config y appearance como PROPS desde el Layout
+export function SettingsProvider({
+    children,
+    config,
+    appearance
+}: {
+    children: ReactNode,
+    config: any,
+    appearance: any
+}) {
 
-    useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const data = await client.fetch(`*[_type == "contactSettings"][0]`)
-                if (data) {
-                    setContact({
-                        whatsapp: data.whatsapp || '',
-                        instagram: data.instagram || '',
-                        facebook: data.facebook || '',
-                        email: data.email || '',
-                        address: data.address || ''
-                    })
-                }
-            } catch (error) {
-                console.error("Error cargando configuración:", error)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchSettings()
-    }, [])
+    // Ya no necesitamos useEffect ni fetch aquí, porque los datos 
+    // vienen listos desde el servidor (Layout)
+
+    const value = {
+        contact: {
+            whatsapp: config?.whatsapp || '',
+            instagram: config?.instagram || '',
+            facebook: config?.facebook || '',
+            email: config?.email || '',
+            address: config?.address || ''
+        },
+        config,
+        appearance
+    }
 
     return (
-        <SettingsContext.Provider value={{ contact, loading }}>
+        <SettingsContext.Provider value={value}>
             {children}
         </SettingsContext.Provider>
     )

@@ -16,29 +16,13 @@ interface RutaOption {
     value: string;
 }
 
+type TabType = 'general' | 'personalizacion' | 'navegacion' | 'resenas' | 'contacto' | 'preguntas';
+
 export default function PreferenciasPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // 1. Añadimos 'personalizacion' a los tabs (Hecho)
-    const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas' | 'contacto' | 'preguntas' | 'personalizacion'>('general')
-
-    const RUTAS_NAV: RutaOption[] = [
-        { title: 'Inicio', value: '/' },
-        { title: 'Comprar un Auto', value: '/catalogo' },
-        { title: 'Vende tu Auto', value: '/vender' },
-        { title: 'Financiamiento', value: '/financiamiento' },
-        { title: 'Sedes', value: '/sedes' },
-        { title: 'Preguntas Frecuentes', value: '/faq' },
-        { title: 'Contacto', value: '/contacto' }
-    ]
-
-    const RUTAS_FOOTER: RutaOption[] = [
-        { title: 'Inicio', value: '/' },
-        { title: 'Compra un auto', value: '/catalogo' },
-        { title: 'Sedes', value: '/sedes' },
-        { title: 'Preguntas frecuentes', value: '/faq' },
-        { title: 'Contacto', value: '/contacto' }
-    ]
+    // 1. SIMPLICIDAD: Siempre empezamos en 'general'. Sin localStorage, sin errores.
+    const [activeTab, setActiveTab] = useState<TabType>('general')
 
     const [settings, setSettings] = useState({
         _id: '',
@@ -50,7 +34,6 @@ export default function PreferenciasPage() {
         maintenanceMode: false
     })
 
-    // NUEVO: Estado para Personalización
     const [appearanceData, setAppearanceData] = useState({
         _id: 'appearance-settings',
         brandName: 'VDL GROUP',
@@ -81,22 +64,22 @@ export default function PreferenciasPage() {
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
 
-    // CARGA DE DATOS
+    // CARGA DE DATOS (Se ejecuta solo una vez al entrar)
     useEffect(() => {
         const fetchSanityData = async () => {
             try {
-                const config = await client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' })
-                const reviews = await client.fetch(`*[_type == "review"] | order(date desc)`, {}, { cache: 'no-store' })
-                const contactData = await client.fetch(`*[_type == "contactSettings"][0]`, {}, { cache: 'no-store' })
-                const faqData = await client.fetch(`*[_type == "faq"] | order(order asc)`, {}, { cache: 'no-store' })
-
-                // NUEVO: Carga de datos de apariencia
-                const appearance = await client.fetch(`*[_type == "appearance"][0]`, {}, { cache: 'no-store' })
+                const [config, reviews, contactData, faqData, appearance] = await Promise.all([
+                    client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' }),
+                    client.fetch(`*[_type == "review"] | order(date desc)`, {}, { cache: 'no-store' }),
+                    client.fetch(`*[_type == "contactSettings"][0]`, {}, { cache: 'no-store' }),
+                    client.fetch(`*[_type == "faq"] | order(order asc)`, {}, { cache: 'no-store' }),
+                    client.fetch(`*[_id == "appearance-settings"][0]`, {}, { cache: 'no-store' })
+                ]);
 
                 if (config) {
                     setSettings({
                         _id: config._id,
-                        siteName: config.siteName || 'VDL MOTORS',
+                        siteName: config.siteName || '',
                         footerDescription: config.footerDescription || '',
                         footerTagline: config.footerTagline || '',
                         navMenu: config.navMenu || [],
@@ -105,11 +88,10 @@ export default function PreferenciasPage() {
                     })
                 }
 
-                // Sincronizar estado de apariencia
                 if (appearance) {
                     setAppearanceData({
                         _id: appearance._id || 'appearance-settings',
-                        brandName: appearance.brandName || 'VDL GROUP',
+                        brandName: appearance.brandName || '',
                         logo: appearance.logo || null
                     })
                 }
@@ -129,72 +111,21 @@ export default function PreferenciasPage() {
             } catch (error) { console.error(error) }
         }
         fetchSanityData()
-    }, [activeTab])
+    }, [])
 
-    const handleAddNavItem = (target: 'navMenu' | 'footerLinks') => {
-        const newItem = { _key: Math.random().toString(36).substr(2, 9), title: 'Nuevo Enlace', path: '/' }
-        setSettings({ ...settings, [target]: [...settings[target], newItem] })
-    }
-
-    const handleUpdateNavItem = (target: 'navMenu' | 'footerLinks', index: number, field: string, value: string) => {
-        const updated = [...settings[target]]
-        updated[index] = { ...updated[index], [field]: value }
-        setSettings({ ...settings, [target]: updated })
-    }
-
-    const handleMoveNavItem = (target: 'navMenu' | 'footerLinks', index: number, direction: 'up' | 'down') => {
-        const newIndex = direction === 'up' ? index - 1 : index + 1
-        if (newIndex < 0 || newIndex >= settings[target].length) return
-        const updated = [...settings[target]]
-        const [movedItem] = updated.splice(index, 1)
-        updated.splice(newIndex, 0, movedItem)
-        setSettings({ ...settings, [target]: updated })
-    }
-
-    const handleAddFaq = async () => {
-        if (!newFaq.question || !newFaq.answer) return alert("Completa los campos")
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
         setIsSubmitting(true)
         try {
-            const result = await writeClient.create({ _type: 'faq', ...newFaq })
-            setFaqs([...faqs, result])
-            setNewFaq({ question: '', answer: '', order: faqs.length + 1 })
-            alert("Pregunta agregada")
-        } finally { setIsSubmitting(false) }
-    }
-
-    const handleDeleteFaq = async (id: string) => {
-        if (confirm("¿Eliminar esta pregunta?")) {
-            await writeClient.delete(id)
-            setFaqs(faqs.filter(f => f._id !== id))
-        }
-    }
-
-    const handleAddReview = async () => {
-        if (!newReview.name || !newReview.comment) return alert("Faltan datos")
-        setIsSubmitting(true)
-        try {
-            const result = await writeClient.create({ _type: 'review', ...newReview })
-            setAllReviews([result, ...allReviews])
-            setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
-            alert("Reseña publicada")
-        } finally { setIsSubmitting(false) }
-    }
-
-    const handleDeleteReview = async (id: string) => {
-        if (confirm("¿Eliminar reseña?")) {
-            await writeClient.delete(id)
-            setAllReviews(allReviews.filter(r => r._id !== id))
-        }
-    }
-
-    const handleUpdateReview = async () => {
-        if (!editingReviewId) return
-        setIsSubmitting(true)
-        try {
-            await writeClient.patch(editingReviewId).set(editForm).commit()
-            setAllReviews(allReviews.map(r => r._id === editingReviewId ? { ...r, ...editForm } : r))
-            setEditingReviewId(null)
-            alert("Cambios guardados")
+            const asset = await writeClient.assets.upload('image', file)
+            setAppearanceData(prev => ({
+                ...prev,
+                logo: { _type: 'image', asset: { _type: "reference", _ref: asset._id } }
+            }))
+            alert("Imagen cargada. Recuerda guardar cambios.")
+        } catch (error) {
+            console.error(error); alert("Error al subir imagen");
         } finally { setIsSubmitting(false) }
     }
 
@@ -211,29 +142,106 @@ export default function PreferenciasPage() {
                     maintenanceMode: settings.maintenanceMode
                 }).commit()
             }
-
-            // NUEVO: Guardar ajustes de apariencia
             await writeClient.createOrReplace({
-                _id: 'appearance-settings',
-                _type: 'appearance',
-                brandName: appearanceData.brandName,
-                logo: appearanceData.logo
+                _id: 'appearance-settings', _type: 'appearance',
+                brandName: appearanceData.brandName, logo: appearanceData.logo
             })
-
             await writeClient.createOrReplace({
-                _id: contact._id,
-                _type: 'contactSettings',
-                whatsapp: contact.whatsapp,
-                instagram: contact.instagram,
-                facebook: contact.facebook,
-                email: contact.email,
-                address: contact.address
+                _id: contact._id, _type: 'contactSettings',
+                whatsapp: contact.whatsapp, instagram: contact.instagram,
+                facebook: contact.facebook, email: contact.email, address: contact.address
             })
-
             alert('Ajustes sincronizados correctamente')
         } catch (error) {
-            console.error(error)
-            alert('Error al sincronizar datos')
+            console.error(error); alert('Error al sincronizar datos')
+        } finally { setIsSubmitting(false) }
+    }
+
+    const RUTAS_NAV: RutaOption[] = [
+        { title: 'Inicio', value: '/' },
+        { title: 'Comprar un Auto', value: '/catalogo' },
+        { title: 'Vende tu Auto', value: '/vender' },
+        { title: 'Financiamiento', value: '/financiamiento' },
+        { title: 'Sedes', value: '/sedes' },
+        { title: 'Preguntas Frecuentes', value: '/faq' },
+        { title: 'Contacto', value: '/contacto' }
+    ]
+
+    const RUTAS_FOOTER: RutaOption[] = [
+        { title: 'Inicio', value: '/' },
+        { title: 'Compra un auto', value: '/catalogo' },
+        { title: 'Sedes', value: '/sedes' },
+        { title: 'Preguntas frecuentes', value: '/faq' },
+        { title: 'Contacto', value: '/contacto' }
+    ]
+
+    // --- FUNCIONES DE NAVEGACIÓN ---
+    const handleAddNavItem = (target: 'navMenu' | 'footerLinks') => {
+        const newItem = { _key: Math.random().toString(36).substr(2, 9), title: 'Nuevo Enlace', path: '/' }
+        setSettings(prev => ({ ...prev, [target]: [...prev[target], newItem] }))
+    }
+
+    const handleUpdateNavItem = (target: 'navMenu' | 'footerLinks', index: number, field: string, value: string) => {
+        const updated = [...settings[target]]
+        updated[index] = { ...updated[index], [field]: value }
+        setSettings(prev => ({ ...prev, [target]: updated }))
+    }
+
+    const handleMoveNavItem = (target: 'navMenu' | 'footerLinks', index: number, direction: 'up' | 'down') => {
+        const newIndex = direction === 'up' ? index - 1 : index + 1
+        if (newIndex < 0 || newIndex >= settings[target].length) return
+        const updated = [...settings[target]]
+        const [movedItem] = updated.splice(index, 1)
+        updated.splice(newIndex, 0, movedItem)
+        setSettings(prev => ({ ...prev, [target]: updated }))
+    }
+
+    // --- FUNCIONES DE FAQs ---
+    const handleAddFaq = async () => {
+        if (!newFaq.question || !newFaq.answer) return alert("Completa los campos")
+        setIsSubmitting(true)
+        try {
+            const result = await writeClient.create({ _type: 'faq', ...newFaq })
+            setFaqs(prev => [...prev, result])
+            setNewFaq({ question: '', answer: '', order: faqs.length + 1 })
+            alert("Pregunta agregada")
+        } finally { setIsSubmitting(false) }
+    }
+
+    const handleDeleteFaq = async (id: string) => {
+        if (confirm("¿Eliminar esta pregunta?")) {
+            await writeClient.delete(id)
+            setFaqs(prev => prev.filter(f => f._id !== id))
+        }
+    }
+
+    // --- FUNCIONES DE RESEÑAS ---
+    const handleAddReview = async () => {
+        if (!newReview.name || !newReview.comment) return alert("Faltan datos")
+        setIsSubmitting(true)
+        try {
+            const result = await writeClient.create({ _type: 'review', ...newReview })
+            setAllReviews(prev => [result, ...prev])
+            setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
+            alert("Reseña publicada")
+        } finally { setIsSubmitting(false) }
+    }
+
+    const handleDeleteReview = async (id: string) => {
+        if (confirm("¿Eliminar reseña?")) {
+            await writeClient.delete(id)
+            setAllReviews(prev => prev.filter(r => r._id !== id))
+        }
+    }
+
+    const handleUpdateReview = async () => {
+        if (!editingReviewId) return
+        setIsSubmitting(true)
+        try {
+            await writeClient.patch(editingReviewId).set(editForm).commit()
+            setAllReviews(prev => prev.map(r => r._id === editingReviewId ? { ...r, ...editForm } : r))
+            setEditingReviewId(null)
+            alert("Cambios guardados")
         } finally { setIsSubmitting(false) }
     }
 
@@ -260,99 +268,77 @@ export default function PreferenciasPage() {
                         </button>
                     </header>
 
-                    {/* TABS ACTUALIZADOS CON PERSONALIZACIÓN */}
                     <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
                         {['general', 'personalizacion', 'navegacion', 'contacto', 'preguntas', 'resenas'].map((tab) => (
-                            <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-none shrink-0 ${activeTab === tab ? 'bg-black text-white shadow-lg' : 'bg-white text-zinc-400 border border-gray-100'}`}>
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab as any)}
+                                className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white shadow-lg' : 'bg-white text-zinc-400 border border-gray-100'}`}
+                            >
                                 {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : 'Reseñas'}
                             </button>
                         ))}
                     </div>
 
                     <div className="no-scrollbar">
+                        {/* PESTAÑA GENERAL */}
+                        {activeTab === 'general' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none mb-5">Identidad</h3>
+                                    <PrefInput
+                                        label="Nombre del Sitio (SEO)"
+                                        value={settings.siteName}
+                                        onChange={(v) => {
+                                            // Solo actualizamos el nombre del sitio (SEO)
+                                            setSettings(prev => ({ ...prev, siteName: v }));
+                                        }}
+                                    />
+                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Descripción Footer</label>
+                                        <textarea value={settings.footerDescription} onChange={(e) => setSettings(prev => ({ ...prev, footerDescription: e.target.value }))} className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
+                                    </div>
+                                    <PrefInput label="Frase final Footer" value={settings.footerTagline} onChange={(v) => setSettings(prev => ({ ...prev, footerTagline: v }))} />
+                                </div>
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none text-left">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5 transition-none">Sistema</h3>
+                                    <div className="flex items-center justify-between bg-[#F7F8FA] p-5 rounded-2xl border border-gray-100 gap-4">
+                                        <div className="leading-tight flex-1 transition-none"><p className="text-[10px] font-black uppercase leading-none">Modo Mantenimiento</p><p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1.5 leading-none">Oculta el sitio al público general</p></div>
+                                        <button onClick={() => setSettings(prev => ({ ...prev, maintenanceMode: !prev.maintenanceMode }))} className={`w-12 h-6 rounded-full transition-none relative ${settings.maintenanceMode ? 'bg-black' : 'bg-zinc-200'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-none ${settings.maintenanceMode ? 'left-7' : 'left-1'}`}></div></button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                        {/* NUEVA PESTAÑA PERSONALIZACIÓN */}
+                        {/* PESTAÑA PERSONALIZACIÓN */}
                         {activeTab === 'personalizacion' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad Visual</h3>
-
-                                    <PrefInput
-                                        label="Nombre de la Marca (Fallback)"
-                                        placeholder="Ej: VDL GROUP"
-                                        value={appearanceData.brandName}
-                                        onChange={(v) => setAppearanceData({ ...appearanceData, brandName: v })}
-                                    />
-
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none mb-5">Identidad Visual</h3>
+                                    <PrefInput label="Nombre de la Marca (Logo Texto)" placeholder="Ej: VDL GROUP" value={appearanceData.brandName} onChange={(v) => setAppearanceData(prev => ({ ...prev, brandName: v }))} />
                                     <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Logo de la Empresa</label>
-                                        <div className="bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4">
-                                            <p className="text-[10px] font-bold text-zinc-400 uppercase">Subida de logo (Próximo paso)</p>
+                                        <div className="relative bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[160px] overflow-hidden group">
+                                            {appearanceData.logo ? (
+                                                <div className="flex flex-col items-center space-y-4 w-full">
+                                                    <img src={`https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${appearanceData.logo.asset._ref.replace('image-', '').replace('-png', '.png').replace('-jpg', '.jpg').replace('-webp', '.webp')}`} alt="Logo Preview" className="h-16 w-auto object-contain" />
+                                                    <button onClick={() => setAppearanceData(prev => ({ ...prev, logo: null }))} className="text-[8px] font-black uppercase text-red-500 hover:underline">Quitar logo</button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase">Haz clic para seleccionar logo</p>
+                                                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* PESTAÑA PREGUNTAS (Sin cambios) */}
-                        {activeTab === 'preguntas' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start no-scrollbar">
-                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-8 space-y-5 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Pregunta</h3>
-                                    <div className="flex flex-col space-y-4">
-                                        <PrefInput label="Pregunta" value={newFaq.question} onChange={(v) => setNewFaq({ ...newFaq, question: v })} />
-                                        <div className="flex flex-col space-y-2.5 leading-none">
-                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Respuesta</label>
-                                            <textarea value={newFaq.answer} onChange={(e) => setNewFaq({ ...newFaq, answer: e.target.value })} className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none min-h-[120px] resize-none" />
-                                        </div>
-                                        <PrefInput label="Orden" type="number" value={newFaq.order.toString()} onChange={(v) => setNewFaq({ ...newFaq, order: parseInt(v) || 0 })} />
-                                        <button onClick={handleAddFaq} disabled={isSubmitting} className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none">
-                                            {isSubmitting ? 'Guardando...' : 'Agregar Pregunta'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="lg:col-span-2 space-y-4">
-                                    {faqs.map(f => (
-                                        <div key={f._id} className="bg-white border border-gray-100 rounded-3xl p-6 flex justify-between items-center group shadow-none">
-                                            <div className="text-left">
-                                                <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nivel {f.order || 0}</p>
-                                                <h4 className="text-[11px] font-black uppercase tracking-tight text-black">{f.question}</h4>
-                                                <p className="text-[10px] text-zinc-500 font-medium mt-1 line-clamp-2 italic leading-relaxed">"{f.answer}"</p>
-                                            </div>
-                                            <button onClick={() => handleDeleteFaq(f._id)} className="p-2 text-zinc-300 hover:text-red-500 transition-colors">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* PESTAÑA CONTACTO (Sin cambios) */}
-                        {activeTab === 'contacto' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Redes y WhatsApp</h3>
-                                    <PrefInput label="WhatsApp de Ventas" placeholder="56912345678" value={contact.whatsapp} onChange={(v) => setContact({ ...contact, whatsapp: v })} />
-                                    <circle />
-                                    <PrefInput label="Instagram (URL)" placeholder="https://instagram.com/..." value={contact.instagram} onChange={(v) => setContact({ ...contact, instagram: v })} />
-                                    <PrefInput label="Facebook (URL)" placeholder="https://facebook.com/..." value={contact.facebook} onChange={(v) => setContact({ ...contact, facebook: v })} />
-                                </div>
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Información Corporativa</h3>
-                                    <PrefInput label="Correo Electrónico" placeholder="ventas@vdlmotors.cl" value={contact.email} onChange={(v) => setContact({ ...contact, email: v })} />
-                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección Física</label>
-                                        <textarea value={contact.address} onChange={(e) => setContact({ ...contact, address: e.target.value })} placeholder="Ej: Av. Las Condes 123, Santiago" className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* PESTAÑA NAVEGACIÓN (Sin cambios) */}
+                        {/* PESTAÑA NAVEGACIÓN */}
                         {activeTab === 'navegacion' && (
-                            <div className="space-y-8">
+                            <div className="space-y-6">
                                 {[
                                     { title: 'Navbar (Header)', target: 'navMenu', opts: RUTAS_NAV },
                                     { title: 'Enlaces Footer', target: 'footerLinks', opts: RUTAS_FOOTER }
@@ -378,7 +364,7 @@ export default function PreferenciasPage() {
                                                     <div className="flex items-center gap-1">
                                                         <button onClick={() => handleMoveNavItem(menu.target as any, i, 'up')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M5 15l7-7 7 7" /></svg></button>
                                                         <button onClick={() => handleMoveNavItem(menu.target as any, i, 'down')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M19 9l-7 7-7-7" /></svg></button>
-                                                        <button onClick={() => setSettings({ ...settings, [menu.target as 'navMenu' | 'footerLinks']: settings[menu.target as 'navMenu' | 'footerLinks'].filter((_, idx) => idx !== i) })} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                        <button onClick={() => setSettings(prev => ({ ...prev, [menu.target as 'navMenu' | 'footerLinks']: prev[menu.target as 'navMenu' | 'footerLinks'].filter((_, idx) => idx !== i) }))} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
                                                     </div>
                                                 </div>
                                             ))}
@@ -388,16 +374,68 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
-                        {/* PESTAÑA RESEÑAS (Sin cambios) */}
+                        {/* PESTAÑA CONTACTO */}
+                        {activeTab === 'contacto' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Redes y WhatsApp</h3>
+                                    <PrefInput label="WhatsApp de Ventas" placeholder="56912345678" value={contact.whatsapp} onChange={(v) => setContact(prev => ({ ...prev, whatsapp: v }))} />
+                                    <PrefInput label="Instagram (URL)" placeholder="https://instagram.com/..." value={contact.instagram} onChange={(v) => setContact(prev => ({ ...prev, instagram: v }))} />
+                                    <PrefInput label="Facebook (URL)" placeholder="https://facebook.com/..." value={contact.facebook} onChange={(v) => setContact(prev => ({ ...prev, facebook: v }))} />
+                                </div>
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Información Corporativa</h3>
+                                    <PrefInput label="Correo Electrónico" placeholder="ventas@vdlmotors.cl" value={contact.email} onChange={(v) => setContact(prev => ({ ...prev, email: v }))} />
+                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección Física</label>
+                                        <textarea value={contact.address} onChange={(e) => setContact(prev => ({ ...prev, address: e.target.value }))} placeholder="Ej: Av. Las Condes 123, Santiago" className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PESTAÑA PREGUNTAS */}
+                        {activeTab === 'preguntas' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start no-scrollbar">
+                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Nueva Pregunta</h3>
+                                    <div className="flex flex-col space-y-4">
+                                        <PrefInput label="Pregunta" value={newFaq.question} onChange={(v) => setNewFaq(prev => ({ ...prev, question: v }))} />
+                                        <div className="flex flex-col space-y-2.5 leading-none">
+                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Respuesta</label>
+                                            <textarea value={newFaq.answer} onChange={(e) => setNewFaq(prev => ({ ...prev, answer: e.target.value }))} className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none min-h-[120px] resize-none" />
+                                        </div>
+                                        <PrefInput label="Orden" type="number" value={newFaq.order.toString()} onChange={(v) => setNewFaq(prev => ({ ...prev, order: parseInt(v) || 0 }))} />
+                                        <button onClick={handleAddFaq} disabled={isSubmitting} className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none">{isSubmitting ? 'Guardando...' : 'Agregar Pregunta'}</button>
+                                    </div>
+                                </div>
+                                <div className="lg:col-span-2 space-y-4">
+                                    {faqs.map(f => (
+                                        <div key={f._id} className="bg-white border border-gray-100 rounded-3xl p-6 flex justify-between items-center group shadow-none">
+                                            <div className="text-left">
+                                                <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nivel {f.order || 0}</p>
+                                                <h4 className="text-[11px] font-black uppercase tracking-tight text-black">{f.question}</h4>
+                                                <p className="text-[10px] text-zinc-500 font-medium mt-1 line-clamp-2 italic leading-relaxed">"{f.answer}"</p>
+                                            </div>
+                                            <button onClick={() => handleDeleteFaq(f._id)} className="p-2 text-zinc-300 hover:text-red-500 transition-colors">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PESTAÑA RESEÑAS */}
                         {activeTab === 'resenas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start text-left no-scrollbar">
-                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-8 space-y-5 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Reseña</h3>
-                                    <PrefInput label="Nombre" value={newReview.name} onChange={(v) => setNewReview({ ...newReview, name: v })} />
-                                    <PrefInput label="Fecha" type="date" value={newReview.date} onChange={(v) => setNewReview({ ...newReview, date: v })} />
+                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Nueva Reseña</h3>
+                                    <PrefInput label="Nombre" value={newReview.name} onChange={(v) => setNewReview(prev => ({ ...prev, name: v }))} />
+                                    <PrefInput label="Fecha" type="date" value={newReview.date} onChange={(v) => setNewReview(prev => ({ ...prev, date: v }))} />
                                     <div className="flex flex-col space-y- leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Etiqueta</label>
-                                        <select value={newReview.badge} onChange={(e) => setNewReview({ ...newReview, badge: e.target.value })} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none cursor-pointer appearance-none">
+                                        <select value={newReview.badge} onChange={(e) => setNewReview(prev => ({ ...prev, badge: e.target.value }))} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none cursor-pointer appearance-none">
                                             <option value="Comprador Satisfecho">Comprador Satisfecho</option>
                                             <option value="Vendedor Satisfecho">Vendedor Satisfecho</option>
                                             <option value="Cliente Verificado">Cliente Verificado</option>
@@ -406,11 +444,11 @@ export default function PreferenciasPage() {
                                     </div>
                                     <div className="flex flex-col space-y-2 leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Estrellas (1-5)</label>
-                                        <input type="number" min="1" max="5" value={newReview.rating} onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) })} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none" />
+                                        <input type="number" min="1" max="5" value={newReview.rating} onChange={(e) => setNewReview(prev => ({ ...prev, rating: parseInt(e.target.value) }))} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none" />
                                     </div>
                                     <div className="flex flex-col space-y-2 leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Comentario</label>
-                                        <textarea value={newReview.comment} onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })} className="w-full bg-[#F7F8FA] rounded-xl p-5 text-[11px] font-bold outline-none min-h-[100px] resize-none" />
+                                        <textarea value={newReview.comment} onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))} className="w-full bg-[#F7F8FA] rounded-xl p-5 text-[11px] font-bold outline-none min-h-[100px] resize-none" />
                                     </div>
                                     <button onClick={handleAddReview} disabled={isSubmitting} className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none">{isSubmitting ? 'Publicando...' : 'Publicar Reseña'}</button>
                                 </div>
@@ -434,20 +472,20 @@ export default function PreferenciasPage() {
                                                 <div className="space-y-3 pt-2">
                                                     <div className="grid grid-cols-1 gap-2">
                                                         <div className="grid grid-cols-2 gap-2">
-                                                            <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" placeholder="Nombre" />
-                                                            <input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
+                                                            <input value={editForm.name} onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" placeholder="Nombre" />
+                                                            <input type="date" value={editForm.date} onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-2">
-                                                            <select value={editForm.badge} onChange={(e) => setEditForm({ ...editForm, badge: e.target.value })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[9px] font-black uppercase border-none appearance-none">
+                                                            <select value={editForm.badge} onChange={(e) => setEditForm(prev => ({ ...prev, badge: e.target.value }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[9px] font-black uppercase border-none appearance-none">
                                                                 <option value="Comprador Satisfecho">Comprador Satisfecho</option>
                                                                 <option value="Vendedor Satisfecho">Vendedor Satisfecho</option>
                                                                 <option value="Cliente Verificado">Cliente Verificado</option>
                                                                 <option value="Opinión Real de Cliente">Opinión Real de Cliente</option>
                                                             </select>
-                                                            <input type="number" min="1" max="5" value={editForm.rating} onChange={(e) => setEditForm({ ...editForm, rating: parseInt(e.target.value) })} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
+                                                            <input type="number" min="1" max="5" value={editForm.rating} onChange={(e) => setEditForm(prev => ({ ...prev, rating: parseInt(e.target.value) }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
                                                         </div>
                                                     </div>
-                                                    <textarea value={editForm.comment} onChange={(e) => setEditForm({ ...editForm, comment: e.target.value })} className="w-full bg-gray-50 rounded-xl p-2 text-[10.5px] font-medium min-h-[60px] resize-none border-none" placeholder="Comentario" />
+                                                    <textarea value={editForm.comment} onChange={(e) => setEditForm(prev => ({ ...prev, comment: e.target.value }))} className="w-full bg-gray-50 rounded-xl p-2 text-[10.5px] font-medium min-h-[60px] resize-none border-none" placeholder="Comentario" />
                                                 </div>
                                             ) : (
                                                 <div className="space-y-4 transition-none">
@@ -472,28 +510,6 @@ export default function PreferenciasPage() {
                                             )}
                                         </div>
                                     ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* PESTAÑA GENERAL (Sin cambios) */}
-                        {activeTab === 'general' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none mb-5">Identidad</h3>
-                                    <PrefInput label="Nombre del Sitio (SEO)" value={settings.siteName} onChange={(v) => setSettings({ ...settings, siteName: v })} />
-                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Descripción Footer</label>
-                                        <textarea value={settings.footerDescription} onChange={(e) => setSettings({ ...settings, footerDescription: e.target.value })} className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
-                                    </div>
-                                    <PrefInput label="Frase final Footer" value={settings.footerTagline} onChange={(v) => setSettings({ ...settings, footerTagline: v })} />
-                                </div>
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none text-left">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5 transition-none">Sistema</h3>
-                                    <div className="flex items-center justify-between bg-[#F7F8FA] p-5 rounded-2xl border border-gray-100 gap-4">
-                                        <div className="leading-tight flex-1 transition-none"><p className="text-[10px] font-black uppercase leading-none">Modo Mantenimiento</p><p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1.5 leading-none">Oculta el sitio al público general</p></div>
-                                        <button onClick={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })} className={`w-12 h-6 rounded-full transition-none relative ${settings.maintenanceMode ? 'bg-black' : 'bg-zinc-200'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-none ${settings.maintenanceMode ? 'left-7' : 'left-1'}`}></div></button>
-                                    </div>
                                 </div>
                             </div>
                         )}
