@@ -13,12 +13,35 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
         { title: 'Financiamiento', path: '/financiamiento' }
     ];
 
-    // LÓGICA SIMPLIFICADA: Solo marca o VDL GROUP (Ignoramos SEO)
+    // --- LÓGICA DE MARCA ---
     const brandName = appearance?.brandName?.trim() || "VDL GROUP";
+    const splitText = appearance?.splitText !== false;
+    const isJoined = appearance?.isJoined === true; // Nueva opción traída del panel
 
-    const nameParts = brandName.split(" ");
-    const firstWord = nameParts[0];
-    const secondPart = nameParts.slice(1).join(" ");
+    const renderTextLogo = () => {
+        // 1. Si el usuario quiere el texto junto, quitamos espacios
+        const displayName = isJoined ? brandName.replace(/\s+/g, '') : brandName;
+
+        // 2. Si NO quiere resaltar la primera palabra, devolvemos el texto plano
+        if (!splitText) {
+            return <span>{displayName}</span>;
+        }
+
+        // 3. Si quiere resaltar, calculamos el punto de corte basado en la primera palabra original
+        const firstWord = brandName.split(" ")[0];
+        const restOfName = isJoined
+            ? brandName.replace(/\s+/g, '').substring(firstWord.length)
+            : brandName.substring(firstWord.length);
+
+        return (
+            <>
+                {firstWord}
+                <span className={`font-light text-zinc-700 ${isJoined ? 'ml-0' : 'ml-1'}`}>
+                    {restOfName}
+                </span>
+            </>
+        );
+    };
 
     const logoUrl = appearance?.logo?.asset?._ref
         ? `https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${appearance.logo.asset._ref.replace('image-', '').replace('-png', '.png').replace('-jpg', '.jpg').replace('-webp', '.webp')}`
@@ -33,9 +56,7 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
                         {logoUrl ? (
                             <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />
                         ) : (
-                            <>
-                                {firstWord}<span className="font-light text-zinc-700 ml-1">{secondPart}</span>
-                            </>
+                            renderTextLogo()
                         )}
                     </Link>
                 </div>

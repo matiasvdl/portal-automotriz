@@ -20,8 +20,6 @@ type TabType = 'general' | 'personalizacion' | 'navegacion' | 'resenas' | 'conta
 
 export default function PreferenciasPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
-
-    // 1. SIMPLICIDAD: Siempre empezamos en 'general'. Sin localStorage, sin errores.
     const [activeTab, setActiveTab] = useState<TabType>('general')
 
     const [settings, setSettings] = useState({
@@ -37,7 +35,9 @@ export default function PreferenciasPage() {
     const [appearanceData, setAppearanceData] = useState({
         _id: 'appearance-settings',
         brandName: 'VDL GROUP',
-        logo: null as any
+        logo: null as any,
+        splitText: true,
+        isJoined: false
     })
 
     const [contact, setContact] = useState({
@@ -64,7 +64,7 @@ export default function PreferenciasPage() {
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
 
-    // CARGA DE DATOS (Se ejecuta solo una vez al entrar)
+    // CARGA DE DATOS
     useEffect(() => {
         const fetchSanityData = async () => {
             try {
@@ -92,7 +92,9 @@ export default function PreferenciasPage() {
                     setAppearanceData({
                         _id: appearance._id || 'appearance-settings',
                         brandName: appearance.brandName || '',
-                        logo: appearance.logo || null
+                        logo: appearance.logo || null,
+                        splitText: appearance.splitText !== undefined ? appearance.splitText : true,
+                        isJoined: appearance.isJoined || false
                     })
                 }
 
@@ -144,16 +146,17 @@ export default function PreferenciasPage() {
             }
             await writeClient.createOrReplace({
                 _id: 'appearance-settings', _type: 'appearance',
-                brandName: appearanceData.brandName, logo: appearanceData.logo
+                brandName: appearanceData.brandName, logo: appearanceData.logo,
+                splitText: appearanceData.splitText, isJoined: appearanceData.isJoined
             })
             await writeClient.createOrReplace({
                 _id: contact._id, _type: 'contactSettings',
                 whatsapp: contact.whatsapp, instagram: contact.instagram,
                 facebook: contact.facebook, email: contact.email, address: contact.address
             })
-            alert('Ajustes sincronizados correctamente')
+            alert('Ajustes guardados correctamente')
         } catch (error) {
-            console.error(error); alert('Error al sincronizar datos')
+            console.error(error); alert('Error al guardar')
         } finally { setIsSubmitting(false) }
     }
 
@@ -175,7 +178,7 @@ export default function PreferenciasPage() {
         { title: 'Contacto', value: '/contacto' }
     ]
 
-    // --- FUNCIONES DE NAVEGACIÓN ---
+    // FUNCIONES NAVEGACION
     const handleAddNavItem = (target: 'navMenu' | 'footerLinks') => {
         const newItem = { _key: Math.random().toString(36).substr(2, 9), title: 'Nuevo Enlace', path: '/' }
         setSettings(prev => ({ ...prev, [target]: [...prev[target], newItem] }))
@@ -196,7 +199,7 @@ export default function PreferenciasPage() {
         setSettings(prev => ({ ...prev, [target]: updated }))
     }
 
-    // --- FUNCIONES DE FAQs ---
+    // FUNCIONES FAQ
     const handleAddFaq = async () => {
         if (!newFaq.question || !newFaq.answer) return alert("Completa los campos")
         setIsSubmitting(true)
@@ -215,13 +218,13 @@ export default function PreferenciasPage() {
         }
     }
 
-    // --- FUNCIONES DE RESEÑAS ---
+    // FUNCIONES RESEÑAS
     const handleAddReview = async () => {
         if (!newReview.name || !newReview.comment) return alert("Faltan datos")
         setIsSubmitting(true)
         try {
             const result = await writeClient.create({ _type: 'review', ...newReview })
-            setAllReviews(prev => [result, ...prev])
+            setAllReviews(prev => [result, ...allReviews])
             setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
             alert("Reseña publicada")
         } finally { setIsSubmitting(false) }
@@ -273,7 +276,7 @@ export default function PreferenciasPage() {
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab as any)}
-                                className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white shadow-lg' : 'bg-white text-zinc-400 border border-gray-100'}`}
+                                className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
                                 {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : 'Reseñas'}
                             </button>
@@ -285,22 +288,15 @@ export default function PreferenciasPage() {
                         {activeTab === 'general' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none mb-5">Identidad</h3>
-                                    <PrefInput
-                                        label="Nombre del Sitio (SEO)"
-                                        value={settings.siteName}
-                                        onChange={(v) => {
-                                            // Solo actualizamos el nombre del sitio (SEO)
-                                            setSettings(prev => ({ ...prev, siteName: v }));
-                                        }}
-                                    />
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad</h3>
+                                    <PrefInput label="Nombre del Sitio (SEO)" value={settings.siteName} onChange={(v) => setSettings(prev => ({ ...prev, siteName: v }))} />
                                     <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Descripción Footer</label>
                                         <textarea value={settings.footerDescription} onChange={(e) => setSettings(prev => ({ ...prev, footerDescription: e.target.value }))} className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
                                     </div>
                                     <PrefInput label="Frase final Footer" value={settings.footerTagline} onChange={(v) => setSettings(prev => ({ ...prev, footerTagline: v }))} />
                                 </div>
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none text-left">
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none text-left">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5 transition-none">Sistema</h3>
                                     <div className="flex items-center justify-between bg-[#F7F8FA] p-5 rounded-2xl border border-gray-100 gap-4">
                                         <div className="leading-tight flex-1 transition-none"><p className="text-[10px] font-black uppercase leading-none">Modo Mantenimiento</p><p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1.5 leading-none">Oculta el sitio al público general</p></div>
@@ -313,26 +309,90 @@ export default function PreferenciasPage() {
                         {/* PESTAÑA PERSONALIZACIÓN */}
                         {activeTab === 'personalizacion' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+
+                                {/* BLOQUE 1: IDENTIDAD DE TEXTO (AJUSTES COMPACTOS) */}
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none mb-5">Identidad Visual</h3>
-                                    <PrefInput label="Nombre de la Marca (Logo Texto)" placeholder="Ej: VDL GROUP" value={appearanceData.brandName} onChange={(v) => setAppearanceData(prev => ({ ...prev, brandName: v }))} />
+                                    <div>
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Configuración de Texto</h3>
+
+                                        <PrefInput
+                                            label="Nombre de la Marca"
+                                            placeholder="Ej: VDL GROUP"
+                                            value={appearanceData.brandName}
+                                            onChange={(v) => setAppearanceData(prev => ({ ...prev, brandName: v }))}
+                                        />
+                                    </div>
+
+                                    {/* CAJA GRIS COMPACTA PARA LOS INTERRUPTORES */}
+                                    <div className="bg-[#F7F8FA] rounded-2xl p-1 border border-gray-100/50">
+                                        {/* Fila 1: Estilo Dividido */}
+                                        <div className="flex items-center justify-between p-4 px-4">
+                                            <div className="leading-tight">
+                                                <p className="text-[9px] font-black uppercase text-zinc-800">Estilo Dividido</p>
+                                                <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">Resalta la primera palabra</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setAppearanceData(prev => ({ ...prev, splitText: !prev.splitText }))}
+                                                className={`w-10 h-5 rounded-full transition-all relative ${appearanceData.splitText ? 'bg-black' : 'bg-zinc-200'}`}
+                                            >
+                                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${appearanceData.splitText ? 'left-6' : 'left-1'}`}></div>
+                                            </button>
+                                        </div>
+
+                                        <div className="h-[1px] bg-gray-200/50 mx-4"></div>
+
+                                        {/* Fila 2: Eliminar Espacios */}
+                                        <div className="flex items-center justify-between p-3 px-4">
+                                            <div className="leading-tight">
+                                                <p className="text-[9px] font-black uppercase text-zinc-800">Eliminar Espacios</p>
+                                                <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">Muestra el nombre todo junto</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setAppearanceData(prev => ({ ...prev, isJoined: !prev.isJoined }))}
+                                                className={`w-10 h-5 rounded-full transition-all relative ${appearanceData.isJoined ? 'bg-black' : 'bg-zinc-200'}`}
+                                            >
+                                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${appearanceData.isJoined ? 'left-6' : 'left-1'}`}></div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* BLOQUE 2: LOGO DE IMAGEN (SUBIDA DE ARCHIVO) */}
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Logo de Empresa</h3>
+
                                     <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Logo de la Empresa</label>
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Imagen del Logo</label>
                                         <div className="relative bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[160px] overflow-hidden group">
                                             {appearanceData.logo ? (
                                                 <div className="flex flex-col items-center space-y-4 w-full">
-                                                    <img src={`https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${appearanceData.logo.asset._ref.replace('image-', '').replace('-png', '.png').replace('-jpg', '.jpg').replace('-webp', '.webp')}`} alt="Logo Preview" className="h-16 w-auto object-contain" />
-                                                    <button onClick={() => setAppearanceData(prev => ({ ...prev, logo: null }))} className="text-[8px] font-black uppercase text-red-500 hover:underline">Quitar logo</button>
+                                                    <img
+                                                        src={`https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${appearanceData.logo.asset._ref.replace('image-', '').replace('-png', '.png').replace('-jpg', '.jpg').replace('-webp', '.webp')}`}
+                                                        alt="Logo Preview"
+                                                        className="h-16 w-auto object-contain"
+                                                    />
+                                                    <button
+                                                        onClick={() => setAppearanceData(prev => ({ ...prev, logo: null }))}
+                                                        className="text-[8px] font-black uppercase text-red-500 hover:underline transition-all"
+                                                    >
+                                                        Quitar logo
+                                                    </button>
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase">Haz clic para seleccionar logo</p>
-                                                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Haz clic o arrastra para seleccionar logo</p>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleLogoUpload}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
                                                 </>
                                             )}
                                         </div>
                                     </div>
                                 </div>
+
                             </div>
                         )}
 
@@ -374,7 +434,6 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
-                        {/* PESTAÑA CONTACTO */}
                         {activeTab === 'contacto' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
@@ -394,11 +453,10 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
-                        {/* PESTAÑA PREGUNTAS */}
                         {activeTab === 'preguntas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start no-scrollbar">
                                 <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Nueva Pregunta</h3>
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Pregunta</h3>
                                     <div className="flex flex-col space-y-4">
                                         <PrefInput label="Pregunta" value={newFaq.question} onChange={(v) => setNewFaq(prev => ({ ...prev, question: v }))} />
                                         <div className="flex flex-col space-y-2.5 leading-none">
@@ -426,11 +484,10 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
-                        {/* PESTAÑA RESEÑAS */}
                         {activeTab === 'resenas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start text-left no-scrollbar">
                                 <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Nueva Reseña</h3>
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Reseña</h3>
                                     <PrefInput label="Nombre" value={newReview.name} onChange={(v) => setNewReview(prev => ({ ...prev, name: v }))} />
                                     <PrefInput label="Fecha" type="date" value={newReview.date} onChange={(v) => setNewReview(prev => ({ ...prev, date: v }))} />
                                     <div className="flex flex-col space-y- leading-none">
