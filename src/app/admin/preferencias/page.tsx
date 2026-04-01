@@ -18,8 +18,9 @@ interface RutaOption {
 
 export default function PreferenciasPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    // 1. Añadimos 'preguntas' a los tabs
-    const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas' | 'contacto' | 'preguntas'>('general')
+
+    // 1. Añadimos 'personalizacion' a los tabs (Hecho)
+    const [activeTab, setActiveTab] = useState<'general' | 'navegacion' | 'resenas' | 'contacto' | 'preguntas' | 'personalizacion'>('general')
 
     const RUTAS_NAV: RutaOption[] = [
         { title: 'Inicio', value: '/' },
@@ -49,6 +50,13 @@ export default function PreferenciasPage() {
         maintenanceMode: false
     })
 
+    // NUEVO: Estado para Personalización
+    const [appearanceData, setAppearanceData] = useState({
+        _id: 'appearance-settings',
+        brandName: 'VDL GROUP',
+        logo: null as any
+    })
+
     const [contact, setContact] = useState({
         _id: 'global-contact',
         whatsapp: '',
@@ -59,8 +67,6 @@ export default function PreferenciasPage() {
     })
 
     const [allReviews, setAllReviews] = useState<any[]>([])
-
-    // ESTADOS PARA PREGUNTAS (NUEVO)
     const [faqs, setFaqs] = useState<any[]>([])
     const [newFaq, setNewFaq] = useState({ question: '', answer: '', order: 0 })
 
@@ -82,8 +88,10 @@ export default function PreferenciasPage() {
                 const config = await client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' })
                 const reviews = await client.fetch(`*[_type == "review"] | order(date desc)`, {}, { cache: 'no-store' })
                 const contactData = await client.fetch(`*[_type == "contactSettings"][0]`, {}, { cache: 'no-store' })
-                // Carga de FAQs (NUEVO)
                 const faqData = await client.fetch(`*[_type == "faq"] | order(order asc)`, {}, { cache: 'no-store' })
+
+                // NUEVO: Carga de datos de apariencia
+                const appearance = await client.fetch(`*[_type == "appearance"][0]`, {}, { cache: 'no-store' })
 
                 if (config) {
                     setSettings({
@@ -96,6 +104,16 @@ export default function PreferenciasPage() {
                         maintenanceMode: config.maintenanceMode || false
                     })
                 }
+
+                // Sincronizar estado de apariencia
+                if (appearance) {
+                    setAppearanceData({
+                        _id: appearance._id || 'appearance-settings',
+                        brandName: appearance.brandName || 'VDL GROUP',
+                        logo: appearance.logo || null
+                    })
+                }
+
                 if (reviews) setAllReviews(reviews)
                 if (faqData) setFaqs(faqData)
                 if (contactData) {
@@ -133,7 +151,6 @@ export default function PreferenciasPage() {
         setSettings({ ...settings, [target]: updated })
     }
 
-    // FUNCIONES PARA PREGUNTAS (NUEVO)
     const handleAddFaq = async () => {
         if (!newFaq.question || !newFaq.answer) return alert("Completa los campos")
         setIsSubmitting(true)
@@ -195,6 +212,14 @@ export default function PreferenciasPage() {
                 }).commit()
             }
 
+            // NUEVO: Guardar ajustes de apariencia
+            await writeClient.createOrReplace({
+                _id: 'appearance-settings',
+                _type: 'appearance',
+                brandName: appearanceData.brandName,
+                logo: appearanceData.logo
+            })
+
             await writeClient.createOrReplace({
                 _id: contact._id,
                 _type: 'contactSettings',
@@ -235,18 +260,41 @@ export default function PreferenciasPage() {
                         </button>
                     </header>
 
-                    {/* TABS ACTUALIZADOS */}
+                    {/* TABS ACTUALIZADOS CON PERSONALIZACIÓN */}
                     <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
-                        {['general', 'navegacion', 'contacto', 'preguntas', 'resenas'].map((tab) => (
+                        {['general', 'personalizacion', 'navegacion', 'contacto', 'preguntas', 'resenas'].map((tab) => (
                             <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-none shrink-0 ${activeTab === tab ? 'bg-black text-white shadow-lg' : 'bg-white text-zinc-400 border border-gray-100'}`}>
-                                {tab === 'general' ? 'General' : tab === 'navegacion' ? 'Navegación' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : 'Reseñas'}
+                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : 'Reseñas'}
                             </button>
                         ))}
                     </div>
 
                     <div className="no-scrollbar">
 
-                        {/* PESTAÑA PREGUNTAS (NUEVA) */}
+                        {/* NUEVA PESTAÑA PERSONALIZACIÓN */}
+                        {activeTab === 'personalizacion' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad Visual</h3>
+
+                                    <PrefInput
+                                        label="Nombre de la Marca (Fallback)"
+                                        placeholder="Ej: VDL GROUP"
+                                        value={appearanceData.brandName}
+                                        onChange={(v) => setAppearanceData({ ...appearanceData, brandName: v })}
+                                    />
+
+                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Logo de la Empresa</label>
+                                        <div className="bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4">
+                                            <p className="text-[10px] font-bold text-zinc-400 uppercase">Subida de logo (Próximo paso)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PESTAÑA PREGUNTAS (Sin cambios) */}
                         {activeTab === 'preguntas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start no-scrollbar">
                                 <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-8 space-y-5 shadow-none">
@@ -281,12 +329,13 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
-                        {/* PESTAÑA CONTACTO */}
+                        {/* PESTAÑA CONTACTO (Sin cambios) */}
                         {activeTab === 'contacto' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-8 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Redes y WhatsApp</h3>
                                     <PrefInput label="WhatsApp de Ventas" placeholder="56912345678" value={contact.whatsapp} onChange={(v) => setContact({ ...contact, whatsapp: v })} />
+                                    <circle />
                                     <PrefInput label="Instagram (URL)" placeholder="https://instagram.com/..." value={contact.instagram} onChange={(v) => setContact({ ...contact, instagram: v })} />
                                     <PrefInput label="Facebook (URL)" placeholder="https://facebook.com/..." value={contact.facebook} onChange={(v) => setContact({ ...contact, facebook: v })} />
                                 </div>
@@ -301,6 +350,7 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {/* PESTAÑA NAVEGACIÓN (Sin cambios) */}
                         {activeTab === 'navegacion' && (
                             <div className="space-y-8">
                                 {[
@@ -338,6 +388,7 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {/* PESTAÑA RESEÑAS (Sin cambios) */}
                         {activeTab === 'resenas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start text-left no-scrollbar">
                                 <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-8 space-y-5 shadow-none">
@@ -425,6 +476,7 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {/* PESTAÑA GENERAL (Sin cambios) */}
                         {activeTab === 'general' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
