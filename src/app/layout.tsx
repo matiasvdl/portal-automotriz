@@ -8,6 +8,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="antialiased">
+        {/* Aquí Next.js meterá el layout de (main) o de admin */}
         {children}
       </body>
     </html>
