@@ -184,11 +184,24 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         setFormData(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }))
     }
 
+    // NUEVA FUNCIÓN PARA PROCESAR COMAS Y BOTÓN
+    const handleAddTags = () => {
+        if (!currentTag.trim()) return;
+
+        // Separamos por comas, limpiamos espacios y filtramos duplicados/vacíos
+        const newTags = currentTag
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag !== "" && !tags.includes(tag));
+
+        setTags([...tags, ...newTags]);
+        setCurrentTag('');
+    };
+
     const addTag = (e: KeyboardEvent) => {
-        if (e.key === 'Enter' && currentTag.trim()) {
-            e.preventDefault()
-            if (!tags.includes(currentTag.trim())) setTags([...tags, currentTag.trim()])
-            setCurrentTag('')
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAddTags();
         }
     }
 
@@ -357,8 +370,23 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-3 shadow-none text-left">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Multimedia y Extras</h3>
                         <div className="space-y-2.5 text-left">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Equipamiento / Características (ENTER)</label>
-                            <input value={currentTag} onChange={(e) => setCurrentTag(e.target.value)} onKeyDown={addTag} className="w-full bg-[#F7F8FA] border-none rounded-xl px-5 py-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black leading-none" />
+                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Equipamiento / Características (Comas o ENTER)</label>
+                            <div className="flex gap-2 h-[45px]">
+                                <input
+                                    value={currentTag}
+                                    onChange={(e) => setCurrentTag(e.target.value)}
+                                    onKeyDown={addTag}
+                                    placeholder="Aire Acondicionado, Bluetooth, Llantas..."
+                                    className="flex-1 bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black leading-none"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleAddTags}
+                                    className="bg-black text-white px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95"
+                                >
+                                    Agregar
+                                </button>
+                            </div>
                             <div className="flex flex-wrap gap-2 pt-1 leading-none">
                                 {tags.map(tag => (
                                     <span key={tag} className="bg-black text-white text-[9px] font-black uppercase px-3 py-2 rounded-lg flex items-center gap-2 leading-none">
