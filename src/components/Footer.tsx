@@ -7,7 +7,7 @@ export default function Footer({ config }: { config?: any }) {
         <footer className="bg-black text-white pt-16 pb-8 border-t border-white/5">
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-16 mb-12 text-left">
 
-                {/* 1. Logo y descripción bajo el logo */}
+                {/* 1. Logo y descripción */}
                 <div className="md:col-span-4 space-y-4">
                     <span className="text-2xl font-black italic tracking-tighter uppercase text-white">
                         VDL<span className="font-light text-zinc-500">MOTORS</span>
@@ -40,9 +40,18 @@ export default function Footer({ config }: { config?: any }) {
                 </div>
             </div>
 
-            {/* 4. Barra final: Copyright y frase dinámica en cursiva */}
+            {/* 4. Barra final: Copyright y acceso secreto */}
             <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] gap-4">
-                <p className="text-center md:text-left">© 2026 VDL Group SPA | TODOS LOS DERECHOS RESERVADOS</p>
+                <p className="text-center md:text-left select-none">
+                    © 2026 VDL Group SPA | TODOS LOS DERECHOS RESERVADOS
+                    {/* LA PUERTA SECRETA: El punto final es el link, sin cursor de mano */}
+                    <Link
+                        href="/admin/ingresar"
+                        className="cursor-default hover:text-gray-500 transition-none ml-0.5"
+                    >
+                        .
+                    </Link>
+                </p>
 
                 {/* Texto dinámico: Oculto en móvil (hidden) y visible en PC (md:block) */}
                 <p className="hidden md:block italic font-medium text-white uppercase tracking-normal">
