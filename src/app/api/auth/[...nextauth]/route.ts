@@ -1,6 +1,8 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 
+const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 const authOptions = {
     providers: [
         CredentialsProvider({
@@ -16,6 +18,7 @@ const authOptions = {
                 if (credentials?.username === ADMIN_USER && credentials?.password === ADMIN_PASSWORD) {
                     return { id: "1", name: "Matias", email: "admin@vdlmotors.cl" }
                 }
+                await sleep(3000); // Simulamos un retraso para evitar ataques de fuerza bruta
                 return null
             }
         })
