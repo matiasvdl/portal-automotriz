@@ -9,17 +9,44 @@ export const appearance = defineType({
             name: 'brandName',
             title: 'Nombre de la Marca',
             type: 'string',
-            description: 'Texto que se mostrará si no hay un logo cargado (Ej: VDL GROUP)',
-            initialValue: 'VDL GROUP'
         }),
         defineField({
             name: 'logo',
             title: 'Logo Principal',
             type: 'image',
-            description: 'Carga tu logo aquí. Si lo dejas vacío, se usará el nombre de la marca.',
-            options: {
-                hotspot: true, // Permite recortar la imagen en Sanity
-            },
+            options: { hotspot: true },
+        }),
+        defineField({
+            name: 'splitText',
+            title: 'Estilo Dividido',
+            type: 'boolean',
+        }),
+        defineField({
+            name: 'isJoined',
+            title: 'Eliminar Espacios',
+            type: 'boolean',
+        }),
+        defineField({
+            name: 'minDepositPercent',
+            title: 'Porcentaje de Pie Mínimo (%)',
+            type: 'number',
+            description: 'Porcentaje por defecto para el cálculo del financiamiento (ej: 30)',
+            initialValue: 30,
+            validation: Rule => Rule.min(0).max(100)
+        }),
+        defineField({
+            name: 'minIncome',
+            title: 'Renta Mínima Requerida ($)',
+            type: 'number',
+            description: 'Ingreso líquido mensual mínimo (ej: 500000)',
+            initialValue: 500000,
+        }),
+        defineField({
+            name: 'minWorkExperience',
+            title: 'Antigüedad Laboral Requerida',
+            type: 'string',
+            description: 'Texto descriptivo (ej: Mínimo 1 año de continuidad)',
+            initialValue: 'Mínimo 1 año de continuidad laboral.',
         }),
     ],
 })

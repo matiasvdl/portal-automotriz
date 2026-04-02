@@ -16,7 +16,7 @@ interface RutaOption {
     value: string;
 }
 
-type TabType = 'general' | 'personalizacion' | 'navegacion' | 'resenas' | 'contacto' | 'preguntas';
+type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas';
 
 export default function PreferenciasPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -37,7 +37,10 @@ export default function PreferenciasPage() {
         brandName: 'VDL GROUP',
         logo: null as any,
         splitText: true,
-        isJoined: false
+        isJoined: false,
+        minDepositPercent: 30,
+        minIncome: 500000,
+        minWorkExperience: ''
     })
 
     const [contact, setContact] = useState({
@@ -94,7 +97,10 @@ export default function PreferenciasPage() {
                         brandName: appearance.brandName || '',
                         logo: appearance.logo || null,
                         splitText: appearance.splitText !== undefined ? appearance.splitText : true,
-                        isJoined: appearance.isJoined || false
+                        isJoined: appearance.isJoined || false,
+                        minDepositPercent: appearance.minDepositPercent || 30, // Cargar porcentaje de Sanity
+                        minIncome: appearance.minIncome || 500000,
+                        minWorkExperience: appearance.minWorkExperience || ''
                     })
                 }
 
@@ -145,9 +151,15 @@ export default function PreferenciasPage() {
                 }).commit()
             }
             await writeClient.createOrReplace({
-                _id: 'appearance-settings', _type: 'appearance',
-                brandName: appearanceData.brandName, logo: appearanceData.logo,
-                splitText: appearanceData.splitText, isJoined: appearanceData.isJoined
+                _id: 'appearance-settings',
+                _type: 'appearance',
+                brandName: appearanceData.brandName,
+                // Solo enviamos el logo si existe, si no, enviamos undefined para que Sanity esté feliz
+                logo: appearanceData.logo?.asset?._ref ? appearanceData.logo : undefined, splitText: appearanceData.splitText,
+                isJoined: appearanceData.isJoined,
+                minDepositPercent: Number(appearanceData.minDepositPercent),
+                minIncome: Number(appearanceData.minIncome),
+                minWorkExperience: appearanceData.minWorkExperience
             })
             await writeClient.createOrReplace({
                 _id: contact._id, _type: 'contactSettings',
@@ -272,14 +284,13 @@ export default function PreferenciasPage() {
                     </header>
 
                     <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
-                        {['general', 'personalizacion', 'navegacion', 'contacto', 'preguntas', 'resenas'].map((tab) => (
+                        {['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab as any)}
                                 className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
-                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : 'Reseñas'}
-                            </button>
+                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : 'Reseñas'}                            </button>
                         ))}
                     </div>
 
@@ -434,6 +445,65 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {/* PESTAÑA FINANCIAMIENTO */}
+                        {activeTab === 'financiamiento' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Configuración de Crédito</h3>
+
+                                    {/* PIE MÍNIMO - Cambiado max-w-md por w-full */}
+                                    <div className="w-full bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                        <div className="leading-tight text-left">
+                                            <p className="text-[9px] font-black uppercase text-zinc-800">Pie Mínimo Automático</p>
+                                            <p className="text-[7px] font-bold text-zinc-400 uppercase mt-0.5 tracking-tighter">Porcentaje base para calcular el pie de los autos</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={appearanceData.minDepositPercent}
+                                                onChange={(e) => setAppearanceData(prev => ({ ...prev, minDepositPercent: parseInt(e.target.value) || 0 }))}
+                                                className="w-16 h-10 bg-white border border-gray-200 rounded-xl text-center text-xs font-black outline-none focus:ring-1 focus:ring-black"
+                                            />
+                                            <span className="text-[10px] font-black text-zinc-400">%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* RENTA MÍNIMA - Cambiado max-w-md por w-full */}
+                                    <div className="w-full bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                        <div className="leading-tight text-left">
+                                            <p className="text-[9px] font-black uppercase text-zinc-800">Renta Mínima Requerida</p>
+                                            <p className="text-[7px] font-bold text-zinc-400 uppercase mt-0.5 tracking-tighter">Sueldo mínimo para calificar al crédito</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black text-zinc-400">$</span>
+                                            <input
+                                                type="number"
+                                                value={appearanceData.minIncome}
+                                                onChange={(e) => setAppearanceData(prev => ({ ...prev, minIncome: parseInt(e.target.value) || 0 }))}
+                                                className="w-28 h-10 bg-white border border-gray-200 rounded-xl text-center text-xs font-black outline-none focus:ring-1 focus:ring-black"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* ANTIGÜEDAD LABORAL - Cambiado max-w-md por w-full */}
+                                    <div className="w-full bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 space-y-3">
+                                        <div className="leading-tight text-left">
+                                            <p className="text-[9px] font-black uppercase text-zinc-800">Texto de Antigüedad</p>
+                                            <p className="text-[7px] font-bold text-zinc-400 uppercase mt-0.5 tracking-tighter">Descripción de continuidad laboral requerida</p>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={appearanceData.minWorkExperience}
+                                            onChange={(e) => setAppearanceData(prev => ({ ...prev, minWorkExperience: e.target.value }))}
+                                            placeholder="Ej: Mínimo 1 año de continuidad"
+                                            className="w-full h-10 bg-white border border-gray-200 rounded-xl px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PESTAÑA CONTACTO */}
                         {activeTab === 'contacto' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
@@ -453,6 +523,7 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {/* PESTAÑA PREGUNTAS */}
                         {activeTab === 'preguntas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start no-scrollbar">
                                 <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
@@ -484,6 +555,7 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {/* PESTAÑA RESEÑAS */}
                         {activeTab === 'resenas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start text-left no-scrollbar">
                                 <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
