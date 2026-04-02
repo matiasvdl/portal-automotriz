@@ -1,7 +1,8 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 
-const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+// Función auxiliar para generar el retraso de seguridad
+const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
 const authOptions = {
     providers: [
@@ -15,10 +16,15 @@ const authOptions = {
                 const ADMIN_USER = process.env.ADMIN_USER || "admin"
                 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "vdl2026"
 
+                // 1. Si las credenciales coinciden, el acceso es instantáneo
                 if (credentials?.username === ADMIN_USER && credentials?.password === ADMIN_PASSWORD) {
                     return { id: "1", name: "Matias", email: "admin@vdlmotors.cl" }
                 }
-                await sleep(3000); // Simulamos un retraso para evitar ataques de fuerza bruta
+
+                // 2. Si las credenciales fallan, activamos el "escudo de tiempo"
+                // El servidor esperará 3 segundos antes de responder que la clave es incorrecta
+                await delay(3000)
+
                 return null
             }
         })
@@ -26,7 +32,7 @@ const authOptions = {
     pages: {
         signIn: '/admin/ingresar',
     },
-    secret: process.env.NEXTAUTH_SECRET || "vdl-secret-123", // Clave de emergencia por si no lee el .env
+    secret: process.env.NEXTAUTH_SECRET,
 }
 
 const handler = NextAuth(authOptions)
