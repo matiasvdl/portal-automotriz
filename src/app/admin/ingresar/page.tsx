@@ -3,19 +3,21 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
+import { useSettings } from '@/context/SettingsContext'
 
 export default function LoginPage() {
+    const { config } = useSettings()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState(false)
     const [showSupportToast, setShowSupportToast] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const router = useRouter()
 
-    const ADMIN_EMAIL = "admin@vdlmotors.cl"
-    const ADMIN_PASSWORD = "vdlmotors"
-
-    const WHATSAPP_NUMBER = "569XXXXXXXX"
-    const WHATSAPP_MESSAGE = encodeURIComponent("Hola, olvidé mi contraseña del Panel VDL y necesito ayuda para recuperar el acceso.");
+    // Datos conectados a tu Sanity
+    const WHATSAPP_NUMBER = config?.whatsappNumber || "569XXXXXXXX"
+    const WHATSAPP_MESSAGE = encodeURIComponent(config?.supportMessage || "Hola, olvidé mi contraseña del Panel VDL y necesito ayuda para recuperar el acceso.");
 
     useEffect(() => {
         if (error || showSupportToast) {
@@ -27,14 +29,25 @@ export default function LoginPage() {
         }
     }, [error, showSupportToast])
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-            setError(false)
-            router.push('/admin/dashboard')
-        } else {
+        setIsSubmitting(true)
+        setError(false) // Limpiamos errores previos
+
+        const result = await signIn('credentials', {
+            username: email,
+            password: password,
+            redirect: false, // Queremos manejar nosotros el movimiento
+        })
+
+        if (result?.error) {
             setError(true)
-            setShowSupportToast(false)
+            setIsSubmitting(false) // Aquí sí lo apagamos
+        } else {
+            // SI TODO SALIÓ BIEN:
+            // Usamos window.location en lugar de router.push 
+            // Esto obliga al navegador a refrescar y reconocer la nueva cookie
+            window.location.href = '/admin/dashboard'
         }
     }
 
@@ -110,11 +123,13 @@ export default function LoginPage() {
                             </div>
                         </div>
 
+                        {/* BOTÓN SIN EFECTO SCALE/REBOTE */}
                         <button
                             type="submit"
-                            className="w-full bg-black text-white text-[9px] font-black uppercase tracking-[0.25em] py-3.5 rounded-xl hover:bg-zinc-950 mt-0 shadow-xl shadow-black/10"
+                            disabled={isSubmitting}
+                            className="w-full bg-black text-white text-[9px] font-black uppercase tracking-[0.25em] py-3.5 rounded-xl hover:bg-zinc-950 mt-0 shadow-xl shadow-black/10 disabled:bg-zinc-800 disabled:cursor-not-allowed"
                         >
-                            Ingresar
+                            {isSubmitting ? 'VERIFICANDO...' : 'Ingresar'}
                         </button>
                     </form>
                 </div>
@@ -154,7 +169,7 @@ export default function LoginPage() {
                     </div>
                 )}
 
-                {/* Copyright - Gris más definido (zinc-500) */}
+                {/* Copyright */}
                 <div className="absolute bottom-6 right-7 z-18">
                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
                         © VDL Group SpA

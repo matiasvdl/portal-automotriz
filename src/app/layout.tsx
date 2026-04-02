@@ -1,5 +1,6 @@
 import "./globals.css";
-
+import { SettingsProvider } from "@/context/SettingsContext";
+import { AuthProvider } from "@/components/AuthProvider";
 export default function RootLayout({
   children,
 }: {
@@ -8,8 +9,12 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="antialiased">
-        {/* Aquí Next.js meterá el layout de (main) o de admin */}
-        {children}
+        {/* Envolvemos todo con los proveedores de datos */}
+        <AuthProvider>
+          <SettingsProvider>
+            {children}
+          </SettingsProvider>
+        </AuthProvider>
       </body>
     </html>
   );

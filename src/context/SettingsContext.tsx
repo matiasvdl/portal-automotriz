@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode } from 'react'
 
-// 1. Definimos qué datos va a repartir el contexto a todo el sitio
+// 1. Definimos la estructura del contexto
 interface SettingsContextType {
     contact: {
         whatsapp: string
@@ -11,25 +11,22 @@ interface SettingsContextType {
         email: string
         address: string
     }
-    config: any      // Aquí viven los menús y SEO
-    appearance: any  // Aquí vive el LOGO y el nombre de la marca (VDL GROUP)
+    config: any
+    appearance: any
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
-// 2. El Provider ahora recibe config y appearance como PROPS desde el Layout
+// 2. El Provider ahora tiene props OPCIONALES (con el ?)
 export function SettingsProvider({
     children,
-    config,
-    appearance
+    config = {},      // Valor por defecto si no viene nada
+    appearance = {}   // Valor por defecto si no viene nada
 }: {
     children: ReactNode,
-    config: any,
-    appearance: any
+    config?: any,     // <-- El "?" es la clave aquí
+    appearance?: any  // <-- El "?" es la clave aquí
 }) {
-
-    // Ya no necesitamos useEffect ni fetch aquí, porque los datos 
-    // vienen listos desde el servidor (Layout)
 
     const value = {
         contact: {

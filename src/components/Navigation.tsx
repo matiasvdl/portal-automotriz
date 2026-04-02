@@ -70,7 +70,7 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
                 {/* BOTÓN CONTACTO Y HAMBURGUESA */}
                 <div className="flex items-center gap-4">
                     {/* Botón Ingresar: Se oculta en móvil para no saturar, se verá dentro del menú desplegable */}
-                    <Link href="/contacto" className="hidden lg:block bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] px-8 py-3.5 rounded-full hover:bg-zinc-800 transition-all active:scale-95">
+                    <Link href="/contacto" className="hidden lg:block bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3.5 rounded-full hover:bg-zinc-800 transition-all active:scale-95">
                         Contacto
                     </Link>
 

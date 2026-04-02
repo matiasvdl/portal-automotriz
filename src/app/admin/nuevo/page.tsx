@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { writeClient } from '@/sanity/lib/client'
 import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
+import { saveCarAction } from '@/app/actions/carActions'
 
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 const builder = imageUrlBuilder(writeClient)
@@ -132,19 +133,23 @@ export default function NuevoVehiculoPage() {
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault()
         setIsSubmitting(true)
+
         try {
             const doc = {
-                _type: 'car',
                 ...formData,
                 slug: { _type: 'slug', current: formData.slug },
                 features: tags
             }
-            await writeClient.create(doc)
+
+            // LLAMADA SEGURA: El token nunca sale de tu servidor
+            await saveCarAction(null, doc)
+
             router.push('/admin/dashboard')
         } catch (error) {
-            console.error(error)
-            alert('Error al publicar.')
-        } finally { setIsSubmitting(false) }
+            alert('Error al guardar.')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     return (

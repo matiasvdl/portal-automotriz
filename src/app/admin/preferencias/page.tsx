@@ -98,7 +98,7 @@ export default function PreferenciasPage() {
                         logo: appearance.logo || null,
                         splitText: appearance.splitText !== undefined ? appearance.splitText : true,
                         isJoined: appearance.isJoined || false,
-                        minDepositPercent: appearance.minDepositPercent || 30, // Cargar porcentaje de Sanity
+                        minDepositPercent: appearance.minDepositPercent || 30,
                         minIncome: appearance.minIncome || 500000,
                         minWorkExperience: appearance.minWorkExperience || ''
                     })
@@ -154,8 +154,8 @@ export default function PreferenciasPage() {
                 _id: 'appearance-settings',
                 _type: 'appearance',
                 brandName: appearanceData.brandName,
-                // Solo enviamos el logo si existe, si no, enviamos undefined para que Sanity esté feliz
-                logo: appearanceData.logo?.asset?._ref ? appearanceData.logo : undefined, splitText: appearanceData.splitText,
+                logo: appearanceData.logo?.asset?._ref ? appearanceData.logo : undefined,
+                splitText: appearanceData.splitText,
                 isJoined: appearanceData.isJoined,
                 minDepositPercent: Number(appearanceData.minDepositPercent),
                 minIncome: Number(appearanceData.minIncome),

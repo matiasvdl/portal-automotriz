@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { writeClient } from '@/sanity/lib/client'
 import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
+import { saveCarAction } from '@/app/actions/carActions'
 
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 const builder = imageUrlBuilder(writeClient)
@@ -208,17 +209,23 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault()
         setIsSubmitting(true)
+
         try {
             const doc = {
                 ...formData,
                 slug: { _type: 'slug', current: formData.slug },
                 features: tags
             }
-            await writeClient.patch(id).set(doc).commit()
+
+            // LLAMADA SEGURA: El token nunca sale de tu servidor
+            await saveCarAction(id || null, doc)
+
             router.push('/admin/dashboard')
         } catch (error) {
-            alert('Error al guardar cambios.')
-        } finally { setIsSubmitting(false) }
+            alert('Error al guardar.')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleDelete = async () => {
