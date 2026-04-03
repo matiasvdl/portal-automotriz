@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { client, writeClient } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
+import { useSession } from "next-auth/react"
+import { useRouter } from 'next/navigation'
 
 // --- INTERFACES ---
 interface NavItem {
@@ -19,6 +21,8 @@ interface RutaOption {
 type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas';
 
 export default function PreferenciasPage() {
+    const { data: session, status } = useSession()
+    const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [activeTab, setActiveTab] = useState<TabType>('general')
 
@@ -69,6 +73,16 @@ export default function PreferenciasPage() {
 
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
+
+    // --- EFECTO DE SEGURIDAD: Bloqueo de acceso por Rol ---
+    useEffect(() => {
+        if (status === 'authenticated') {
+            const userRole = (session?.user as any)?.role
+            if (userRole !== 'Administrador Principal') {
+                router.push('/admin/dashboard')
+            }
+        }
+    }, [session, status, router])
 
     // CARGA DE DATOS
     useEffect(() => {
@@ -126,6 +140,15 @@ export default function PreferenciasPage() {
         }
         fetchSanityData()
     }, [])
+
+    useEffect(() => {
+        if (status === 'authenticated') {
+            const userRole = (session?.user as any)?.role
+            if (userRole !== 'Administrador Principal') {
+                router.push('/admin/dashboard')
+            }
+        }
+    }, [session, status, router])
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
