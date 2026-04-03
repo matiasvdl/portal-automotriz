@@ -145,7 +145,7 @@ export default function VenderAutoPage() {
                     {/* BARRA LATERAL: PROCESO */}
                     <aside className="lg:col-span-5 order-1 lg:order-2 space-y-6">
                         <div className="bg-white rounded-[25px] p-8 border border-gray-100 shadow-none">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-6 italic leading-none">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-6 leading-none">
                                 ¿Cómo funciona?
                             </h4>
                             <div className="space-y-6">
