@@ -78,7 +78,8 @@ export default function PreferenciasPage() {
     useEffect(() => {
         if (status === 'authenticated') {
             const userRole = (session?.user as any)?.role
-            if (userRole !== 'Administrador Principal') {
+            // Si NO es Admin Principal Y NO es Administrador, lo expulsamos
+            if (userRole !== 'Administrador Principal' && userRole !== 'Administrador') {
                 router.push('/admin/dashboard')
             }
         }
@@ -140,15 +141,6 @@ export default function PreferenciasPage() {
         }
         fetchSanityData()
     }, [])
-
-    useEffect(() => {
-        if (status === 'authenticated') {
-            const userRole = (session?.user as any)?.role
-            if (userRole !== 'Administrador Principal') {
-                router.push('/admin/dashboard')
-            }
-        }
-    }, [session, status, router])
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]

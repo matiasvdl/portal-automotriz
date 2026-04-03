@@ -81,23 +81,24 @@ export default function AdminNavigation() {
                                 Mi cuenta
                             </button>
 
-                            {/* FILTRO DE SEGURIDAD: Solo Admin Principal ve esto */}
+                            {/* ADMINISTRACIÓN: Solo Admin Principal */}
                             {userRole === 'Administrador Principal' && (
-                                <>
-                                    <button
-                                        onClick={() => { setIsUserMenuOpen(false); router.push('/admin/administracion') }}
-                                        className={`w-full text-left px-6 py-3 text-[10px] font-black uppercase transition-colors ${pathname === '/admin/administracion' ? 'bg-[#F7F8FA] text-black' : 'text-zinc-700 hover:bg-[#F7F8FA]'}`}
-                                    >
-                                        Administración
-                                    </button>
+                                <button
+                                    onClick={() => { setIsUserMenuOpen(false); router.push('/admin/administracion') }}
+                                    className={`w-full text-left px-6 py-3 text-[10px] font-black uppercase transition-colors ${pathname === '/admin/administracion' ? 'bg-[#F7F8FA] text-black' : 'text-zinc-700 hover:bg-[#F7F8FA]'}`}
+                                >
+                                    Administración
+                                </button>
+                            )}
 
-                                    <button
-                                        onClick={() => { setIsUserMenuOpen(false); router.push('/admin/preferencias') }}
-                                        className={`w-full text-left px-6 py-3 text-[10px] font-black uppercase transition-colors ${pathname === '/admin/preferencias' ? 'bg-[#F7F8FA] text-black' : 'text-zinc-700 hover:bg-[#F7F8FA]'}`}
-                                    >
-                                        Preferencias
-                                    </button>
-                                </>
+                            {/* PREFERENCIAS: Admin Principal Y Administrador */}
+                            {(userRole === 'Administrador Principal' || userRole === 'Administrador') && (
+                                <button
+                                    onClick={() => { setIsUserMenuOpen(false); router.push('/admin/preferencias') }}
+                                    className={`w-full text-left px-6 py-3 text-[10px] font-black uppercase transition-colors ${pathname === '/admin/preferencias' ? 'bg-[#F7F8FA] text-black' : 'text-zinc-700 hover:bg-[#F7F8FA]'}`}
+                                >
+                                    Preferencias
+                                </button>
                             )}
 
                             <div className="h-[1px] bg-gray-50 mx-6 my-2"></div>
