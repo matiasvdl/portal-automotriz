@@ -14,13 +14,13 @@ export default function MiCuentaPage() {
     const [mounted, setMounted] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    // Lista de todo el equipo
     const [team, setTeam] = useState<any[]>([])
 
     const [profileData, setProfileData] = useState({
         _id: '',
         firstName: '',
         lastName: '',
+        username: '',
         email: '',
         phone: '',
         role: 'Administrador',
@@ -30,10 +30,8 @@ export default function MiCuentaPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [passwords, setPasswords] = useState({ new: '', confirm: '' })
 
-    // 1. CARGA DE DATOS Y EQUIPO
     const loadAllData = async () => {
         if (session?.user?.email) {
-            // Traemos a todos los adminProfiles de Sanity
             const allUsers = await client.fetch(
                 `*[_type == "adminProfile"] | order(_createdAt asc)`,
                 {},
@@ -41,13 +39,13 @@ export default function MiCuentaPage() {
             )
             setTeam(allUsers)
 
-            // Por defecto, cargamos el perfil del usuario logueado (Tú)
             const myData = allUsers.find((u: any) => u.email === session.user?.email)
             if (myData && profileData._id === '') {
                 setProfileData({
                     _id: myData._id,
                     firstName: myData.firstName || '',
                     lastName: myData.lastName || '',
+                    username: myData.username || '',
                     email: myData.email || '',
                     phone: myData.phone || '',
                     role: myData.role || 'Administrador',
@@ -71,19 +69,19 @@ export default function MiCuentaPage() {
         }
     }
 
-    // Función para seleccionar a quién editar (Tú o Catalina)
     const selectUserToEdit = (user: any) => {
         setProfileData({
             _id: user._id,
             firstName: user.firstName || '',
             lastName: user.lastName || '',
+            username: user.username || '',
             email: user.email || '',
             phone: user.phone || '',
             role: user.role || 'Administrador',
             image: user.image || null
         })
         setImagePreview(user.image ? urlFor(user.image).url() : null)
-        setPasswords({ new: '', confirm: '' }) // Limpiamos campos de clave al cambiar de usuario
+        setPasswords({ new: '', confirm: '' })
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
@@ -95,6 +93,7 @@ export default function MiCuentaPage() {
             let updateData: any = {
                 firstName: profileData.firstName,
                 lastName: profileData.lastName,
+                username: profileData.username,
                 email: profileData.email,
                 phone: profileData.phone,
                 role: profileData.role,
@@ -124,7 +123,7 @@ export default function MiCuentaPage() {
             if (result.success) {
                 alert('Cambios guardados con éxito');
                 setPasswords({ new: '', confirm: '' });
-                loadAllData(); // Recargamos la lista para ver los cambios
+                loadAllData();
             } else {
                 alert('Error: ' + result.error);
             }
@@ -187,7 +186,7 @@ export default function MiCuentaPage() {
                             <h4 className="text-[9px] font-black uppercase tracking-widest mb-5 opacity-50 leading-none">Estado de Conexión</h4>
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                                    <span className="text-[9px] font-bold uppercase text-zinc-400">Sistema</span>
+                                    <span className="text-[9px] font-bold uppercase text-zinc-500">Sistema</span>
                                     <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0 rounded">En Línea</span>
                                 </div>
                                 <div className="flex justify-between items-center">
@@ -206,6 +205,7 @@ export default function MiCuentaPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <AccountInput label="Nombre" value={profileData.firstName} onChange={(v) => setProfileData({ ...profileData, firstName: v })} />
                                 <AccountInput label="Apellido" value={profileData.lastName} onChange={(v) => setProfileData({ ...profileData, lastName: v })} />
+                                <AccountInput label="Nombre de Usuario" value={profileData.username} onChange={(v) => setProfileData({ ...profileData, username: v })} />
                                 <AccountInput label="Correo Electrónico" value={profileData.email} onChange={(v) => setProfileData({ ...profileData, email: v })} />
                                 <AccountInput label="Teléfono de Contacto" value={profileData.phone} onChange={(v) => setProfileData({ ...profileData, phone: v })} />
                             </div>

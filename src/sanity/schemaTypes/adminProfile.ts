@@ -6,6 +6,7 @@ export default {
     fields: [
         { name: 'firstName', title: 'Nombre', type: 'string' },
         { name: 'lastName', title: 'Apellido', type: 'string' },
+        { name: 'username', title: 'Nombre de Usuario', type: 'string' },
         { name: 'email', title: 'Correo electrónico', type: 'string' },
         { name: 'phone', title: 'Teléfono', type: 'string' },
         {
@@ -15,7 +16,8 @@ export default {
             options: {
                 list: [
                     { title: 'Administrador Principal', value: 'Administrador Principal' },
-                    { title: 'Administrador', value: 'Administrador' }
+                    { title: 'Administrador', value: 'Administrador' },
+                    { title: 'Ventas', value: 'Ventas' } // Añadido aquí
                 ],
                 layout: 'dropdown'
             },

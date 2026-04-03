@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
 import { useSession } from "next-auth/react"
+import { useRouter } from 'next/navigation'
 import bcrypt from "bcryptjs"
 import { updateAdminProfile } from '@/app/actions/updateProfile'
 
 export default function AdministracionPage() {
-    const { data: session } = useSession()
+    const { data: session, status } = useSession()
+    const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [mounted, setMounted] = useState(false)
     const [team, setTeam] = useState<any[]>([])
@@ -32,8 +34,17 @@ export default function AdministracionPage() {
 
     useEffect(() => {
         setMounted(true)
-        loadTeam()
-    }, [])
+
+        // SEGURIDAD: Redirección si no es Administrador Principal
+        if (status === 'authenticated') {
+            const userRole = (session?.user as any)?.role
+            if (userRole !== 'Administrador Principal') {
+                router.push('/admin/dashboard')
+            } else {
+                loadTeam()
+            }
+        }
+    }, [session, status, router])
 
     const prepareNew = () => {
         setUserData({ _id: 'new', firstName: '', lastName: '', username: '', email: '', phone: '', role: 'Ventas', password: '', confirmPassword: '' })
@@ -92,7 +103,7 @@ export default function AdministracionPage() {
         }
     }
 
-    if (!mounted) return null
+    if (!mounted || status === 'loading') return null
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-40 text-left no-scrollbar">
@@ -143,6 +154,27 @@ export default function AdministracionPage() {
                                 ))}
                             </div>
                         </div>
+
+                        {/* BLOQUE DE INFORMACIÓN: JERARQUÍA */}
+                        <div className="bg-zinc-900 rounded-[30px] p-7 text-white space-y-7">
+                            <div>
+                                <h4 className="text-[9px] font-black uppercase tracking-widest mb-6 opacity-90 leading-none ">Jerarquía de Permisos</h4>
+                                <div className="space-y-6">
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black uppercase text-white tracking-widest leading-none">1. Admin Principal</p>
+                                        <p className="text-[8px] font-bold text-zinc-400 leading-tight uppercase tracking-tighter">Acceso total. Único perfil con gestión de equipo y roles.</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black uppercase text-white tracking-widest leading-none">2. Administrador</p>
+                                        <p className="text-[8px] font-bold text-zinc-400 leading-tight uppercase tracking-tighter">Gestión operativa. Sin acceso a panel administrativo.</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black uppercase text-white tracking-widest leading-none">3. Ventas</p>
+                                        <p className="text-[8px] font-bold text-zinc-400 leading-tight uppercase tracking-tighter">Acceso limitado. Solo visualización e inventario de stock.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* COLUMNA IZQUIERDA: FORMULARIO */}
@@ -157,7 +189,7 @@ export default function AdministracionPage() {
                                 <AccountInput label="Usuario" value={userData.username} onChange={(v) => setUserData({ ...userData, username: v })} />
 
                                 <div className="flex flex-col space-y-3 text-left leading-none">
-                                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none">Cargo / Rol</label>
+                                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none italic">Cargo / Rol</label>
                                     <select
                                         value={userData.role}
                                         onChange={(e) => setUserData({ ...userData, role: e.target.value })}
@@ -180,22 +212,22 @@ export default function AdministracionPage() {
                                 <AccountInput label="Contraseña" type="password" value={userData.password} onChange={(v) => setUserData({ ...userData, password: v })} />
                                 <AccountInput label="Confirmar" type="password" value={userData.confirmPassword} onChange={(v) => setUserData({ ...userData, confirmPassword: v })} />
                             </div>
-                            <p className="text-[8px] font-bold text-zinc-400 uppercase italic tracking-[0.1em]">
+                            <p className="text-[8px] font-bold text-zinc-300 uppercase italic tracking-[0.1em]">
                                 El cambio de contraseña es instantáneo tras guardar.
                             </p>
                         </div>
                     </div>
 
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     )
 }
 
 function AccountInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string; }) {
     return (
         <div className="flex flex-col space-y-3 text-left leading-none">
-            <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none">{label}</label>
+            <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none italic">{label}</label>
             <input
                 type={type}
                 value={value}

@@ -10,42 +10,40 @@ export const authOptions: NextAuthOptions = {
         CredentialsProvider({
             name: "VDL Admin",
             credentials: {
-                username: { label: "Usuario", type: "text" },
+                username: { label: "Usuario o Email", type: "text" },
                 password: { label: "Contraseña", type: "password" }
             },
             async authorize(credentials) {
                 if (!credentials?.username || !credentials?.password) return null
 
                 try {
-                    // Normalizamos el correo (minúsculas y sin espacios)
-                    const searchEmail = credentials.username.toLowerCase().trim()
+                    // Normalizamos el identificador (puede ser username o email)
+                    const identifier = credentials.username.toLowerCase().trim()
 
-                    // Buscamos al usuario en Sanity por su correo
+                    // Buscamos al usuario en Sanity por email O por username
                     const user = await client.fetch(
-                        `*[_type == "adminProfile" && lower(email) == $email][0]`,
-                        { email: searchEmail },
+                        `*[_type == "adminProfile" && (lower(email) == $identifier || lower(username) == $identifier)][0]`,
+                        { identifier },
                         { cache: 'no-store' }
                     )
 
-                    // Verificamos si el usuario existe y si tiene una contraseña guardada
                     if (user && user.password) {
-                        // Comparamos la clave ingresada con el hash guardado en Sanity
                         const isPasswordCorrect = await bcrypt.compare(
                             credentials.password,
                             user.password
                         )
 
                         if (isPasswordCorrect) {
-                            // Si es correcto, devolvemos los datos para crear la sesión
                             return {
                                 id: user._id,
                                 name: `${user.firstName} ${user.lastName}`,
                                 email: user.email,
+                                role: user.role,
+                                username: user.username
                             }
                         }
                     }
 
-                    // Si falla, esperamos 3 segundos para prevenir ataques de fuerza bruta
                     await delay(3000)
                     return null
 
@@ -62,18 +60,22 @@ export const authOptions: NextAuthOptions = {
     },
     session: {
         strategy: "jwt",
-        maxAge: 24 * 60 * 60, // Sesión activa por 24 horas
+        maxAge: 24 * 60 * 60,
     },
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
+                token.role = (user as any).role;
+                token.username = (user as any).username;
             }
             return token;
         },
         async session({ session, token }) {
             if (session.user) {
                 (session.user as any).id = token.id;
+                (session.user as any).role = token.role;
+                (session.user as any).username = token.username;
             }
             return session;
         }

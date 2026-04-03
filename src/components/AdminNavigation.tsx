@@ -33,6 +33,7 @@ export default function AdminNavigation() {
 
     const displayName = userData?.firstName || session?.user?.name?.split(' ')[0] || 'Admin'
     const initial = displayName.charAt(0).toUpperCase()
+    const userRole = (session?.user as any)?.role
 
     return (
         <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center no-scrollbar">
@@ -78,13 +79,15 @@ export default function AdminNavigation() {
                                 Mi cuenta
                             </button>
 
-                            {/* ADMINISTRACIÓN */}
-                            <button
-                                onClick={() => { setIsUserMenuOpen(false); router.push('/admin/administracion') }}
-                                className={`w-full text-left px-6 py-3 text-[10px] font-black uppercase transition-colors ${pathname === '/admin/administracion' ? 'bg-[#F7F8FA] text-black' : 'text-zinc-700 hover:bg-[#F7F8FA]'}`}
-                            >
-                                Administración
-                            </button>
+                            {/* ADMINISTRACIÓN - FILTRADO POR ROL */}
+                            {userRole === 'Administrador Principal' && (
+                                <button
+                                    onClick={() => { setIsUserMenuOpen(false); router.push('/admin/administracion') }}
+                                    className={`w-full text-left px-6 py-3 text-[10px] font-black uppercase transition-colors ${pathname === '/admin/administracion' ? 'bg-[#F7F8FA] text-black' : 'text-zinc-700 hover:bg-[#F7F8FA]'}`}
+                                >
+                                    Administración
+                                </button>
+                            )}
 
                             <button
                                 onClick={() => { setIsUserMenuOpen(false); router.push('/admin/preferencias') }}
