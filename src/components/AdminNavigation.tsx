@@ -33,6 +33,8 @@ export default function AdminNavigation() {
 
     const displayName = userData?.firstName || session?.user?.name?.split(' ')[0] || 'Admin'
     const initial = displayName.charAt(0).toUpperCase()
+
+    // Extraemos el rol de la sesión para la seguridad visual
     const userRole = (session?.user as any)?.role
 
     return (
@@ -79,7 +81,7 @@ export default function AdminNavigation() {
                                 Mi cuenta
                             </button>
 
-                            {/* ADMINISTRACIÓN - FILTRADO POR ROL */}
+                            {/* ADMINISTRACIÓN - FILTRADO ESTRICTO POR ROL */}
                             {userRole === 'Administrador Principal' && (
                                 <button
                                     onClick={() => { setIsUserMenuOpen(false); router.push('/admin/administracion') }}

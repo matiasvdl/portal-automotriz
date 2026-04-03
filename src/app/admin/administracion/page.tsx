@@ -189,7 +189,7 @@ export default function AdministracionPage() {
                                 <AccountInput label="Usuario" value={userData.username} onChange={(v) => setUserData({ ...userData, username: v })} />
 
                                 <div className="flex flex-col space-y-3 text-left leading-none">
-                                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none italic">Cargo / Rol</label>
+                                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none">Cargo / Rol</label>
                                     <select
                                         value={userData.role}
                                         onChange={(e) => setUserData({ ...userData, role: e.target.value })}
@@ -212,7 +212,7 @@ export default function AdministracionPage() {
                                 <AccountInput label="Contraseña" type="password" value={userData.password} onChange={(v) => setUserData({ ...userData, password: v })} />
                                 <AccountInput label="Confirmar" type="password" value={userData.confirmPassword} onChange={(v) => setUserData({ ...userData, confirmPassword: v })} />
                             </div>
-                            <p className="text-[8px] font-bold text-zinc-300 uppercase italic tracking-[0.1em]">
+                            <p className="text-[8px] font-bold text-zinc-400 uppercase italic tracking-[0.1em]">
                                 El cambio de contraseña es instantáneo tras guardar.
                             </p>
                         </div>
@@ -227,7 +227,7 @@ export default function AdministracionPage() {
 function AccountInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string; }) {
     return (
         <div className="flex flex-col space-y-3 text-left leading-none">
-            <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none italic">{label}</label>
+            <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none">{label}</label>
             <input
                 type={type}
                 value={value}
