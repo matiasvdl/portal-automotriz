@@ -40,7 +40,10 @@ export default function PreferenciasPage() {
         isJoined: false,
         minDepositPercent: 30,
         minIncome: 500000,
-        minWorkExperience: ''
+        minWorkExperience: '',
+        heroTitle: 'TRANSFORMA TU CAMINO',
+        heroPosition: 'center',
+        heroImage: null as any // CAMPO AGREGADO
     })
 
     const [contact, setContact] = useState({
@@ -100,7 +103,10 @@ export default function PreferenciasPage() {
                         isJoined: appearance.isJoined || false,
                         minDepositPercent: appearance.minDepositPercent || 30,
                         minIncome: appearance.minIncome || 500000,
-                        minWorkExperience: appearance.minWorkExperience || ''
+                        minWorkExperience: appearance.minWorkExperience || '',
+                        heroTitle: appearance.heroTitle || 'TRANSFORMA TU CAMINO',
+                        heroPosition: appearance.heroPosition || 'center',
+                        heroImage: appearance.heroImage || null // CARGA DE IMAGEN AGREGADA
                     })
                 }
 
@@ -140,6 +146,17 @@ export default function PreferenciasPage() {
     const handleSaveGlobal = async () => {
         setIsSubmitting(true)
         try {
+            let heroImageRef = appearanceData.heroImage;
+
+            // LOGICA PARA SUBIR LA FOTO DEL BANNER SI ES UN ARCHIVO NUEVO
+            if (appearanceData.heroImage instanceof File) {
+                const asset = await writeClient.assets.upload('image', appearanceData.heroImage)
+                heroImageRef = {
+                    _type: 'image',
+                    asset: { _type: "reference", _ref: asset._id }
+                }
+            }
+
             if (settings._id) {
                 await writeClient.patch(settings._id).set({
                     siteName: settings.siteName,
@@ -159,7 +176,10 @@ export default function PreferenciasPage() {
                 isJoined: appearanceData.isJoined,
                 minDepositPercent: Number(appearanceData.minDepositPercent),
                 minIncome: Number(appearanceData.minIncome),
-                minWorkExperience: appearanceData.minWorkExperience
+                minWorkExperience: appearanceData.minWorkExperience,
+                heroTitle: appearanceData.heroTitle,
+                heroPosition: appearanceData.heroPosition,
+                heroImage: heroImageRef // GUARDADO DE IMAGEN AGREGADO
             })
             await writeClient.createOrReplace({
                 _id: contact._id, _type: 'contactSettings',
@@ -321,7 +341,7 @@ export default function PreferenciasPage() {
                         {activeTab === 'personalizacion' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
 
-                                {/* BLOQUE 1: IDENTIDAD DE TEXTO (AJUSTES COMPACTOS) */}
+                                {/* BLOQUE 1: IDENTIDAD DE TEXTO */}
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <div>
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Configuración de Texto</h3>
@@ -334,9 +354,7 @@ export default function PreferenciasPage() {
                                         />
                                     </div>
 
-                                    {/* CAJA GRIS COMPACTA PARA LOS INTERRUPTORES */}
                                     <div className="bg-[#F7F8FA] rounded-2xl p-1 border border-gray-100/50">
-                                        {/* Fila 1: Estilo Dividido */}
                                         <div className="flex items-center justify-between p-4 px-4">
                                             <div className="leading-tight">
                                                 <p className="text-[9px] font-black uppercase text-zinc-800">Estilo Dividido</p>
@@ -349,10 +367,7 @@ export default function PreferenciasPage() {
                                                 <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${appearanceData.splitText ? 'left-6' : 'left-1'}`}></div>
                                             </button>
                                         </div>
-
                                         <div className="h-[1px] bg-gray-200/50 mx-4"></div>
-
-                                        {/* Fila 2: Eliminar Espacios */}
                                         <div className="flex items-center justify-between p-3 px-4">
                                             <div className="leading-tight">
                                                 <p className="text-[9px] font-black uppercase text-zinc-800">Eliminar Espacios</p>
@@ -368,7 +383,7 @@ export default function PreferenciasPage() {
                                     </div>
                                 </div>
 
-                                {/* BLOQUE 2: LOGO DE IMAGEN (SUBIDA DE ARCHIVO) */}
+                                {/* BLOQUE 2: LOGO DE IMAGEN */}
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Logo de Empresa</h3>
 
@@ -404,6 +419,70 @@ export default function PreferenciasPage() {
                                     </div>
                                 </div>
 
+                                {/* BLOQUE 3: BANNER PRINCIPAL (NUEVA SECCION INTEGRADA) */}
+                                <div className="lg:col-span-2 bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <div className="border-b border-gray-50 pb-5">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">Banner Principal</h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Subida de Imagen Banner */}
+                                        <div className="space-y-3 text-left">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none block">Imagen del Banner</label>
+                                            <div className="flex items-center gap-5">
+                                                <div className="relative w-40 h-24 bg-[#F7F8FA] border border-gray-100 rounded-2xl overflow-hidden flex items-center justify-center">
+                                                    {appearanceData.heroImage ? (
+                                                        <img
+                                                            src={appearanceData.heroImage instanceof File
+                                                                ? URL.createObjectURL(appearanceData.heroImage)
+                                                                : `https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${appearanceData.heroImage.asset._ref.replace('image-', '').replace('-png', '.png').replace('-jpg', '.jpg').replace('-webp', '.webp')}`}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <span className="text-[8px] font-black text-zinc-300 uppercase">Sin imagen</span>
+                                                    )}
+                                                </div>
+                                                <label className="cursor-pointer bg-black text-white text-[8px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl transition-all active:scale-95">
+                                                    Cambiar Foto
+                                                    <input
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0]
+                                                            if (file) setAppearanceData({ ...appearanceData, heroImage: file })
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        {/* Selector de Posicion */}
+                                        <div className="space-y-3 text-left">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none block">Alineación de Fotografía</label>
+                                            <select
+                                                value={appearanceData.heroPosition}
+                                                onChange={(e) => setAppearanceData({ ...appearanceData, heroPosition: e.target.value })}
+                                                className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[10px] font-black uppercase outline-none cursor-pointer appearance-none"
+                                            >
+                                                <option value="top">Superior (Enfocar arriba)</option>
+                                                <option value="center">Centro (Recomendado)</option>
+                                                <option value="bottom">Inferior (Enfocar abajo)</option>
+                                            </select>
+                                            <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Úsalo si el auto queda cortado en la pantalla</p>
+                                        </div>
+
+                                        {/* Input Titulo Banner */}
+                                        <div className="md:col-span-2">
+                                            <PrefInput
+                                                label="Título del Banner"
+                                                placeholder="EJ: TRANSFORMA TU CAMINO"
+                                                value={appearanceData.heroTitle}
+                                                onChange={(v) => setAppearanceData(prev => ({ ...prev, heroTitle: v }))}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -450,8 +529,6 @@ export default function PreferenciasPage() {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Configuración de Crédito</h3>
-
-                                    {/* PIE MÍNIMO - Cambiado max-w-md por w-full */}
                                     <div className="w-full bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
                                         <div className="leading-tight text-left">
                                             <p className="text-[9px] font-black uppercase text-zinc-800">Pie Mínimo Automático</p>
@@ -467,8 +544,6 @@ export default function PreferenciasPage() {
                                             <span className="text-[10px] font-black text-zinc-400">%</span>
                                         </div>
                                     </div>
-
-                                    {/* RENTA MÍNIMA - Cambiado max-w-md por w-full */}
                                     <div className="w-full bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
                                         <div className="leading-tight text-left">
                                             <p className="text-[9px] font-black uppercase text-zinc-800">Renta Mínima Requerida</p>
@@ -484,8 +559,6 @@ export default function PreferenciasPage() {
                                             />
                                         </div>
                                     </div>
-
-                                    {/* ANTIGÜEDAD LABORAL - Cambiado max-w-md por w-full */}
                                     <div className="w-full bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 space-y-3">
                                         <div className="leading-tight text-left">
                                             <p className="text-[9px] font-black uppercase text-zinc-800">Texto de Antigüedad</p>

@@ -24,8 +24,8 @@ export function SettingsProvider({
     appearance = {}   // Valor por defecto si no viene nada
 }: {
     children: ReactNode,
-    config?: any,     // <-- El "?" es la clave aquí
-    appearance?: any  // <-- El "?" es la clave aquí
+    config?: any,     //
+    appearance?: any  //
 }) {
 
     const value = {
