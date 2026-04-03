@@ -42,16 +42,13 @@ export default function Footer({ config }: { config?: any }) {
 
             {/* 4. Barra final: Copyright y acceso secreto */}
             <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] gap-4">
-                <p className="text-center md:text-left select-none">
-                    © 2026 VDL Group SPA | TODOS LOS DERECHOS RESERVADOS
-                    {/* LA PUERTA SECRETA: El punto final es el link, sin cursor de mano */}
-                    <Link
-                        href="/admin/ingresar"
-                        className="cursor-default hover:text-gray-500 transition-none ml-0.5"
-                    >
-                        .
-                    </Link>
-                </p>
+                <Link
+                    href="/admin/ingresar"
+                    className="cursor-default hover:text-gray-500 transition-none ml-0.5"
+                >
+                    <p className="text-center md:text-left select-none">
+                        © 2026 VDL Group SPA | TODOS LOS DERECHOS RESERVADOS
+                    </p>                    </Link>
 
                 {/* Texto dinámico: Oculto en móvil (hidden) y visible en PC (md:block) */}
                 <p className="hidden md:block italic font-medium text-white uppercase tracking-normal">
