@@ -53,8 +53,6 @@ export default function PreferenciasPage() {
     const [contact, setContact] = useState({
         _id: 'global-contact',
         whatsapp: '',
-        instagram: '',
-        facebook: '',
         email: '',
         address: ''
     })
@@ -131,8 +129,6 @@ export default function PreferenciasPage() {
                     setContact({
                         _id: contactData._id || 'global-contact',
                         whatsapp: contactData.whatsapp || '',
-                        instagram: contactData.instagram || '',
-                        facebook: contactData.facebook || '',
                         email: contactData.email || '',
                         address: contactData.address || ''
                     })
@@ -198,8 +194,6 @@ export default function PreferenciasPage() {
             })
             await writeClient.createOrReplace({
                 _id: contact._id, _type: 'contactSettings',
-                whatsapp: contact.whatsapp, instagram: contact.instagram,
-                facebook: contact.facebook, email: contact.email, address: contact.address
             })
             alert('Ajustes guardados correctamente')
         } catch (error) {
@@ -595,8 +589,6 @@ export default function PreferenciasPage() {
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Redes y WhatsApp</h3>
                                     <PrefInput label="WhatsApp de Ventas" placeholder="56937084907" value={contact.whatsapp} onChange={(v) => setContact(prev => ({ ...prev, whatsapp: v }))} />
-                                    <PrefInput label="Instagram (URL)" placeholder="https://instagram.com/..." value={contact.instagram} onChange={(v) => setContact(prev => ({ ...prev, instagram: v }))} />
-                                    <PrefInput label="Facebook (URL)" placeholder="https://facebook.com/..." value={contact.facebook} onChange={(v) => setContact(prev => ({ ...prev, facebook: v }))} />
                                 </div>
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Información Corporativa</h3>

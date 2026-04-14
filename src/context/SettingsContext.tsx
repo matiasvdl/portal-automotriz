@@ -16,8 +16,6 @@ interface SiteConfig {
     lastLegalUpdate?: string
     maintenanceMode?: boolean
     whatsapp?: string
-    instagram?: string
-    facebook?: string
     email?: string
     address?: string
     navMenu?: Array<{ title: string; path: string }>
@@ -44,8 +42,6 @@ interface AppearanceSettings {
 interface SettingsContextType {
     contact: {
         whatsapp: string
-        instagram?: string
-        facebook?: string
         email: string
         address: string
     }
@@ -72,8 +68,6 @@ export function SettingsProvider({
     const value = {
         contact: {
             whatsapp: config?.whatsapp || '',
-            instagram: config?.instagram || '',
-            facebook: config?.facebook || '',
             email: config?.email || '',
             address: config?.address || ''
         },
