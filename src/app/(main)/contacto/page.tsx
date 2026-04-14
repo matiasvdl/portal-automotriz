@@ -26,15 +26,19 @@ export default function ContactoPage() {
         setIsSubmitting(true)
 
         try {
+            // INTEGRACIÓN CON RESEND
             const result = await sendContactEmail(formData)
+
             if (result.success) {
                 setSubmitted(true)
                 setFormData({ name: '', email: '', phone: '', subject: 'Consulta General', message: '' })
             } else {
-                alert("Error al enviar. Inténtalo de nuevo.")
+                // Si Resend devuelve un error (ej. API Key inválida)
+                alert("Error al enviar el correo. Por favor, intenta de nuevo.")
             }
         } catch (error) {
             console.error(error)
+            alert("Ocurrió un error en el servidor.")
         } finally {
             setIsSubmitting(false)
         }
@@ -132,7 +136,7 @@ export default function ContactoPage() {
                                                 disabled={isSubmitting}
                                                 className="w-full bg-black text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50"
                                             >
-                                                {isSubmitting ? 'Procesando...' : 'Enviar mensaje profesional'}
+                                                {isSubmitting ? 'Procesando...' : 'Enviar mensaje'}
                                             </button>
                                         </div>
                                     </div>
@@ -144,8 +148,8 @@ export default function ContactoPage() {
                     {/* BARRA LATERAL (5 COL) */}
                     <aside className="lg:col-span-5 order-1 lg:order-2 space-y-6">
                         <div className="bg-white rounded-[25px] p-8 border border-gray-100 shadow-none">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-8 italic leading-none">
-                                Información Corporativa
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-8 leading-none text-left">
+                                Información de Contacto
                             </h4>
 
                             <div className="space-y-8">

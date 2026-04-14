@@ -2,7 +2,7 @@ import { type SchemaTypeDefinition } from 'sanity' // Importamos el tipo SchemaT
 import { car } from './car' // Importamos el esquema de car
 import { review } from './review' // Importamos los esquemas de car y review
 import { siteConfig } from './siteConfig' // Agregamos el nuevo esquema de configuración del sitio
-import { contact } from './contact' // Agregamos el nuevo esquema de contacto
+import { contact } from './contact' // Agregamos el nuevo esquema de configuración de contacto
 import { faq } from './faq' // Agregamos el nuevo esquema de FAQ
 import { appearance } from './appearance' // Importamos el nuevo esquema de apariencia
 import adminProfile from './adminProfile' // Importamos el nuevo esquema de adminProfile
