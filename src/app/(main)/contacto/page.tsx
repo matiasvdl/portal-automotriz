@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { useSettings } from '@/context/SettingsContext'
+import { sendContactEmail } from '@/app/actions/contact' // Acción que creamos antes
 
 export default function ContactoPage() {
     const { contact } = useSettings()
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitted, setSubmitted] = useState(false)
 
     const [formData, setFormData] = useState({
         name: '',
@@ -19,29 +21,30 @@ export default function ContactoPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value })
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsSubmitting(true)
 
-        // Sincronización con WhatsApp de Sanity
-        const destinationNumber = contact.whatsapp || "569XXXXXXXX"
-
-        const text = `Hola VDL Motors! Tengo una consulta.%0A` +
-            `- Nombre: ${formData.name}%0A` +
-            `- Correo: ${formData.email}%0A` +
-            `- Asunto: ${formData.subject}%0A` +
-            `- Mensaje: ${formData.message}`
-
-        window.open(`https://wa.me/${destinationNumber}?text=${text}`, '_blank')
-
-        setTimeout(() => setIsSubmitting(false), 2000)
+        try {
+            const result = await sendContactEmail(formData)
+            if (result.success) {
+                setSubmitted(true)
+                setFormData({ name: '', email: '', phone: '', subject: 'Consulta General', message: '' })
+            } else {
+                alert("Error al enviar. Inténtalo de nuevo.")
+            }
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] antialiased text-black font-sans">
-
             <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
 
+                {/* HEADER IDÉNTICO AL ORIGINAL */}
                 <header className="mb-8 text-left">
                     <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">
                         Atención personalizada
@@ -53,74 +56,92 @@ export default function ContactoPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                    {/* FORMULARIO DE MENSAJE */}
-                    <form onSubmit={handleSubmit} className="lg:col-span-7 order-2 lg:order-1">
-                        <div className="bg-white rounded-[25px] border border-gray-100 p-7 space-y-9 shadow-none">
+                    {/* COLUMNA FORMULARIO (7 COL) */}
+                    <div className="lg:col-span-7 order-2 lg:order-1">
+                        <form onSubmit={handleSubmit} className="bg-white rounded-[25px] border border-gray-100 p-7 space-y-9 shadow-none">
 
                             <section className="space-y-6">
                                 <h3 className="text-[9px] font-black uppercase tracking-widest text-black border-b border-gray-50 pb-4 leading-none">
                                     01. Envíanos un mensaje
                                 </h3>
-                                <div className="space-y-5">
-                                    <InputField
-                                        label="Nombre Completo"
-                                        name="name"
-                                        placeholder="Tu nombre"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                    />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <InputField
-                                            label="Correo Electrónico"
-                                            name="email"
-                                            type="email"
-                                            placeholder="ejemplo@correo.com"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                        />
-                                        <InputField
-                                            label="Teléfono"
-                                            name="phone"
-                                            placeholder="+56 9"
-                                            value={formData.phone}
-                                            onChange={handleChange}
-                                        />
+
+                                {submitted ? (
+                                    <div className="py-12 text-center animate-in fade-in zoom-in duration-500">
+                                        <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                                        </div>
+                                        <h4 className="font-black uppercase text-[11px] mb-1">¡Mensaje enviado con éxito!</h4>
+                                        <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mb-6">Te responderemos a la brevedad.</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSubmitted(false)}
+                                            className="text-[9px] font-black underline uppercase tracking-widest hover:text-zinc-500 transition-colors"
+                                        >
+                                            Enviar otro mensaje
+                                        </button>
                                     </div>
-                                    <FormSelect
-                                        label="Asunto"
-                                        name="subject"
-                                        value={formData.subject}
-                                        options={['Consulta General', 'Post-Venta', 'Financiamiento', 'Agendar Visita']}
-                                        onChange={handleChange}
-                                    />
-                                    <div className="flex flex-col space-y-2.5 text-left leading-none">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1">Mensaje</label>
-                                        <textarea
-                                            name="message"
-                                            value={formData.message}
+                                ) : (
+                                    <div className="space-y-5">
+                                        <InputField
+                                            label="Nombre Completo"
+                                            name="name"
+                                            placeholder="Tu nombre"
+                                            value={formData.name}
                                             onChange={handleChange}
-                                            placeholder="Escribe tu mensaje aquí..."
-                                            rows={5}
-                                            required
-                                            className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed transition-all placeholder:text-zinc-300"
                                         />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <InputField
+                                                label="Correo Electrónico"
+                                                name="email"
+                                                type="email"
+                                                placeholder="ejemplo@correo.com"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                            />
+                                            <InputField
+                                                label="Teléfono"
+                                                name="phone"
+                                                placeholder="+56 9"
+                                                value={formData.phone}
+                                                onChange={handleChange}
+                                            />
+                                        </div>
+                                        <FormSelect
+                                            label="Asunto"
+                                            name="subject"
+                                            value={formData.subject}
+                                            options={['Consulta General', 'Post-Venta', 'Financiamiento', 'Agendar Visita']}
+                                            onChange={handleChange}
+                                        />
+                                        <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1">Mensaje</label>
+                                            <textarea
+                                                name="message"
+                                                value={formData.message}
+                                                onChange={handleChange}
+                                                placeholder="Escribe tu mensaje aquí..."
+                                                rows={5}
+                                                required
+                                                className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed transition-all placeholder:text-zinc-300"
+                                            />
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <button
+                                                type="submit"
+                                                disabled={isSubmitting}
+                                                className="w-full bg-black text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50"
+                                            >
+                                                {isSubmitting ? 'Procesando...' : 'Enviar mensaje profesional'}
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </section>
+                        </form>
+                    </div>
 
-                            <div className="pt-2">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full bg-black text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50"
-                                >
-                                    {isSubmitting ? 'Enviando...' : 'Enviar consulta a WhatsApp'}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-
-                    {/* BARRA LATERAL: INFORMACIÓN SINCRONIZADA */}
+                    {/* BARRA LATERAL (5 COL) */}
                     <aside className="lg:col-span-5 order-1 lg:order-2 space-y-6">
                         <div className="bg-white rounded-[25px] p-8 border border-gray-100 shadow-none">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-8 italic leading-none">
@@ -131,7 +152,6 @@ export default function ContactoPage() {
                                 <ContactDetail
                                     label="Ubicación"
                                     value={contact.address || "Dirección no disponible"}
-                                    /* AGREGAMOS EL FRAGMENTO <> </> AQUÍ */
                                     icon={<>
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -150,13 +170,14 @@ export default function ContactoPage() {
                             </div>
                         </div>
                     </aside>
+
                 </div>
             </main>
         </div>
     )
 }
 
-/** COMPONENTES AUXILIARES **/
+/** COMPONENTES AUXILIARES RESTAURADOS AL 100% **/
 
 function InputField({ label, name, placeholder, value, onChange, type = "text" }: any) {
     return (

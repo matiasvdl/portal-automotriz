@@ -2,24 +2,31 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSettings } from '@/context/SettingsContext'
+import Image from 'next/image' // Componente para optimización de imágenes
+import { useSettings } from '@/context/SettingsContext' // Acceso a la configuración global
+import { urlFor } from '@/sanity/lib/image' // Ayudante oficial de Sanity para URLs de imágenes
 
 export default function Navigation({ config: propConfig }: { config?: any }) {
+    // Obtenemos los datos de apariencia y configuración desde el contexto
     const { appearance, config: contextConfig } = useSettings();
-    const [isMenuOpen, setIsMenuOpen] = useState(false); // Estado para el menú móvil
+    const [isMenuOpen, setIsMenuOpen] = useState(false); // Estado para controlar el menú móvil
     const config = propConfig || contextConfig;
 
+    // Definición de los elementos del menú de navegación
     const menuItems = config?.navMenu?.length > 0 ? config.navMenu : [
         { title: 'Comprar un auto', path: '/catalogo' },
         { title: 'Vende tu auto', path: '/vender' },
         { title: 'Financiamiento', path: '/financiamiento' }
     ];
 
-    // --- LÓGICA DE MARCA (MANTENIDA IDÉNTICA) ---
-    const brandName = appearance?.brandName?.trim() || "VDL GROUP";
-    const splitText = appearance?.splitText !== false;
-    const isJoined = appearance?.isJoined === true;
+    // --- LÓGICA DE MARCA ---
+    const brandName = appearance?.brandName?.trim() || "VDL MOTORS"; // Nombre de marca con respaldo
+    const splitText = appearance?.splitText !== false; // Opción para dividir el texto del logo
+    const isJoined = appearance?.isJoined === true; // Opción para unir las palabras del logo
 
+    /**
+     * Renderiza el logo en formato texto basándose en la configuración de Sanity.
+     */
     const renderTextLogo = () => {
         const displayName = isJoined ? brandName.replace(/\s+/g, '') : brandName;
         if (!splitText) return <span>{displayName}</span>;
@@ -39,9 +46,8 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
         );
     };
 
-    const logoUrl = appearance?.logo?.asset?._ref
-        ? `https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${appearance.logo.asset._ref.replace('image-', '').replace('-png', '.png').replace('-jpg', '.jpg').replace('-webp', '.webp')}`
-        : null;
+    // Obtención segura de la URL del logo utilizando urlFor
+    const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null;
 
     return (
         <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none text-left font-sans">
@@ -51,7 +57,15 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
                 <div className="flex items-center">
                     <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
                         {logoUrl ? (
-                            <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />
+                            <div className="relative h-8 w-32"> {/* Contenedor para control de tamaño del logo optimizado */}
+                                <Image
+                                    src={logoUrl}
+                                    alt={brandName}
+                                    fill
+                                    className="object-contain object-left"
+                                    priority // Carga prioritaria para evitar parpadeos en el logo
+                                />
+                            </div>
                         ) : (
                             renderTextLogo()
                         )}
@@ -69,15 +83,15 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
 
                 {/* BOTÓN CONTACTO Y HAMBURGUESA */}
                 <div className="flex items-center gap-4">
-                    {/* Botón Ingresar: Se oculta en móvil para no saturar, se verá dentro del menú desplegable */}
                     <Link href="/contacto" className="hidden lg:block bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3.5 rounded-full hover:bg-zinc-800 transition-all active:scale-95">
                         Contacto
                     </Link>
 
-                    {/* BOTÓN HAMBURGUESA (SÓLO MÓVIL) */}
+                    {/* Botón hamburguesa para dispositivos móviles */}
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         className="lg:hidden p-2 text-black transition-all"
+                        aria-label="Abrir menú"
                     >
                         {isMenuOpen ? (
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>

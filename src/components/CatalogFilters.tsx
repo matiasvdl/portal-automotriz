@@ -5,6 +5,7 @@ import CarCard from './CarCard'
 
 /**
  * Componente interno: Item de Filtro (Acordeón)
+ * Mantiene el estilo original: text-[13px], text-zinc-700, zinc-400
  */
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false)
@@ -40,12 +41,17 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
     const [sortBy, setSortBy] = useState('relevancia')
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false)
 
+    // Estado con TODAS las opciones que extraemos de Sanity
     const [filters, setFilters] = useState({
+        category: '',
         make: '',
         model: '',
         body: '',
         transmission: '',
         fuel: '',
+        drivetrain: '',
+        color: '',
+        location: '',
         minYear: '',
         maxYear: '',
         minPrice: '',
@@ -55,23 +61,28 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
     })
 
     const hasActiveFilters = useMemo(() => {
-        return Object.values(filters).some(value => value !== '');
-    }, [filters]);
+        return Object.values(filters).some(value => value !== '') || search !== '';
+    }, [filters, search]);
 
+    // Lógica de filtrado con todos los campos nuevos
     const filteredCars = useMemo(() => {
         let result = initialCars.filter(car => {
             const matchSearch = (car.make + ' ' + car.model).toLowerCase().includes(search.toLowerCase())
+            const matchCat = filters.category === '' || car.category === filters.category
             const matchMake = filters.make === '' || car.make === filters.make
             const matchModel = filters.model === '' || car.model === filters.model
             const matchBody = filters.body === '' || car.body === filters.body
             const matchTrans = filters.transmission === '' || car.transmission === filters.transmission
             const matchFuel = filters.fuel === '' || car.fuel === filters.fuel
+            const matchDrive = filters.drivetrain === '' || car.drivetrain === filters.drivetrain
+            const matchColor = filters.color === '' || car.color === filters.color
+            const matchLoc = filters.location === '' || car.location === filters.location
 
             const carYear = car.year
             const matchMinYear = filters.minYear === '' || carYear >= parseInt(filters.minYear)
             const matchMaxYear = filters.maxYear === '' || carYear <= parseInt(filters.maxYear)
 
-            const price = car.listPrice // Usamos listPrice que es el campo real de Sanity
+            const price = car.listPrice
             const matchMinPrice = filters.minPrice === '' || price >= parseInt(filters.minPrice)
             const matchMaxPrice = filters.maxPrice === '' || price <= parseInt(filters.maxPrice)
 
@@ -79,25 +90,38 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
             const matchMinKm = filters.minKm === '' || km >= parseInt(filters.minKm)
             const matchMaxKm = filters.maxKm === '' || km <= parseInt(filters.maxKm)
 
-            return matchSearch && matchMake && matchModel && matchBody && matchTrans &&
-                matchFuel && matchMinYear && matchMaxYear && matchMinPrice &&
+            return matchSearch && matchCat && matchMake && matchModel && matchBody && matchTrans &&
+                matchFuel && matchDrive && matchColor && matchLoc &&
+                matchMinYear && matchMaxYear && matchMinPrice &&
                 matchMaxPrice && matchMinKm && matchMaxKm
         })
 
-        if (sortBy === 'precio-menor') result.sort((a, b) => (a.financedPrice || a.listPrice) - (b.financedPrice || b.listPrice))
-        if (sortBy === 'precio-mayor') result.sort((a, b) => (b.financedPrice || b.listPrice) - (a.financedPrice || a.listPrice))
+        if (sortBy === 'precio-menor') result.sort((a, b) => (a.listPrice) - (b.listPrice))
+        if (sortBy === 'precio-mayor') result.sort((a, b) => (b.listPrice) - (a.listPrice))
         if (sortBy === 'año-nuevo') result.sort((a, b) => b.year - a.year)
         if (sortBy === 'km-menor') result.sort((a, b) => a.mileage - b.mileage)
 
         return result
     }, [search, filters, sortBy, initialCars])
 
-    const uniqueMakes = [...new Set(initialCars.map(c => c.make))].sort()
-    const uniqueModels = [...new Set(initialCars.filter(c => filters.make === '' || c.make === filters.make).map(c => c.model))].sort()
+    // Generación dinámica de opciones desde los datos de Sanity
+    const getUnique = (field: string) => [...new Set(initialCars.map(c => c[field]))].filter(Boolean).sort()
+
+    const uniqueCategories = useMemo(() => getUnique('category'), [initialCars])
+    const uniqueMakes = useMemo(() => getUnique('make'), [initialCars])
+    const uniqueModels = useMemo(() =>
+        [...new Set(initialCars.filter(c => filters.make === '' || c.make === filters.make).map(c => c.model))].filter(Boolean).sort()
+        , [initialCars, filters.make])
+    const uniqueBodies = useMemo(() => getUnique('body'), [initialCars])
+    const uniqueFuels = useMemo(() => getUnique('fuel'), [initialCars])
+    const uniqueTrans = useMemo(() => getUnique('transmission'), [initialCars])
+    const uniqueDrives = useMemo(() => getUnique('drivetrain'), [initialCars])
+    const uniqueColors = useMemo(() => getUnique('color'), [initialCars])
+    const uniqueLocs = useMemo(() => getUnique('location'), [initialCars])
 
     return (
         <div className="bg-white min-h-screen text-left">
-            {/* 1. BUSCADOR SUPERIOR - Ajustado a max-w-7xl */}
+            {/* 1. BUSCADOR SUPERIOR */}
             <div className="border-b border-gray-100 bg-white sticky top-20 z-30 leading-none">
                 <div className="max-w-7xl mx-auto px-6 py-5">
                     <div className="relative">
@@ -116,9 +140,9 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                 </div>
             </div>
 
-            {/* 2. CONTENIDO PRINCIPAL - Ajustado a max-w-7xl y gap-12 */}
+            {/* 2. CONTENIDO PRINCIPAL */}
             <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row gap-12 leading-none">
-                
+
                 {/* BARRA LATERAL */}
                 <aside className="w-full md:w-64 shrink-0">
                     <div className="sticky top-44 space-y-2">
@@ -126,7 +150,10 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                             <h2 className="text-[12px] font-black text-black uppercase tracking-tight">Filtros</h2>
                             {hasActiveFilters && (
                                 <button
-                                    onClick={() => setFilters({ make: '', model: '', body: '', transmission: '', fuel: '', minYear: '', maxYear: '', minPrice: '', maxPrice: '', minKm: '', maxKm: '' })}
+                                    onClick={() => {
+                                        setFilters({ category: '', make: '', model: '', body: '', transmission: '', fuel: '', drivetrain: '', color: '', location: '', minYear: '', maxYear: '', minPrice: '', maxPrice: '', minKm: '', maxKm: '' });
+                                        setSearch('');
+                                    }}
                                     className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-800 transition-colors"
                                 >
                                     LIMPIAR
@@ -135,6 +162,18 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                         </div>
 
                         <div className="flex flex-col">
+                            {/* CATEGORÍA */}
+                            <FilterSection title="Categoría">
+                                <div className="space-y-1">
+                                    {uniqueCategories.map(cat => (
+                                        <button key={cat} onClick={() => setFilters({ ...filters, category: filters.category === cat ? '' : cat })} className={`w-full text-left py-1.5 px-1 text-[13px] transition-colors ${filters.category === cat ? 'font-bold text-black' : 'text-zinc-500 hover:text-black'}`}>
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            </FilterSection>
+
+                            {/* PRECIO */}
                             <FilterSection title="Precio">
                                 <div className="flex gap-2 items-center px-1">
                                     <input type="number" placeholder="Desde" className="w-full border border-gray-200 rounded p-2 text-xs outline-none" onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })} />
@@ -143,16 +182,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                                 </div>
                             </FilterSection>
 
-                            <FilterSection title="Carrocería">
-                                <div className="grid grid-cols-2 gap-2">
-                                    {['SUV', 'Sedan', 'Hatchback', 'Camioneta'].map(body => (
-                                        <button key={body} onClick={() => setFilters({ ...filters, body: filters.body === body ? '' : body })} className={`text-[10px] font-bold py-2.5 border rounded-md uppercase tracking-tight transition-all ${filters.body === body ? 'bg-black text-white border-black' : 'bg-white text-zinc-500 border-gray-100 hover:border-zinc-300'}`}>
-                                            {body}
-                                        </button>
-                                    ))}
-                                </div>
-                            </FilterSection>
-
+                            {/* MARCA */}
                             <FilterSection title="Marca">
                                 <div className="space-y-1 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                                     {uniqueMakes.map(make => (
@@ -163,6 +193,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                                 </div>
                             </FilterSection>
 
+                            {/* MODELO */}
                             <FilterSection title="Modelo">
                                 <div className="space-y-1 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                                     {uniqueModels.map(model => (
@@ -173,6 +204,51 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                                 </div>
                             </FilterSection>
 
+                            {/* CARROCERÍA */}
+                            <FilterSection title="Carrocería">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {uniqueBodies.map(body => (
+                                        <button key={body} onClick={() => setFilters({ ...filters, body: filters.body === body ? '' : body })} className={`text-[10px] font-bold py-2.5 border rounded-md uppercase tracking-tight transition-all ${filters.body === body ? 'bg-black text-white border-black' : 'bg-white text-zinc-500 border-gray-100 hover:border-zinc-300'}`}>
+                                            {body}
+                                        </button>
+                                    ))}
+                                </div>
+                            </FilterSection>
+
+                            {/* TRACCIÓN */}
+                            <FilterSection title="Tracción">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {uniqueDrives.map(d => (
+                                        <button key={d} onClick={() => setFilters({ ...filters, drivetrain: filters.drivetrain === d ? '' : d })} className={`text-[10px] font-bold py-2.5 border rounded-md uppercase tracking-tight transition-all ${filters.drivetrain === d ? 'bg-black text-white border-black' : 'bg-white text-zinc-500 border-gray-100 hover:border-zinc-300'}`}>
+                                            {d}
+                                        </button>
+                                    ))}
+                                </div>
+                            </FilterSection>
+
+                            {/* COLOR */}
+                            <FilterSection title="Color">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {uniqueColors.map(c => (
+                                        <button key={c} onClick={() => setFilters({ ...filters, color: filters.color === c ? '' : c })} className={`text-[10px] font-bold py-2.5 border rounded-md uppercase tracking-tight transition-all ${filters.color === c ? 'bg-black text-white border-black' : 'bg-white text-zinc-500 border-gray-100 hover:border-zinc-300'}`}>
+                                            {c}
+                                        </button>
+                                    ))}
+                                </div>
+                            </FilterSection>
+
+                            {/* UBICACIÓN */}
+                            <FilterSection title="Ubicación">
+                                <div className="space-y-1">
+                                    {uniqueLocs.map(loc => (
+                                        <button key={loc} onClick={() => setFilters({ ...filters, location: filters.location === loc ? '' : loc })} className={`w-full text-left py-1.5 px-1 text-[13px] transition-colors ${filters.location === loc ? 'font-bold text-black' : 'text-zinc-500 hover:text-black'}`}>
+                                            {loc}
+                                        </button>
+                                    ))}
+                                </div>
+                            </FilterSection>
+
+                            {/* AÑO */}
                             <FilterSection title="Año">
                                 <div className="flex gap-2 items-center px-1">
                                     <input type="number" placeholder="Min" className="w-full border border-gray-200 rounded p-2 text-xs outline-none" onChange={(e) => setFilters({ ...filters, minYear: e.target.value })} />
@@ -181,6 +257,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                                 </div>
                             </FilterSection>
 
+                            {/* KILOMETRAJE */}
                             <FilterSection title="Kilometraje">
                                 <div className="flex gap-2 items-center px-1">
                                     <input type="number" placeholder="Min" className="w-full border border-gray-200 rounded p-2 text-xs outline-none" onChange={(e) => setFilters({ ...filters, minKm: e.target.value })} />
@@ -189,9 +266,10 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                                 </div>
                             </FilterSection>
 
+                            {/* TRANSMISIÓN */}
                             <FilterSection title="Transmisión">
                                 <div className="grid grid-cols-2 gap-2">
-                                    {['Automatica', 'Manual'].map(t => (
+                                    {uniqueTrans.map(t => (
                                         <button key={t} onClick={() => setFilters({ ...filters, transmission: filters.transmission === t ? '' : t })} className={`text-[10px] font-bold py-2.5 border rounded-md uppercase tracking-tight transition-all ${filters.transmission === t ? 'bg-black text-white border-black' : 'bg-white text-zinc-500 border-gray-100 hover:border-zinc-300'}`}>
                                             {t}
                                         </button>
@@ -199,9 +277,10 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                                 </div>
                             </FilterSection>
 
+                            {/* COMBUSTIBLE */}
                             <FilterSection title="Combustible">
                                 <div className="grid grid-cols-2 gap-2">
-                                    {['Bencina', 'Diesel', 'Hibrido', 'Electrico'].map(f => (
+                                    {uniqueFuels.map(f => (
                                         <button key={f} onClick={() => setFilters({ ...filters, fuel: filters.fuel === f ? '' : f })} className={`text-[10px] font-bold py-2.5 border rounded-md uppercase tracking-tight transition-all ${filters.fuel === f ? 'bg-black text-white border-black' : 'bg-white text-zinc-400 border-gray-100 hover:border-zinc-300'}`}>
                                             {f}
                                         </button>
@@ -212,7 +291,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                     </div>
                 </aside>
 
-                {/* 3. GRILLA DE RESULTADOS - Ajustado gap-8 e igualado tamaño visual */}
+                {/* 3. GRILLA DE RESULTADOS */}
                 <div className="flex-grow">
                     <div className="mb-6 flex justify-between items-center border-b border-gray-50 pb-5 leading-none">
                         <h3 className="text-zinc-800 text-[11px] font-black uppercase tracking-widest leading-none">
@@ -252,7 +331,6 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                         </div>
                     </div>
 
-                    {/* GRID DE 3 COLUMNAS: Al tener filtros al lado, 3 columnas equivalen al tamaño de 4 en el inicio */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredCars.map((car) => (
                             <CarCard key={car._id} car={car} />

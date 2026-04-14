@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { useState, useEffect, use } from 'react'
 import FeaturesAccordion from '@/components/FeaturesAccordion'
 import CarCard from '@/components/CarCard'
+import { useSettings } from '@/context/SettingsContext' // Importamos el contexto
 
 // Funciones de obtención de datos (GROQ)
 async function getCar(slug: string) {
@@ -38,10 +39,9 @@ async function getRecommendedCars(currentId: string) {
     return await client.fetch(query, { currentId })
 }
 
-const WHATSAPP_NUMBER = "569XXXXXXXX" // Reemplaza por el número real (sin +, solo código país + teléfono)
-
 export default function CarDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const resolvedParams = use(params)
+    const { contact } = useSettings() // Extraemos los datos de contacto dinámicos
 
     // ESTADOS
     const [car, setCar] = useState<any>(null)
@@ -53,8 +53,14 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
 
     // Filtro para la inspección visual interna
     const [detailFilter, setDetailFilter] = useState<'all' | 'exterior' | 'interior'>('all')
-    // Control para abrir/cerrar la sección de detalles (acordeón manual)
     const [showDetails, setShowDetails] = useState(true)
+
+    // Lógica de WhatsApp dinámica
+    // Limpiamos el número de cualquier '+' o espacios para que el link no falle
+    const cleanNumber = contact.whatsapp.replace(/\D/g, '')
+    const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
+        `Hola VDL Motors, me interesa el ${car?.make} ${car?.model} (${car?.year}) que vi en la web. ¿Sigue disponible?`
+    )}`
 
     const currentImageIndex = modalImages.findIndex((img) => img === selectedImage);
     const showPreviousImage = () => {
@@ -76,26 +82,17 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
 
     useEffect(() => {
         if (!isModalOpen) return;
-
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                setIsModalOpen(false);
-            }
-            if (e.key === 'ArrowRight') {
-                showNextImage();
-            }
-            if (e.key === 'ArrowLeft') {
-                showPreviousImage();
-            }
+            if (e.key === 'Escape') setIsModalOpen(false);
+            if (e.key === 'ArrowRight') showNextImage();
+            if (e.key === 'ArrowLeft') showPreviousImage();
         };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isModalOpen, selectedImage, modalImages]);
 
     useEffect(() => {
         if (!resolvedParams?.slug) return
-
         async function loadData() {
             try {
                 const carData = await getCar(resolvedParams.slug)
@@ -164,7 +161,6 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                         </div>
 
                         <div className="pt-8 border-t border-gray-100">
-                            {/* DESCRIPCIÓN */}
                             <div className="mb-8">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-black mb-4">Descripción</h3>
                                 <p className="text-sm font-medium leading-relaxed text-zinc-600 max-w-2xl">
@@ -172,7 +168,6 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                                 </p>
                             </div>
 
-                            {/* SECCIÓN CARACTERÍSTICAS */}
                             <div className="pt-6 border-t border-gray-100">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-black mb-2">Características</h3>
 
@@ -216,7 +211,6 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                         </div>
                     </div>
 
-                    {/* COLUMNA DERECHA */}
                     <aside className="lg:col-span-4">
                         <div className="sticky top-32 space-y-4">
                             <div className="bg-[#FBFBFB] rounded-2xl p-6 border border-gray-100 flex justify-between items-center shadow-sm">
@@ -232,10 +226,10 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                                     <DataRow label="Marca" value={car.make} /><DataRow label="Modelo" value={car.model} /><DataRow label="Año" value={car.year} /><DataRow label="Kilometraje" value={`${car.mileage?.toLocaleString('es-CL')} KM`} /><DataRow label="Combustible" value={car.fuel} /><DataRow label="Transmisión" value={car.transmission} /><DataRow label="Ubicación" value="Santiago" />
                                 </div>
                                 <div className="text-center">
-                                    {/* TEXTO COTIZACIÓN AGREGADO AQUÍ */}
                                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">Cotiza en línea vía WhatsApp</p>
+                                    {/* BOTÓN DINÁMICO MEJORADO */}
                                     <a
-                                        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola, me interesa el ${car.make} ${car.model} (${car.year}) que vi en el catálogo.`)}`}
+                                        href={whatsappUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="block w-full bg-black text-white text-center font-bold text-[10px] uppercase tracking-[0.15em] py-4 rounded-xl hover:bg-zinc-800 transition-all shadow-sm"
@@ -248,7 +242,6 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                     </aside>
                 </div>
 
-                {/* RECOMENDADOS */}
                 <section className="mt-5 pt-6 border-t border-gray-100">
                     <div className="mb-6">
                         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">Más opciones</p>
@@ -270,7 +263,6 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                     <button
                         className="absolute left-6 top-1/2 z-50 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white hover:bg-black/60 focus:outline-none"
                         onClick={(e) => { e.stopPropagation(); showPreviousImage(); }}
-                        aria-label="Anterior imagen"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -280,7 +272,6 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                     <button
                         className="absolute right-6 top-1/2 z-50 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white hover:bg-black/60 focus:outline-none"
                         onClick={(e) => { e.stopPropagation(); showNextImage(); }}
-                        aria-label="Siguiente imagen"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
