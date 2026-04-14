@@ -15,10 +15,7 @@ interface SiteConfig {
     hero?: {
         title?: string;
         subtitle?: string;
-        image?: {
-            url?: string;
-            asset?: any;
-        };
+        image?: any;
         position?: string;
     };
     termsAndConditions?: string
