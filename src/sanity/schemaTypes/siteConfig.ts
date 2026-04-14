@@ -44,7 +44,8 @@ export const siteConfig = {
                                     { title: 'Vende tu Auto', value: '/vender' },
                                     { title: 'Financiamiento', value: '/financiamiento' },
                                     { title: 'Preguntas Frecuentes', value: '/faq' },
-                                    { title: 'Contacto', value: '/contacto' },
+                                    { title: 'Terminos y Condiciones', value: '/terminos' },
+                                    { title: 'Contacto', value: '/contacto' }
                                 ]
                             }
                         }
@@ -68,9 +69,12 @@ export const siteConfig = {
                             options: {
                                 list: [
                                     { title: 'Inicio', value: '/' },
-                                    { title: 'Compra un auto', value: '/catalogo' },
-                                    { title: 'Preguntas frecuentes', value: '/faq' },
-                                    { title: 'Contacto', value: '/contacto' },
+                                    { title: 'Comprar un Auto', value: '/catalogo' },
+                                    { title: 'Vende tu Auto', value: '/vender' },
+                                    { title: 'Financiamiento', value: '/financiamiento' },
+                                    { title: 'Preguntas Frecuentes', value: '/faq' },
+                                    { title: 'Terminos y Condiciones', value: '/terminos' },
+                                    { title: 'Contacto', value: '/contacto' }
                                 ]
                             }
                         }

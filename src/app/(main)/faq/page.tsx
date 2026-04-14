@@ -89,7 +89,7 @@ export default function FAQPage() {
 
                             <div className="space-y-4">
                                 <a
-                                    href={`https://wa.me/${contact.whatsapp || "56937084907"}`}
+                                    href={`https://wa.me/${contact.whatsapp || "56 9 3708 4907084907"}`}
                                     target="_blank"
                                     className="block w-full bg-black text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95"
                                 >

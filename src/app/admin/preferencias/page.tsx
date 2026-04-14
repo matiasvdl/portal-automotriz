@@ -1,10 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { client, writeClient } from '@/sanity/lib/client'
+import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
+import {
+    uploadSanityImage,
+    saveGlobalPreferences,
+    createSanityDocument,
+    deleteSanityDocument,
+    updateSanityDocument
+} from '@/app/actions/preferencesActions'
 
 // --- INTERFACES ---
 interface NavItem {
@@ -143,15 +150,26 @@ export default function PreferenciasPage() {
         if (!file) return
         setIsSubmitting(true)
         try {
-            const asset = await writeClient.assets.upload('image', file)
-            setAppearanceData(prev => ({
-                ...prev,
-                logo: { _type: 'image', asset: { _type: "reference", _ref: asset._id } }
-            }))
-            alert("Imagen cargada. Recuerda guardar cambios.")
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const result = await uploadSanityImage(formData)
+
+            if (result.success && result.assetId) {
+                setAppearanceData(prev => ({
+                    ...prev,
+                    logo: { _type: 'image', asset: { _type: "reference", _ref: result.assetId } }
+                }))
+                alert("Imagen cargada con éxito. Recuerda guardar los cambios globales.")
+            } else {
+                alert("Error: El servidor no pudo procesar la imagen.")
+            }
         } catch (error) {
-            console.error(error); alert("Error al subir imagen");
-        } finally { setIsSubmitting(false) }
+            console.error("Error al subir logo:", error)
+            alert("Error al subir imagen")
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleSaveGlobal = async () => {
@@ -159,28 +177,19 @@ export default function PreferenciasPage() {
         try {
             let heroImageRef = appearanceData.heroImage;
 
-            // LOGICA PARA SUBIR LA FOTO DEL BANNER SI ES UN ARCHIVO NUEVO
+            // Subir imagen de forma segura a través del servidor
             if (appearanceData.heroImage instanceof File) {
-                const asset = await writeClient.assets.upload('image', appearanceData.heroImage)
-                heroImageRef = {
-                    _type: 'image',
-                    asset: { _type: "reference", _ref: asset._id }
+                const formData = new FormData();
+                formData.append('file', appearanceData.heroImage);
+                const result = await uploadSanityImage(formData);
+                if (result.success && result.assetId) {
+                    heroImageRef = { _type: 'image', asset: { _type: "reference", _ref: result.assetId } }
                 }
             }
 
-            if (settings._id) {
-                await writeClient.patch(settings._id).set({
-                    siteName: settings.siteName,
-                    footerDescription: settings.footerDescription,
-                    footerTagline: settings.footerTagline,
-                    navMenu: settings.navMenu,
-                    footerLinks: settings.footerLinks,
-                    maintenanceMode: settings.maintenanceMode
-                }).commit()
-            }
-            await writeClient.createOrReplace({
+            // Preparar paquete de datos
+            const appearancePayload = {
                 _id: 'appearance-settings',
-                _type: 'appearance',
                 brandName: appearanceData.brandName,
                 logo: appearanceData.logo?.asset?._ref ? appearanceData.logo : undefined,
                 splitText: appearanceData.splitText,
@@ -190,12 +199,17 @@ export default function PreferenciasPage() {
                 minWorkExperience: appearanceData.minWorkExperience,
                 heroTitle: appearanceData.heroTitle,
                 heroPosition: appearanceData.heroPosition,
-                heroImage: heroImageRef // GUARDADO DE IMAGEN AGREGADO
-            })
-            await writeClient.createOrReplace({
-                _id: contact._id, _type: 'contactSettings',
-            })
-            alert('Ajustes guardados correctamente')
+                heroImage: heroImageRef
+            };
+
+            // Llamar a la acción del servidor
+            const response = await saveGlobalPreferences(settings, appearancePayload, contact);
+
+            if (response.success) {
+                alert('Ajustes guardados correctamente')
+            } else {
+                alert('Hubo un error al guardar')
+            }
         } catch (error) {
             console.error(error); alert('Error al guardar')
         } finally { setIsSubmitting(false) }
@@ -207,13 +221,17 @@ export default function PreferenciasPage() {
         { title: 'Vende tu Auto', value: '/vender' },
         { title: 'Financiamiento', value: '/financiamiento' },
         { title: 'Preguntas Frecuentes', value: '/faq' },
+        { title: 'Terminos y Condiciones', value: '/terminos' },
         { title: 'Contacto', value: '/contacto' }
     ]
 
     const RUTAS_FOOTER: RutaOption[] = [
         { title: 'Inicio', value: '/' },
-        { title: 'Compra un auto', value: '/catalogo' },
-        { title: 'Preguntas frecuentes', value: '/faq' },
+        { title: 'Comprar un Auto', value: '/catalogo' },
+        { title: 'Vende tu Auto', value: '/vender' },
+        { title: 'Financiamiento', value: '/financiamiento' },
+        { title: 'Preguntas Frecuentes', value: '/faq' },
+        { title: 'Terminos y Condiciones', value: '/terminos' },
         { title: 'Contacto', value: '/contacto' }
     ]
 
@@ -243,17 +261,25 @@ export default function PreferenciasPage() {
         if (!newFaq.question || !newFaq.answer) return alert("Completa los campos")
         setIsSubmitting(true)
         try {
-            const result = await writeClient.create({ _type: 'faq', ...newFaq })
-            setFaqs(prev => [...prev, result])
-            setNewFaq({ question: '', answer: '', order: faqs.length + 1 })
-            alert("Pregunta agregada")
+            const result = await createSanityDocument('faq', newFaq)
+            if (result.success && result.data) {
+                setFaqs(prev => [...prev, result.data])
+                setNewFaq({ question: '', answer: '', order: faqs.length + 1 })
+                alert("Pregunta agregada")
+            } else {
+                alert("Error al agregar la pregunta")
+            }
         } finally { setIsSubmitting(false) }
     }
 
     const handleDeleteFaq = async (id: string) => {
         if (confirm("¿Eliminar esta pregunta?")) {
-            await writeClient.delete(id)
-            setFaqs(prev => prev.filter(f => f._id !== id))
+            const result = await deleteSanityDocument(id)
+            if (result.success) {
+                setFaqs(prev => prev.filter(f => f._id !== id))
+            } else {
+                alert("Error al eliminar la pregunta")
+            }
         }
     }
 
@@ -262,17 +288,25 @@ export default function PreferenciasPage() {
         if (!newReview.name || !newReview.comment) return alert("Faltan datos")
         setIsSubmitting(true)
         try {
-            const result = await writeClient.create({ _type: 'review', ...newReview })
-            setAllReviews(prev => [result, ...allReviews])
-            setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
-            alert("Reseña publicada")
+            const result = await createSanityDocument('review', newReview)
+            if (result.success && result.data) {
+                setAllReviews(prev => [result.data, ...allReviews])
+                setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
+                alert("Reseña publicada")
+            } else {
+                alert("Error al publicar la reseña")
+            }
         } finally { setIsSubmitting(false) }
     }
 
     const handleDeleteReview = async (id: string) => {
         if (confirm("¿Eliminar reseña?")) {
-            await writeClient.delete(id)
-            setAllReviews(prev => prev.filter(r => r._id !== id))
+            const result = await deleteSanityDocument(id)
+            if (result.success) {
+                setAllReviews(prev => prev.filter(r => r._id !== id))
+            } else {
+                alert("Error al eliminar la reseña")
+            }
         }
     }
 
@@ -280,10 +314,14 @@ export default function PreferenciasPage() {
         if (!editingReviewId) return
         setIsSubmitting(true)
         try {
-            await writeClient.patch(editingReviewId).set(editForm).commit()
-            setAllReviews(prev => prev.map(r => r._id === editingReviewId ? { ...r, ...editForm } : r))
-            setEditingReviewId(null)
-            alert("Cambios guardados")
+            const result = await updateSanityDocument(editingReviewId, editForm)
+            if (result.success) {
+                setAllReviews(prev => prev.map(r => r._id === editingReviewId ? { ...r, ...editForm } : r))
+                setEditingReviewId(null)
+                alert("Cambios guardados")
+            } else {
+                alert("Error al guardar cambios")
+            }
         } finally { setIsSubmitting(false) }
     }
 
@@ -569,7 +607,7 @@ export default function PreferenciasPage() {
                                     <div className="w-full bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 space-y-3">
                                         <div className="leading-tight text-left">
                                             <p className="text-[9px] font-black uppercase text-zinc-800">Texto de Antigüedad</p>
-                                            <p className="text-[7px] font-bold text-zinc-400 uppercase mt-0.5 tracking-tighter">Descripción de continuidad laboral requerida</p>
+                                            <p className="text-[7px] font-bold text-zinc-400 uppercase mt-0.5 tracking-tighter">Descripción de continuity laboral requerida</p>
                                         </div>
                                         <input
                                             type="text"
@@ -588,7 +626,7 @@ export default function PreferenciasPage() {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Redes y WhatsApp</h3>
-                                    <PrefInput label="WhatsApp de Ventas" placeholder="56937084907" value={contact.whatsapp} onChange={(v) => setContact(prev => ({ ...prev, whatsapp: v }))} />
+                                    <PrefInput label="WhatsApp de Ventas" placeholder="56 9 3708 4907084907" value={contact.whatsapp} onChange={(v) => setContact(prev => ({ ...prev, whatsapp: v }))} />
                                 </div>
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Información Corporativa</h3>

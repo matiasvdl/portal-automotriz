@@ -215,7 +215,7 @@ export default function CarDetailPage({ params }: { params: Promise<{ slug: stri
                                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">Cotiza en línea vía WhatsApp</p>
                                     {/* 3. El número ahora es dinámico desde el contexto */}
                                     <a
-                                        href={`https://wa.me/${contact.whatsapp || "56937084907"}?text=${encodeURIComponent(`Hola, me interesa el ${car.make} ${car.model} (${car.year}) que vi en el catálogo.`)}`}
+                                        href={`https://wa.me/${contact.whatsapp || "56 9 3708 4907084907"}?text=${encodeURIComponent(`Hola, me interesa el ${car.make} ${car.model} (${car.year}) que vi en el catálogo.`)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="block w-full bg-black text-white text-center font-bold text-[10px] uppercase tracking-[0.15em] py-4 rounded-xl hover:bg-zinc-800 transition-all shadow-sm"

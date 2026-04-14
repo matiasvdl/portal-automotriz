@@ -16,7 +16,7 @@ export default function LoginPage() {
     const router = useRouter()
 
     // Datos conectados a tu Sanity
-    const WHATSAPP_NUMBER = config?.whatsappNumber || "56937084907"; // Número de WhatsApp de soporte, con código de país
+    const WHATSAPP_NUMBER = config?.whatsappNumber || "56 9 3708 4907084907"; // Número de WhatsApp de soporte, con código de país
     const WHATSAPP_MESSAGE = encodeURIComponent(config?.supportMessage || "Hola, olvidé mi contraseña del Panel VDL y necesito ayuda para recuperar el acceso."); // Mensaje predefinido para el soporte
 
     useEffect(() => {

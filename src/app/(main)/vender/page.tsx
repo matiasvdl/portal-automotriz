@@ -36,7 +36,7 @@ export default function VenderAutoPage() {
         setIsSubmitting(true)
 
         // Sincronización: Usamos el número de Sanity
-        const destinationNumber = contact.whatsapp || "56937084907"
+        const destinationNumber = contact.whatsapp || "56 9 3708 4907084907"
 
         const message = `Hola VDL Motors! Me interesa vender mi auto.%0A` +
             `- Cliente: ${formData.firstName} ${formData.lastName}%0A` +
