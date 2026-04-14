@@ -97,34 +97,6 @@ export const siteConfig = {
             name: 'supportMessage',
             title: 'Mensaje de Soporte',
             type: 'string',
-        },
-        {
-            name: 'hero',
-            title: 'Banner Principal (Hero)',
-            type: 'object',
-            fields: [
-                { name: 'title', title: 'Título Principal', type: 'string' },
-                { name: 'subtitle', title: 'Subtítulo', type: 'string' },
-                {
-                    name: 'image',
-                    title: 'Imagen de Fondo',
-                    type: 'image',
-                    options: { hotspot: true }
-                },
-                {
-                    name: 'position',
-                    title: 'Posición de la Imagen',
-                    type: 'string',
-                    options: {
-                        list: [
-                            { title: 'Centro', value: 'center' },
-                            { title: 'Arriba', value: 'top' },
-                            { title: 'Abajo', value: 'bottom' },
-                        ]
-                    },
-                    initialValue: 'center'
-                }
-            ]
         }
     ]
 }

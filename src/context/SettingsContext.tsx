@@ -4,7 +4,8 @@ import { createContext, useContext, ReactNode } from 'react'
 
 /**
  * 1. Definimos la estructura de la Configuración del Sitio (siteConfig)
- * Aquí incluimos los campos legales, de navegación y de contacto.
+ * Aquí incluimos los campos legales, de navegación y de soporte.
+ * Nota: El 'hero' fue movido a AppearanceSettings.
  */
 interface SiteConfig {
     siteName?: string
@@ -12,12 +13,6 @@ interface SiteConfig {
     footerTagline?: string
     whatsappNumber?: string;
     supportMessage?: string;
-    hero?: {
-        title?: string;
-        subtitle?: string;
-        image?: any;
-        position?: string;
-    };
     termsAndConditions?: string
     lastLegalUpdate?: string
     maintenanceMode?: boolean
@@ -30,7 +25,7 @@ interface SiteConfig {
 
 /**
  * 2. Definimos la estructura de Apariencia (appearance)
- * Incluye la marca, el logo y los parámetros de financiamiento.
+ * Incluye la marca, el logo, los parámetros de financiamiento y el BANNER PRINCIPAL (hero).
  */
 interface AppearanceSettings {
     brandName?: string
@@ -40,6 +35,13 @@ interface AppearanceSettings {
     minDepositPercent?: number
     minIncome?: number
     minWorkExperience?: string
+    // --- HERO TRASLADADO AQUÍ ---
+    hero?: {
+        title?: string;
+        subtitle?: string;
+        image?: any;
+        position?: string;
+    };
 }
 
 /**
@@ -58,7 +60,7 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 /**
- * 4. El Provider ahora utiliza las interfaces definidas para validar los datos.
+ * 4. El Provider utiliza las interfaces definidas para validar los datos.
  */
 export function SettingsProvider({
     children,

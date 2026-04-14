@@ -48,5 +48,34 @@ export const appearance = defineType({
             description: 'Texto descriptivo (ej: Mínimo 1 año de continuidad)',
             initialValue: 'Mínimo 1 año de continuidad laboral.',
         }),
+        // --- NUEVO: SECCIÓN DEL BANNER ---
+        defineField({
+            name: 'hero',
+            title: 'Banner Principal (Hero)',
+            type: 'object',
+            fields: [
+                { name: 'title', title: 'Título Principal', type: 'string' },
+                { name: 'subtitle', title: 'Subtítulo', type: 'string' },
+                {
+                    name: 'image',
+                    title: 'Imagen de Fondo',
+                    type: 'image',
+                    options: { hotspot: true }
+                },
+                {
+                    name: 'position',
+                    title: 'Posición de la Imagen',
+                    type: 'string',
+                    options: {
+                        list: [
+                            { title: 'Centro', value: 'center' },
+                            { title: 'Arriba', value: 'top' },
+                            { title: 'Abajo', value: 'bottom' },
+                        ]
+                    },
+                    initialValue: 'center'
+                }
+            ]
+        })
     ],
 })

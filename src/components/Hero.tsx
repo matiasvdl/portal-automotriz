@@ -2,11 +2,13 @@
 
 import { useSettings } from '@/context/SettingsContext'
 import Image from 'next/image'
-import { urlFor } from '@/sanity/lib/image' // Importa esto para las imágenes
+import { urlFor } from '@/sanity/lib/image'
 
 export default function Hero() {
-    const { config } = useSettings()
-    const hero = config?.hero
+    // 1. AHORA EXTRAEMOS appearance EN LUGAR DE config
+    const { appearance } = useSettings()
+    // 2. BUSCAMOS EL HERO DENTRO DE appearance
+    const hero = appearance?.hero
 
     const DEFAULT_BANNER = '/images/porsche-banner.jpg'
 
