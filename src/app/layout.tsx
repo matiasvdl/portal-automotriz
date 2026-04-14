@@ -1,21 +1,17 @@
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
-import { SettingsProvider } from "@/context/SettingsContext"; // Importamos el proveedor de ajustes
+import { SettingsProvider } from "@/context/SettingsContext";
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body className="antialiased">
-        {/* El SettingsProvider envuelve todo para que incluso el Login 
-          pueda saber cuál es el número de WhatsApp de soporte.
-        */}
+      <body className="antialiased min-h-screen flex flex-col bg-[#F7F8FA]">
         <SettingsProvider>
           <AuthProvider>
-            {children}
+            {/* flex-grow hace que este contenedor ocupe todo el espacio y mande el footer al fondo */}
+            <main className="flex-grow flex flex-col">
+              {children}
+            </main>
           </AuthProvider>
         </SettingsProvider>
       </body>

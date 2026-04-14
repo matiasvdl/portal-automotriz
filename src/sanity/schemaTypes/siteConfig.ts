@@ -97,6 +97,17 @@ export const siteConfig = {
             name: 'supportMessage',
             title: 'Mensaje de Soporte',
             type: 'string',
+        },
+        {
+            name: 'termsAndConditions',
+            title: 'Términos y Condiciones',
+            type: 'text',
+            rows: 15,
+        },
+        {
+            name: 'lastLegalUpdate',
+            title: 'Última actualización legal',
+            type: 'date',
         }
     ]
 }

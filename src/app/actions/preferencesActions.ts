@@ -18,25 +18,40 @@ export async function uploadSanityImage(formData: FormData) {
 // 2. Acción para guardar toda la configuración general
 export async function saveGlobalPreferences(settings: any, appearanceData: any, contact: any) {
     try {
-        if (settings._id) {
-            await writeClient.patch(settings._id).set({
-                siteName: settings.siteName,
-                footerDescription: settings.footerDescription,
-                footerTagline: settings.footerTagline,
-                navMenu: settings.navMenu,
-                footerLinks: settings.footerLinks,
-                maintenanceMode: settings.maintenanceMode
-            }).commit()
-        }
+        // 1. Guardamos la Configuración del Sitio (siteConfig)
+        // Usamos un ID fijo 'siteConfig' para que siempre sobreescriba el mismo documento
+        await writeClient.createOrReplace({
+            _id: 'siteConfig', // ID FIJO
+            _type: 'siteConfig',
+            siteName: settings.siteName,
+            footerDescription: settings.footerDescription,
+            footerTagline: settings.footerTagline,
+            navMenu: settings.navMenu,
+            footerLinks: settings.footerLinks,
+            maintenanceMode: settings.maintenanceMode,
+            // Aquí enviamos los legales
+            termsAndConditions: settings.termsAndConditions || "",
+            lastLegalUpdate: settings.lastLegalUpdate || ""
+        })
 
-        await writeClient.createOrReplace({ _type: 'appearance', ...appearanceData })
+        // 2. Guardamos Apariencia
+        await writeClient.createOrReplace({
+            _id: 'appearance-settings', // ID FIJO
+            _type: 'appearance',
+            ...appearanceData
+        })
 
-        await writeClient.createOrReplace({ _id: contact._id, _type: 'contactSettings', ...contact })
+        // 3. Guardamos Contacto
+        await writeClient.createOrReplace({
+            _id: 'contact-settings', // ID FIJO
+            _type: 'contactSettings',
+            ...contact
+        })
 
         revalidatePath('/')
         return { success: true }
     } catch (error: any) {
-        console.error(error);
+        console.error("ERROR EN SERVIDOR:", error);
         return { success: false, error: error.message }
     }
 }

@@ -25,7 +25,7 @@ interface RutaOption {
     value: string;
 }
 
-type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas';
+type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas' | 'legales';
 
 export default function PreferenciasPage() {
     const { data: session, status } = useSession()
@@ -40,7 +40,9 @@ export default function PreferenciasPage() {
         footerTagline: '',
         navMenu: [] as NavItem[],
         footerLinks: [] as NavItem[],
-        maintenanceMode: false
+        maintenanceMode: false,
+        termsAndConditions: '',
+        lastLegalUpdate: ''
     })
 
     const [appearanceData, setAppearanceData] = useState({
@@ -111,7 +113,9 @@ export default function PreferenciasPage() {
                         footerTagline: config.footerTagline || '',
                         navMenu: config.navMenu || [],
                         footerLinks: config.footerLinks || [],
-                        maintenanceMode: config.maintenanceMode || false
+                        maintenanceMode: config.maintenanceMode || false,
+                        termsAndConditions: config.termsAndConditions || '',
+                        lastLegalUpdate: config.lastLegalUpdate || ''
                     })
                 }
 
@@ -179,7 +183,7 @@ export default function PreferenciasPage() {
         try {
             let heroImageRef = appearanceData.heroImage;
 
-            // Subir imagen de forma segura a través del servidor
+            // 1. Subir imagen de forma segura si es un archivo nuevo
             if (appearanceData.heroImage instanceof File) {
                 const formData = new FormData();
                 formData.append('file', appearanceData.heroImage);
@@ -189,7 +193,14 @@ export default function PreferenciasPage() {
                 }
             }
 
-            // Preparar paquete de datos
+            // 2. Preparamos el paquete de SETTINGS (Aquí incluimos los legales)
+            const settingsPayload = {
+                ...settings,
+                termsAndConditions: settings.termsAndConditions,
+                lastLegalUpdate: settings.lastLegalUpdate
+            };
+
+            // 3. Preparamos el paquete de APARIENCIA (Hero y Logo)
             const appearancePayload = {
                 _id: 'appearance-settings',
                 brandName: appearanceData.brandName,
@@ -207,8 +218,8 @@ export default function PreferenciasPage() {
                 }
             };
 
-            // Llamar a la acción del servidor
-            const response = await saveGlobalPreferences(settings, appearancePayload, contact);
+            // 4. Llamamos a la acción del servidor enviando los PAYLOADS
+            const response = await saveGlobalPreferences(settingsPayload, appearancePayload, contact);
 
             if (response.success) {
                 alert('Ajustes guardados correctamente')
@@ -216,8 +227,11 @@ export default function PreferenciasPage() {
                 alert('Hubo un error al guardar')
             }
         } catch (error) {
-            console.error(error); alert('Error al guardar')
-        } finally { setIsSubmitting(false) }
+            console.error("Error al guardar:", error);
+            alert('Error al guardar')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const RUTAS_NAV: RutaOption[] = [
@@ -354,13 +368,13 @@ export default function PreferenciasPage() {
                     </header>
 
                     <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
-                        {['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas'].map((tab) => (
+                        {['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'legales'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab as any)}
                                 className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
-                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : 'Reseñas'}                            </button>
+                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : tab === 'legales' ? 'Legales' : 'Reseñas'}                            </button>
                         ))}
                     </div>
 
@@ -768,6 +782,29 @@ export default function PreferenciasPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* PESTAÑA LEGALES */}
+
+                        {activeTab === 'legales' && (
+                            <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 mb-5">Contenido Legal</h3>
+                                <PrefInput
+                                    label="Fecha de Actualización"
+                                    type="date"
+                                    value={settings.lastLegalUpdate}
+                                    onChange={(v) => setSettings(prev => ({ ...prev, lastLegalUpdate: v }))}
+                                />
+                                <div className="flex flex-col space-y-2.5 text-left">
+                                    <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">Términos y Condiciones</label>
+                                    <textarea
+                                        value={settings.termsAndConditions}
+                                        onChange={(e) => setSettings(prev => ({ ...prev, termsAndConditions: e.target.value }))}
+                                        className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-medium outline-none min-h-[400px] resize-y"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                     </div>
                 </main>
             </div>

@@ -1,6 +1,7 @@
 import { client } from '@/sanity/lib/client'
 import Link from 'next/link'
 import CarCard from "@/components/CarCard"
+import { urlFor } from '@/sanity/lib/image' // Necesitamos esto para la imagen
 
 export const revalidate = 0
 
@@ -29,29 +30,42 @@ async function getData() {
       footerDescription,
       footerLinks,
       footerTagline
+    },
+    // AGREGAMOS ESTO PARA TRAER EL HERO DESDE SANITY
+    "appearance": *[_type == "appearance"][0] {
+      hero
     }
   }`
   return await client.fetch(query)
 }
 
 export default async function HomePage() {
-  const { cars, reviews } = await getData()
+  const { cars, reviews, appearance } = await getData()
+
+  // Extraemos los datos del hero
+  const hero = appearance?.hero;
+
+  // Configuramos la imagen dinámica o un fallback
+  const heroImageUrl = hero?.image?.asset
+    ? urlFor(hero.image).url()
+    : "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1920"
 
   return (
-    <div className="min-h-screen">
-      {/* 1. HERO / BANNER */}
+    <div className="flex flex-col flex-grow">
+      {/* 1. HERO / BANNER DINÁMICO */}
       <header className="relative h-[450px] bg-zinc-900 flex items-center justify-center overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1920"
-          className="absolute inset-0 w-full h-full object-cover opacity-60"
-          alt="Hero Banner"
+          src={heroImageUrl}
+          className="absolute inset-0 w-full h-full object-cover opacity-60 transition-all duration-700"
+          style={{ objectPosition: hero?.position || 'center' }}
+          alt={hero?.title || "Hero Banner"}
         />
         <div className="relative z-10 text-center text-white px-4 max-w-3xl">
           <h1 className="text-4xl font-extrabold tracking-tight mb-1 leading-tight uppercase">
-            Transforma tu camino
+            {hero?.title || 'Transforma tu camino'}
           </h1>
           <p className="text-lg font-medium opacity-80 mb-5">
-            Comprar y vender un auto nunca fue tan simple.
+            {hero?.subtitle || 'Comprar y vender un auto nunca fue tan simple.'}
           </p>
 
           <div className="bg-white p-1 rounded-xl flex max-w-xl mx-auto border border-gray-200 shadow-sm">
