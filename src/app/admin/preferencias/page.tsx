@@ -53,8 +53,9 @@ export default function PreferenciasPage() {
         minIncome: 500000,
         minWorkExperience: '',
         heroTitle: 'TRANSFORMA TU CAMINO',
+        heroSubtitle: 'Comprar y vender un auto nunca fue tan simple.',
         heroPosition: 'center',
-        heroImage: null as any // CAMPO AGREGADO
+        heroImage: null as any
     })
 
     const [contact, setContact] = useState({
@@ -124,9 +125,10 @@ export default function PreferenciasPage() {
                         minDepositPercent: appearance.minDepositPercent || 30,
                         minIncome: appearance.minIncome || 500000,
                         minWorkExperience: appearance.minWorkExperience || '',
-                        heroTitle: appearance.heroTitle || 'TRANSFORMA TU CAMINO',
-                        heroPosition: appearance.heroPosition || 'center',
-                        heroImage: appearance.heroImage || null // CARGA DE IMAGEN AGREGADA
+                        heroTitle: appearance.hero?.title || 'TRANSFORMA TU CAMINO',
+                        heroSubtitle: appearance.hero?.subtitle || 'Comprar y vender un auto nunca fue tan simple.', // <-- LÍNEA NUEVA
+                        heroPosition: appearance.hero?.position || 'center',
+                        heroImage: appearance.hero?.image || null
                     })
                 }
 
@@ -197,9 +199,12 @@ export default function PreferenciasPage() {
                 minDepositPercent: Number(appearanceData.minDepositPercent),
                 minIncome: Number(appearanceData.minIncome),
                 minWorkExperience: appearanceData.minWorkExperience,
-                heroTitle: appearanceData.heroTitle,
-                heroPosition: appearanceData.heroPosition,
-                heroImage: heroImageRef
+                hero: {
+                    title: appearanceData.heroTitle,
+                    subtitle: appearanceData.heroSubtitle,
+                    position: appearanceData.heroPosition,
+                    image: heroImageRef?.asset ? { _type: 'image', asset: heroImageRef.asset } : undefined
+                }
             };
 
             // Llamar a la acción del servidor
@@ -463,8 +468,7 @@ export default function PreferenciasPage() {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* BLOQUE 3: BANNER PRINCIPAL (NUEVA SECCION INTEGRADA) */}
+                                {/* BLOQUE 3: BANNER PRINCIPAL */}
                                 <div className="lg:col-span-2 bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <div className="border-b border-gray-50 pb-5">
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">Banner Principal</h3>
@@ -517,13 +521,19 @@ export default function PreferenciasPage() {
                                             <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Úsalo si el auto queda cortado en la pantalla</p>
                                         </div>
 
-                                        {/* Input Titulo Banner */}
-                                        <div className="md:col-span-2">
+                                        {/* Inputs Titulo y Subtitulo Banner */}
+                                        <div className="md:col-span-2 space-y-4">
                                             <PrefInput
                                                 label="Título del Banner"
                                                 placeholder="EJ: TRANSFORMA TU CAMINO"
                                                 value={appearanceData.heroTitle}
                                                 onChange={(v) => setAppearanceData(prev => ({ ...prev, heroTitle: v }))}
+                                            />
+                                            <PrefInput
+                                                label="Subtítulo del Banner"
+                                                placeholder="EJ: Comprar y vender un auto nunca fue tan simple."
+                                                value={appearanceData.heroSubtitle}
+                                                onChange={(v) => setAppearanceData(prev => ({ ...prev, heroSubtitle: v }))}
                                             />
                                         </div>
                                     </div>
