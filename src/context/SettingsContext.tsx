@@ -12,6 +12,15 @@ interface SiteConfig {
     footerTagline?: string
     whatsappNumber?: string;
     supportMessage?: string;
+    hero?: {
+        title?: string;
+        subtitle?: string;
+        image?: {
+            url?: string;
+            asset?: any;
+        };
+        position?: string;
+    };
     termsAndConditions?: string
     lastLegalUpdate?: string
     maintenanceMode?: boolean
