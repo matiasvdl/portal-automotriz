@@ -10,6 +10,8 @@ interface SiteConfig {
     siteName?: string
     footerDescription?: string
     footerTagline?: string
+    whatsappNumber?: string;
+    supportMessage?: string;
     termsAndConditions?: string
     lastLegalUpdate?: string
     maintenanceMode?: boolean

@@ -212,7 +212,6 @@ export default function PreferenciasPage() {
         { title: 'Comprar un Auto', value: '/catalogo' },
         { title: 'Vende tu Auto', value: '/vender' },
         { title: 'Financiamiento', value: '/financiamiento' },
-        { title: 'Sedes', value: '/sedes' },
         { title: 'Preguntas Frecuentes', value: '/faq' },
         { title: 'Contacto', value: '/contacto' }
     ]
@@ -220,7 +219,6 @@ export default function PreferenciasPage() {
     const RUTAS_FOOTER: RutaOption[] = [
         { title: 'Inicio', value: '/' },
         { title: 'Compra un auto', value: '/catalogo' },
-        { title: 'Sedes', value: '/sedes' },
         { title: 'Preguntas frecuentes', value: '/faq' },
         { title: 'Contacto', value: '/contacto' }
     ]
@@ -596,7 +594,7 @@ export default function PreferenciasPage() {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Redes y WhatsApp</h3>
-                                    <PrefInput label="WhatsApp de Ventas" placeholder="56912345678" value={contact.whatsapp} onChange={(v) => setContact(prev => ({ ...prev, whatsapp: v }))} />
+                                    <PrefInput label="WhatsApp de Ventas" placeholder="56937084907" value={contact.whatsapp} onChange={(v) => setContact(prev => ({ ...prev, whatsapp: v }))} />
                                     <PrefInput label="Instagram (URL)" placeholder="https://instagram.com/..." value={contact.instagram} onChange={(v) => setContact(prev => ({ ...prev, instagram: v }))} />
                                     <PrefInput label="Facebook (URL)" placeholder="https://facebook.com/..." value={contact.facebook} onChange={(v) => setContact(prev => ({ ...prev, facebook: v }))} />
                                 </div>

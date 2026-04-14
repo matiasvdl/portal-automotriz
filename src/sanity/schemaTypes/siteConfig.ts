@@ -1,4 +1,4 @@
-// sanity/schemaTypes/siteConfig.ts
+// src/sanity/schemaTypes/siteConfig.ts
 
 export const siteConfig = {
     name: 'siteConfig',
@@ -43,7 +43,6 @@ export const siteConfig = {
                                     { title: 'Comprar un Auto', value: '/catalogo' },
                                     { title: 'Vende tu Auto', value: '/vender' },
                                     { title: 'Financiamiento', value: '/financiamiento' },
-                                    { title: 'Sedes', value: '/sedes' },
                                     { title: 'Preguntas Frecuentes', value: '/faq' },
                                     { title: 'Contacto', value: '/contacto' },
                                 ]
@@ -70,7 +69,6 @@ export const siteConfig = {
                                 list: [
                                     { title: 'Inicio', value: '/' },
                                     { title: 'Compra un auto', value: '/catalogo' },
-                                    { title: 'Sedes', value: '/sedes' },
                                     { title: 'Preguntas frecuentes', value: '/faq' },
                                     { title: 'Contacto', value: '/contacto' },
                                 ]
@@ -85,6 +83,16 @@ export const siteConfig = {
             title: 'Frase final del Footer',
             type: 'string',
             description: 'Ejemplo: TRANSFORMA TU CAMINO'
+        },
+        {
+            name: 'whatsappNumber',
+            title: 'Número de WhatsApp (Soporte Admin)',
+            type: 'string',
+        },
+        {
+            name: 'supportMessage',
+            title: 'Mensaje de Soporte',
+            type: 'string',
         }
     ]
 }
