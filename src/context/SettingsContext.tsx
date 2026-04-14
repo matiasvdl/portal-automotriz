@@ -44,8 +44,8 @@ interface AppearanceSettings {
 interface SettingsContextType {
     contact: {
         whatsapp: string
-        instagram: string
-        facebook: string
+        instagram?: string
+        facebook?: string
         email: string
         address: string
     }

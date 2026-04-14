@@ -1,14 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useSettings } from '@/context/SettingsContext' // Importamos el contexto
+import { useSettings } from '@/context/SettingsContext'
 
 export default function Footer({ config: propConfig }: { config?: any }) {
-    // 1. Obtenemos la apariencia y la configuración del contexto
     const { appearance, config: contextConfig } = useSettings();
     const config = propConfig || contextConfig;
 
-    // --- LÓGICA DE MARCA DINÁMICA ---
     const brandName = appearance?.brandName?.trim() || "VDL MOTORS";
     const splitText = appearance?.splitText !== false;
     const isJoined = appearance?.isJoined === true;
@@ -36,7 +34,7 @@ export default function Footer({ config: propConfig }: { config?: any }) {
         <footer className="bg-black text-white pt-16 pb-8 border-t border-white/5">
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-16 mb-12 text-left">
 
-                {/* 1. Logo dinámico y descripción */}
+                {/* 1. Logo y descripción */}
                 <div className="md:col-span-4 space-y-6">
                     <div className="space-y-4">
                         <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase text-white block">
@@ -58,7 +56,7 @@ export default function Footer({ config: propConfig }: { config?: any }) {
                     ))}
                 </div>
 
-                {/* 3. Enlaces Columna 2 + Selector de País */}
+                {/* 3. Enlaces Columna 2 */}
                 <div className="md:col-span-3 space-y-4 text-sm font-medium text-gray-400">
                     {config?.footerLinks?.slice(3).map((link: any, i: number) => (
                         <Link key={i} href={link.path || '#'} className="block hover:text-white transition-colors">
@@ -72,12 +70,9 @@ export default function Footer({ config: propConfig }: { config?: any }) {
                 </div>
             </div>
 
-            {/* 4. Barra final: Copyright dinámico */}
+            {/* 4. Barra final */}
             <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] gap-4">
-                <Link
-                    href="/admin/ingresar"
-                    className="cursor-default hover:text-gray-500 transition-none ml-0.5"
-                >
+                <Link href="/admin/ingresar" className="cursor-default hover:text-gray-500 transition-none ml-0.5">
                     <p className="text-center md:text-left select-none">
                         © 2026 {config?.siteName || brandName} | TODOS LOS DERECHOS RESERVADOS
                     </p>
