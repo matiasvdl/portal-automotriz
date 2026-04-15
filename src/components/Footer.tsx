@@ -53,7 +53,7 @@ export default function Footer({ config: propConfig }: { config?: any }) {
                                     <img
                                         src={logoUrl}
                                         alt={brandName}
-                                        className="w-full h-auto object-contain brightness-0 invert"
+                                        className="w-full h-auto object-contain object-left"
                                     />
                                 </div>
                             ) : (
