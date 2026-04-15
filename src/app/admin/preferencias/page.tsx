@@ -25,7 +25,8 @@ interface RutaOption {
     value: string;
 }
 
-type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas' | 'legales';
+// Añadimos 'seo' a los tipos de pestañas
+type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas' | 'legales' | 'seo';
 
 export default function PreferenciasPage() {
     const { data: session, status } = useSession()
@@ -42,7 +43,17 @@ export default function PreferenciasPage() {
         footerLinks: [] as NavItem[],
         maintenanceMode: false,
         termsAndConditions: '',
-        lastLegalUpdate: ''
+        lastLegalUpdate: '',
+        // BLOQUE SEO: Campos para Google
+        seoDescriptions: {
+            home: '',
+            catalogo: '',
+            vender: '',
+            financiamiento: '',
+            contacto: '',
+            faq: '',
+            terminos: ''
+        }
     })
 
     const [appearanceData, setAppearanceData] = useState({
@@ -82,11 +93,10 @@ export default function PreferenciasPage() {
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
 
-    // --- EFECTO DE SEGURIDAD: Bloqueo de acceso por Rol ---
+    // --- EFECTO DE SEGURIDAD ---
     useEffect(() => {
         if (status === 'authenticated') {
             const userRole = (session?.user as any)?.role
-            // Si NO es Admin Principal Y NO es Administrador, lo expulsamos
             if (userRole !== 'Administrador Principal' && userRole !== 'Administrador') {
                 router.push('/admin/dashboard')
             }
@@ -115,7 +125,11 @@ export default function PreferenciasPage() {
                         footerLinks: config.footerLinks || [],
                         maintenanceMode: config.maintenanceMode || false,
                         termsAndConditions: config.termsAndConditions || '',
-                        lastLegalUpdate: config.lastLegalUpdate || ''
+                        lastLegalUpdate: config.lastLegalUpdate || '',
+                        // Sincronizamos las descripciones SEO
+                        seoDescriptions: config.seoDescriptions || {
+                            home: '', catalogo: '', vender: '', financiamiento: '', contacto: '', faq: '', terminos: ''
+                        }
                     })
                 }
 
@@ -130,7 +144,7 @@ export default function PreferenciasPage() {
                         minIncome: appearance.minIncome || 500000,
                         minWorkExperience: appearance.minWorkExperience || '',
                         heroTitle: appearance.hero?.title || 'TRANSFORMA TU CAMINO',
-                        heroSubtitle: appearance.hero?.subtitle || 'Comprar y vender un auto nunca fue tan simple.', // <-- LÍNEA NUEVA
+                        heroSubtitle: appearance.hero?.subtitle || 'Comprar y vender un auto nunca fue tan simple.',
                         heroPosition: appearance.hero?.position || 'center',
                         heroImage: appearance.hero?.image || null
                     })
@@ -158,9 +172,7 @@ export default function PreferenciasPage() {
         try {
             const formData = new FormData()
             formData.append('file', file)
-
             const result = await uploadSanityImage(formData)
-
             if (result.success && result.assetId) {
                 setAppearanceData(prev => ({
                     ...prev,
@@ -182,8 +194,6 @@ export default function PreferenciasPage() {
         setIsSubmitting(true)
         try {
             let heroImageRef = appearanceData.heroImage;
-
-            // 1. Subir imagen de forma segura si es un archivo nuevo
             if (appearanceData.heroImage instanceof File) {
                 const formData = new FormData();
                 formData.append('file', appearanceData.heroImage);
@@ -193,14 +203,8 @@ export default function PreferenciasPage() {
                 }
             }
 
-            // 2. Preparamos el paquete de SETTINGS (Aquí incluimos los legales)
-            const settingsPayload = {
-                ...settings,
-                termsAndConditions: settings.termsAndConditions,
-                lastLegalUpdate: settings.lastLegalUpdate
-            };
+            const settingsPayload = { ...settings };
 
-            // 3. Preparamos el paquete de APARIENCIA (Hero y Logo)
             const appearancePayload = {
                 _id: 'appearance-settings',
                 brandName: appearanceData.brandName,
@@ -218,7 +222,6 @@ export default function PreferenciasPage() {
                 }
             };
 
-            // 4. Llamamos a la acción del servidor enviando los PAYLOADS
             const response = await saveGlobalPreferences(settingsPayload, appearancePayload, contact);
 
             if (response.success) {
@@ -368,13 +371,14 @@ export default function PreferenciasPage() {
                     </header>
 
                     <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
-                        {['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'legales'].map((tab) => (
+                        {['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'seo', 'legales'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab as any)}
                                 className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
-                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : tab === 'legales' ? 'Legales' : 'Reseñas'}                            </button>
+                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : tab === 'seo' ? 'SEO' : tab === 'legales' ? 'Legales' : 'Reseñas'}
+                            </button>
                         ))}
                     </div>
 
@@ -404,12 +408,9 @@ export default function PreferenciasPage() {
                         {/* PESTAÑA PERSONALIZACIÓN */}
                         {activeTab === 'personalizacion' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
-
-                                {/* BLOQUE 1: IDENTIDAD DE TEXTO */}
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <div>
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Configuración de Texto</h3>
-
                                         <PrefInput
                                             label="Nombre de la Marca"
                                             placeholder="Ej: VDL GROUP"
@@ -417,7 +418,6 @@ export default function PreferenciasPage() {
                                             onChange={(v) => setAppearanceData(prev => ({ ...prev, brandName: v }))}
                                         />
                                     </div>
-
                                     <div className="bg-[#F7F8FA] rounded-2xl p-1 border border-gray-100/50">
                                         <div className="flex items-center justify-between p-4 px-4">
                                             <div className="leading-tight">
@@ -447,10 +447,8 @@ export default function PreferenciasPage() {
                                     </div>
                                 </div>
 
-                                {/* BLOQUE 2: LOGO DE IMAGEN */}
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Logo de Empresa</h3>
-
                                     <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Imagen del Logo</label>
                                         <div className="relative bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[160px] overflow-hidden group">
@@ -482,14 +480,11 @@ export default function PreferenciasPage() {
                                         </div>
                                     </div>
                                 </div>
-                                {/* BLOQUE 3: BANNER PRINCIPAL */}
                                 <div className="lg:col-span-2 bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <div className="border-b border-gray-50 pb-5">
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">Banner Principal</h3>
                                     </div>
-
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        {/* Subida de Imagen Banner */}
                                         <div className="space-y-3 text-left">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none block">Imagen del Banner</label>
                                             <div className="flex items-center gap-5">
@@ -519,8 +514,6 @@ export default function PreferenciasPage() {
                                                 </label>
                                             </div>
                                         </div>
-
-                                        {/* Selector de Posicion */}
                                         <div className="space-y-3 text-left">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none block">Alineación de Fotografía</label>
                                             <select
@@ -534,8 +527,6 @@ export default function PreferenciasPage() {
                                             </select>
                                             <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Úsalo si el auto queda cortado en la pantalla</p>
                                         </div>
-
-                                        {/* Inputs Titulo y Subtitulo Banner */}
                                         <div className="md:col-span-2 space-y-4">
                                             <PrefInput
                                                 label="Título del Banner"
@@ -663,6 +654,33 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {/* PESTAÑA SEO (NUEVA) */}
+                        {activeTab === 'seo' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Google & Posicionamiento (SEO)</h3>
+                                    <div className="space-y-6">
+                                        <SEOTextarea label="Inicio (Home)" value={settings.seoDescriptions.home} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, home: v } })} />
+                                        <SEOTextarea label="Catálogo General" value={settings.seoDescriptions.catalogo} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, catalogo: v } })} />
+                                        <SEOTextarea label="Vender mi Auto" value={settings.seoDescriptions.vender} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, vender: v } })} />
+                                        <SEOTextarea label="Financiamiento" value={settings.seoDescriptions.financiamiento} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, financiamiento: v } })} />
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Páginas Secundarias (SEO)</h3>
+                                    <div className="space-y-6">
+                                        <SEOTextarea label="Preguntas Frecuentes" value={settings.seoDescriptions.faq} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, faq: v } })} />
+                                        <SEOTextarea label="Contacto" value={settings.seoDescriptions.contacto} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, contacto: v } })} />
+                                        <SEOTextarea
+                                            label="Términos y Condiciones"
+                                            value={settings.seoDescriptions.terminos}
+                                            onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, terminos: v } })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* PESTAÑA PREGUNTAS */}
                         {activeTab === 'preguntas' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start no-scrollbar">
@@ -784,7 +802,6 @@ export default function PreferenciasPage() {
                         )}
 
                         {/* PESTAÑA LEGALES */}
-
                         {activeTab === 'legales' && (
                             <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 mb-5">Contenido Legal</h3>
@@ -795,7 +812,9 @@ export default function PreferenciasPage() {
                                     onChange={(v) => setSettings(prev => ({ ...prev, lastLegalUpdate: v }))}
                                 />
                                 <div className="flex flex-col space-y-2.5 text-left">
-                                    <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">Términos y Condiciones</label>
+                                    <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">
+                                        Terminos y Condiciones
+                                    </label>
                                     <textarea
                                         value={settings.termsAndConditions}
                                         onChange={(e) => setSettings(prev => ({ ...prev, termsAndConditions: e.target.value }))}
@@ -804,7 +823,6 @@ export default function PreferenciasPage() {
                                 </div>
                             </div>
                         )}
-
                     </div>
                 </main>
             </div>
@@ -817,6 +835,22 @@ function PrefInput({ label, value, onChange, type = "text", placeholder }: { lab
         <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
             <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-none shadow-none placeholder:text-zinc-300 placeholder:font-normal" />
+        </div>
+    )
+}
+
+// Componente auxiliar para las cajas de texto SEO
+function SEOTextarea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void; }) {
+    return (
+        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
+            <textarea
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="Escribe la descripción para Google aquí..."
+                className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black min-h-[80px] resize-none shadow-none transition-all placeholder:text-zinc-300"
+            />
+            <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Recomendado: Máximo 160 caracteres.</p>
         </div>
     )
 }

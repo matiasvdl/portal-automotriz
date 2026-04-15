@@ -1,16 +1,24 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSettings } from '@/context/SettingsContext'
+import { urlFor } from '@/sanity/lib/image'
 
 export default function Footer({ config: propConfig }: { config?: any }) {
     const { appearance, config: contextConfig } = useSettings();
     const config = propConfig || contextConfig;
 
+    // --- PASO A: Extraemos datos dinámicos ---
+    const primaryColor = appearance?.primaryColor || '#000000';
     const brandName = appearance?.brandName?.trim() || "VDL MOTORS";
     const splitText = appearance?.splitText !== false;
     const isJoined = appearance?.isJoined === true;
 
+    /**
+     * Renderiza el logo en formato texto basándose en la configuración de Sanity.
+     * El color del texto secundario ahora es dinámico.
+     */
     const renderTextLogo = () => {
         const displayName = isJoined ? brandName.replace(/\s+/g, '') : brandName;
         if (!splitText) return <span>{displayName}</span>;
@@ -23,12 +31,18 @@ export default function Footer({ config: propConfig }: { config?: any }) {
         return (
             <>
                 {firstWord}
-                <span className={`font-light text-zinc-500 ${isJoined ? 'ml-0' : 'ml-1'}`}>
+                <span
+                    className={`font-light ${isJoined ? 'ml-0' : 'ml-1'}`}
+                    style={{ color: primaryColor }}
+                >
                     {restOfName}
                 </span>
             </>
         );
     };
+
+    // Obtención segura de la URL del logo
+    const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null;
 
     return (
         <footer className="bg-black text-white pt-16 pb-8 border-t border-white/5">
@@ -38,11 +52,23 @@ export default function Footer({ config: propConfig }: { config?: any }) {
                 <div className="md:col-span-4 space-y-6">
                     <div className="space-y-4">
                         <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase text-white block">
-                            {renderTextLogo()}
+                            {logoUrl ? (
+                                <div className="relative h-8 w-32">
+                                    <Image
+                                        src={logoUrl}
+                                        alt={brandName}
+                                        fill
+                                        className="object-contain object-left brightness-0 invert" // Hacemos el logo blanco para el fondo negro
+                                        priority
+                                    />
+                                </div>
+                            ) : (
+                                renderTextLogo()
+                            )}
                         </Link>
 
                         <p className="text-zinc-400 text-sm leading-relaxed max-w-xs font-medium">
-                            {config?.footerDescription}
+                            {config?.footerDescription || "Tu socio de confianza en la compra y venta de vehículos seleccionados."}
                         </p>
                     </div>
                 </div>

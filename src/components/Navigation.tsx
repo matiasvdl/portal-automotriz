@@ -2,15 +2,18 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image' // Componente para optimización de imágenes
-import { useSettings } from '@/context/SettingsContext' // Acceso a la configuración global
-import { urlFor } from '@/sanity/lib/image' // Ayudante oficial de Sanity para URLs de imágenes
+import Image from 'next/image'
+import { useSettings } from '@/context/SettingsContext'
+import { urlFor } from '@/sanity/lib/image'
 
 export default function Navigation({ config: propConfig }: { config?: any }) {
     // Obtenemos los datos de apariencia y configuración desde el contexto
     const { appearance, config: contextConfig } = useSettings();
-    const [isMenuOpen, setIsMenuOpen] = useState(false); // Estado para controlar el menú móvil
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const config = propConfig || contextConfig;
+
+    // --- PASO A: Extraemos el color primario dinámico ---
+    const primaryColor = appearance?.primaryColor || '#000000';
 
     // Definición de los elementos del menú de navegación
     const menuItems = config?.navMenu?.length > 0 ? config.navMenu : [
@@ -20,12 +23,13 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
     ];
 
     // --- LÓGICA DE MARCA ---
-    const brandName = appearance?.brandName?.trim() || "VDL MOTORS"; // Nombre de marca con respaldo
-    const splitText = appearance?.splitText !== false; // Opción para dividir el texto del logo
-    const isJoined = appearance?.isJoined === true; // Opción para unir las palabras del logo
+    const brandName = appearance?.brandName?.trim() || "VDL MOTORS";
+    const splitText = appearance?.splitText !== false;
+    const isJoined = appearance?.isJoined === true;
 
     /**
      * Renderiza el logo en formato texto basándose en la configuración de Sanity.
+     * Ahora el color secundario del texto se ajusta al color de marca.
      */
     const renderTextLogo = () => {
         const displayName = isJoined ? brandName.replace(/\s+/g, '') : brandName;
@@ -39,14 +43,17 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
         return (
             <>
                 {firstWord}
-                <span className={`font-light text-zinc-700 ${isJoined ? 'ml-0' : 'ml-1'}`}>
+                {/* PASO A: El color del texto secundario del logo ahora es dinámico */}
+                <span
+                    className={`font-light ${isJoined ? 'ml-0' : 'ml-1'}`}
+                    style={{ color: primaryColor }}
+                >
                     {restOfName}
                 </span>
             </>
         );
     };
 
-    // Obtención segura de la URL del logo utilizando urlFor
     const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null;
 
     return (
@@ -57,13 +64,13 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
                 <div className="flex items-center">
                     <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
                         {logoUrl ? (
-                            <div className="relative h-8 w-32"> {/* Contenedor para control de tamaño del logo optimizado */}
+                            <div className="relative h-8 w-32">
                                 <Image
                                     src={logoUrl}
                                     alt={brandName}
                                     fill
                                     className="object-contain object-left"
-                                    priority // Carga prioritaria para evitar parpadeos en el logo
+                                    priority
                                 />
                             </div>
                         ) : (
@@ -75,7 +82,11 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
                 {/* ENLACES DESKTOP (LG) */}
                 <div className="hidden lg:flex gap-12">
                     {menuItems.map((link: any, i: number) => (
-                        <Link key={i} href={link.path || '#'} className="text-[10px] font-black uppercase tracking-[0.2em] text-[#333333] hover:text-black transition-colors">
+                        <Link
+                            key={i}
+                            href={link.path || '#'}
+                            className="text-[10px] font-black uppercase tracking-[0.2em] text-[#333333] hover:text-black transition-colors"
+                        >
                             {link.title}
                         </Link>
                     ))}
@@ -83,11 +94,15 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
 
                 {/* BOTÓN CONTACTO Y HAMBURGUESA */}
                 <div className="flex items-center gap-4">
-                    <Link href="/contacto" className="hidden lg:block bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3.5 rounded-full hover:bg-zinc-800 transition-all active:scale-95">
+                    {/* PASO A: Botón con color dinámico de marca */}
+                    <Link
+                        href="/contacto"
+                        className="hidden lg:block text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3.5 rounded-full transition-all active:scale-95 shadow-lg shadow-black/5"
+                        style={{ backgroundColor: primaryColor }}
+                    >
                         Contacto
                     </Link>
 
-                    {/* Botón hamburguesa para dispositivos móviles */}
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         className="lg:hidden p-2 text-black transition-all"
@@ -116,10 +131,12 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
                         </Link>
                     ))}
                     <hr className="border-gray-50" />
+                    {/* PASO A: Botón móvil con color dinámico */}
                     <Link
                         href="/contacto"
                         onClick={() => setIsMenuOpen(false)}
-                        className="bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] py-4 rounded-2xl text-center"
+                        className="text-white text-[10px] font-black uppercase tracking-[0.2em] py-4 rounded-2xl text-center"
+                        style={{ backgroundColor: primaryColor }}
                     >
                         Contáctanos
                     </Link>
