@@ -3,13 +3,16 @@
 import { useState, useRef, ChangeEvent, KeyboardEvent, useEffect, use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { writeClient } from '@/sanity/lib/client'
+// Importamos el cliente de lectura (seguro para el cliente) y las acciones de servidor
+import { client as readClient } from '@/sanity/lib/client'
+import { uploadSanityImage } from '@/app/actions/vehiculosActions'
+import { saveCarAction, deleteCarAction } from '@/app/actions/carActions'
 import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
-import { saveCarAction } from '@/app/actions/carActions'
 
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
-const builder = imageUrlBuilder(writeClient)
+// Usamos el cliente de lectura para evitar errores de token en el navegador
+const builder = imageUrlBuilder(readClient)
 function urlFor(source: any) {
     return builder.image(source)
 }
@@ -72,7 +75,8 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     useEffect(() => {
         const fetchCar = async () => {
             try {
-                const car = await writeClient.fetch(`*[_type == "car" && _id == $id][0]`, { id })
+                // Usamos el cliente de lectura para obtener los datos iniciales
+                const car = await readClient.fetch(`*[_type == "car" && _id == $id][0]`, { id })
                 if (car) {
                     setFormData({
                         make: car.make || '',
@@ -163,16 +167,22 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         handleChange('slug', generated)
     }
 
+    // CORRECCIÓN PARA VERCEL: Ahora usamos la Server Action para subir imágenes nuevas
     const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>, field: 'images' | 'exteriorImages' | 'interiorImages') => {
         const files = e.target.files; if (!files || files.length === 0) return
         setIsSubmitting(true)
         try {
             const uploadPromises = Array.from(files).map(async (file) => {
-                const asset = await writeClient.assets.upload('image', file)
+                const imgFormData = new FormData()
+                imgFormData.append('file', file)
+
+                const result = await uploadSanityImage(imgFormData)
+                if (!result.success || !result.assetId) throw new Error("Fallo en la subida")
+
                 return {
                     _type: 'image' as const,
                     _key: Math.random().toString(36).substring(2),
-                    asset: { _type: 'reference' as const, _ref: asset._id }
+                    asset: { _type: 'reference' as const, _ref: result.assetId }
                 }
             })
             const uploaded = await Promise.all(uploadPromises)
@@ -185,16 +195,12 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         setFormData(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }))
     }
 
-    // NUEVA FUNCIÓN PARA PROCESAR COMAS Y BOTÓN
     const handleAddTags = () => {
         if (!currentTag.trim()) return;
-
-        // Separamos por comas, limpiamos espacios y filtramos duplicados/vacíos
         const newTags = currentTag
             .split(',')
             .map(tag => tag.trim())
             .filter(tag => tag !== "" && !tags.includes(tag));
-
         setTags([...tags, ...newTags]);
         setCurrentTag('');
     };
@@ -217,9 +223,8 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                 features: tags
             }
 
-            // LLAMADA SEGURA: El token nunca sale de tu servidor
-            await saveCarAction(id || null, doc)
-
+            // Usamos la acción de servidor para guardar los cambios
+            await saveCarAction(id, doc)
             router.push('/admin/dashboard')
         } catch (error) {
             alert('Error al guardar.')
@@ -232,7 +237,8 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         if (confirm('¿Estás seguro de que deseas eliminar este vehículo permanentemente?')) {
             setIsSubmitting(true)
             try {
-                await writeClient.delete(id)
+                // Usamos la acción de servidor para eliminar
+                await deleteCarAction(id)
                 router.push('/admin/dashboard')
             } catch (error) {
                 alert('Error al eliminar el vehículo.')
