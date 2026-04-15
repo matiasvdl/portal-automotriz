@@ -7,7 +7,8 @@ import { revalidatePath } from 'next/cache'
 
 export async function saveCarAction(id: string | null, carData: any) {
     try {
-        // Limpieza básica de datos antes de enviar
+        // Limpieza de datos: Aseguramos que los números sean números y no strings
+        // Esto evita errores de esquema en Sanity
         const cleanData = {
             ...carData,
             listPrice: Number(carData.listPrice) || 0,
@@ -21,26 +22,40 @@ export async function saveCarAction(id: string | null, carData: any) {
             await writeClient.patch(id).set(cleanData).commit()
         } else {
             // NUEVO: Crea un documento desde cero
-            await writeClient.create({ _type: 'car', ...cleanData })
+            // Verificamos que el _type sea 'car' explícitamente
+            await writeClient.create({
+                _type: 'car',
+                ...cleanData
+            })
         }
 
-        // Esto limpia la memoria de Vercel para que el auto aparezca de inmediato
+        // REVALIDACIÓN: Esto es clave para que los cambios se vean sin refrescar
         revalidatePath('/catalogo')
+        revalidatePath('/admin/dashboard') // <-- Añadido para que el admin se actualice
         revalidatePath('/')
 
         return { success: true }
-    } catch (error) {
-        console.error("Error en Sanity:", error)
-        return { success: false, error: "No se pudo guardar en la base de datos" }
+    } catch (error: any) {
+        console.error("Error en Sanity al guardar vehículo:", error)
+        return {
+            success: false,
+            error: error.message || "No se pudo guardar en la base de datos"
+        }
     }
 }
 
 export async function deleteCarAction(id: string) {
     try {
         await writeClient.delete(id)
+
+        // Revalidamos las mismas rutas tras eliminar
         revalidatePath('/catalogo')
+        revalidatePath('/admin/dashboard')
+        revalidatePath('/')
+
         return { success: true }
     } catch (error) {
-        return { success: false, error: "Error al eliminar" }
+        console.error("Error al eliminar vehículo:", error)
+        return { success: false, error: "Error al eliminar el registro" }
     }
 }
