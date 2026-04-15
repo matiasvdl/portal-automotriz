@@ -64,7 +64,7 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
                 <div className="flex items-center">
                     <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
                         {logoUrl ? (
-                            <div className="relative h-8 w-32">
+                            <div style={{ width: `${appearance?.logoWidth || 120}px` }} className="relative aspect-video">
                                 <Image
                                     src={logoUrl}
                                     alt={brandName}

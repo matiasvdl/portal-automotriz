@@ -23,6 +23,21 @@ export const appearance = defineType({
             options: { hotspot: true },
         }),
         defineField({
+            name: 'logoWidth',
+            title: 'Ancho del Logo (px)',
+            type: 'number',
+            initialValue: 120,
+        }),
+        // --- NUEVO: CAMPO PARA EL FAVICON ---
+        defineField({
+            name: 'favicon',
+            title: 'Favicon (Icono de la pestaña)',
+            type: 'image',
+            description: 'Sube una imagen cuadrada (PNG o ICO). Si no subes nada, se usará el logo principal.',
+            options: { hotspot: true },
+        }),
+
+        defineField({
             name: 'splitText',
             title: 'Estilo Dividido',
             type: 'boolean',

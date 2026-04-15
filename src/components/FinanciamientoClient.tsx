@@ -9,7 +9,7 @@ export default function FinanciamientoClient() {
 
     // PASO A: Color primario dinámico
     const primaryColor = appearance?.primaryColor || '#000000'
-    const siteName = appearance?.Sitename || 'nuestra automotora'
+    const siteName = appearance?.brandName || 'nuestra automotora'
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [availableCars, setAvailableCars] = useState<any[]>([])

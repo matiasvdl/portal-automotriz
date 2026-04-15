@@ -12,6 +12,12 @@ export const siteConfig = {
             initialValue: 'VDL MOTORS'
         },
         {
+            name: 'siteUrl',
+            title: 'URL del Sitio (Dominio)',
+            type: 'string',
+            description: 'Ejemplo: dominio.cl (Sin el https:// al final si prefieres)'
+        },
+        {
             name: 'maintenanceMode',
             title: 'Modo Mantenimiento',
             type: 'boolean',

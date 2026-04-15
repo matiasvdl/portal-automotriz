@@ -19,31 +19,42 @@ export async function uploadSanityImage(formData: FormData) {
 export async function saveGlobalPreferences(settings: any, appearanceData: any, contact: any) {
     try {
         // 1. Guardamos la Configuración del Sitio (siteConfig)
-        // Usamos un ID fijo 'siteConfig' para que siempre sobreescriba el mismo documento
+        // Incluimos siteUrl y seoDescriptions para el SEO dinámico
         await writeClient.createOrReplace({
-            _id: 'siteConfig', // ID FIJO
+            _id: 'siteConfig',
             _type: 'siteConfig',
             siteName: settings.siteName,
+            siteUrl: settings.siteUrl, // <-- NUEVO: Guardado del dominio
             footerDescription: settings.footerDescription,
             footerTagline: settings.footerTagline,
             navMenu: settings.navMenu,
             footerLinks: settings.footerLinks,
             maintenanceMode: settings.maintenanceMode,
-            // Aquí enviamos los legales
             termsAndConditions: settings.termsAndConditions || "",
-            lastLegalUpdate: settings.lastLegalUpdate || ""
+            lastLegalUpdate: settings.lastLegalUpdate || "",
+            // <-- NUEVO: Guardado de todas las descripciones de Google
+            seoDescriptions: {
+                home: settings.seoDescriptions?.home || "",
+                catalogo: settings.seoDescriptions?.catalogo || "",
+                vender: settings.seoDescriptions?.vender || "",
+                financiamiento: settings.seoDescriptions?.financiamiento || "",
+                contacto: settings.seoDescriptions?.contacto || "",
+                faq: settings.seoDescriptions?.faq || "",
+                terminos: settings.seoDescriptions?.terminos || ""
+            }
         })
 
         // 2. Guardamos Apariencia
+        // El spread (...) ya incluye brandName, logo, primaryColor, hero, etc.
         await writeClient.createOrReplace({
-            _id: 'appearance-settings', // ID FIJO
+            _id: 'appearance-settings',
             _type: 'appearance',
             ...appearanceData
         })
 
         // 3. Guardamos Contacto
         await writeClient.createOrReplace({
-            _id: 'contact-settings', // ID FIJO
+            _id: 'contact-settings',
             _type: 'contactSettings',
             ...contact
         })

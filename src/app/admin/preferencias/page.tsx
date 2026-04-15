@@ -12,6 +12,7 @@ import {
     deleteSanityDocument,
     updateSanityDocument
 } from '@/app/actions/preferencesActions'
+import { urlFor } from '@/sanity/lib/image'
 
 // --- INTERFACES ---
 interface NavItem {
@@ -37,6 +38,7 @@ export default function PreferenciasPage() {
     const [settings, setSettings] = useState({
         _id: '',
         siteName: 'VDL MOTORS',
+        siteUrl: '',
         footerDescription: '',
         footerTagline: '',
         navMenu: [] as NavItem[],
@@ -59,7 +61,10 @@ export default function PreferenciasPage() {
     const [appearanceData, setAppearanceData] = useState({
         _id: 'appearance-settings',
         brandName: 'VDL GROUP',
+        primaryColor: '#000000',
         logo: null as any,
+        logoWidth: 120,
+        favicon: null as any,
         splitText: true,
         isJoined: false,
         minDepositPercent: 30,
@@ -119,6 +124,7 @@ export default function PreferenciasPage() {
                     setSettings({
                         _id: config._id,
                         siteName: config.siteName || '',
+                        siteUrl: config.siteUrl || '',
                         footerDescription: config.footerDescription || '',
                         footerTagline: config.footerTagline || '',
                         navMenu: config.navMenu || [],
@@ -138,6 +144,9 @@ export default function PreferenciasPage() {
                         _id: appearance._id || 'appearance-settings',
                         brandName: appearance.brandName || '',
                         logo: appearance.logo || null,
+                        logoWidth: appearance.logoWidth || 120,
+                        primaryColor: appearance.primaryColor || '#000000',
+                        favicon: appearance.favicon || null,
                         splitText: appearance.splitText !== undefined ? appearance.splitText : true,
                         isJoined: appearance.isJoined || false,
                         minDepositPercent: appearance.minDepositPercent || 30,
@@ -208,7 +217,9 @@ export default function PreferenciasPage() {
             const appearancePayload = {
                 _id: 'appearance-settings',
                 brandName: appearanceData.brandName,
+                primaryColor: appearanceData.primaryColor,
                 logo: appearanceData.logo?.asset?._ref ? appearanceData.logo : undefined,
+                favicon: appearanceData.favicon,
                 splitText: appearanceData.splitText,
                 isJoined: appearanceData.isJoined,
                 minDepositPercent: Number(appearanceData.minDepositPercent),
@@ -388,18 +399,56 @@ export default function PreferenciasPage() {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad</h3>
-                                    <PrefInput label="Nombre del Sitio (SEO)" value={settings.siteName} onChange={(v) => setSettings(prev => ({ ...prev, siteName: v }))} />
+
+                                    <PrefInput
+                                        label="Nombre del Sitio (SEO)"
+                                        placeholder="Ej: VDL MOTORS"
+                                        value={settings.siteName}
+                                        onChange={(v) => setSettings(prev => ({ ...prev, siteName: v }))}
+                                    />
+
+                                    {/* NUEVO: Campo para el Dominio dinámico */}
+                                    <PrefInput
+                                        label="URL del Sitio (Dominio)"
+                                        placeholder="dominio.cl"
+                                        value={settings.siteUrl}
+                                        onChange={(v) => setSettings(prev => ({ ...prev, siteUrl: v }))}
+                                    />
+                                    <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none -mt-4">
+                                        Escribe tu dominio sin "https://". Ejemplo: miweb.cl
+                                    </p>
+
                                     <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Descripción Footer</label>
-                                        <textarea value={settings.footerDescription} onChange={(e) => setSettings(prev => ({ ...prev, footerDescription: e.target.value }))} className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
+                                        <textarea
+                                            value={settings.footerDescription}
+                                            onChange={(e) => setSettings(prev => ({ ...prev, footerDescription: e.target.value }))}
+                                            placeholder="Breve descripción de la empresa para el pie de página..."
+                                            className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none"
+                                        />
                                     </div>
-                                    <PrefInput label="Frase final Footer" value={settings.footerTagline} onChange={(v) => setSettings(prev => ({ ...prev, footerTagline: v }))} />
+
+                                    <PrefInput
+                                        label="Frase final Footer"
+                                        placeholder="Tu socio de confianza"
+                                        value={settings.footerTagline}
+                                        onChange={(v) => setSettings(prev => ({ ...prev, footerTagline: v }))}
+                                    />
                                 </div>
+
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none text-left">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5 transition-none">Sistema</h3>
                                     <div className="flex items-center justify-between bg-[#F7F8FA] p-5 rounded-2xl border border-gray-100 gap-4">
-                                        <div className="leading-tight flex-1 transition-none"><p className="text-[10px] font-black uppercase leading-none">Modo Mantenimiento</p><p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1.5 leading-none">Oculta el sitio al público general</p></div>
-                                        <button onClick={() => setSettings(prev => ({ ...prev, maintenanceMode: !prev.maintenanceMode }))} className={`w-12 h-6 rounded-full transition-none relative ${settings.maintenanceMode ? 'bg-black' : 'bg-zinc-200'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-none ${settings.maintenanceMode ? 'left-7' : 'left-1'}`}></div></button>
+                                        <div className="leading-tight flex-1 transition-none">
+                                            <p className="text-[10px] font-black uppercase leading-none">Modo Mantenimiento</p>
+                                            <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1.5 leading-none">Oculta el sitio al público general</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSettings(prev => ({ ...prev, maintenanceMode: !prev.maintenanceMode }))}
+                                            className={`w-12 h-6 rounded-full transition-none relative ${settings.maintenanceMode ? 'bg-black' : 'bg-zinc-200'}`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-none ${settings.maintenanceMode ? 'left-7' : 'left-1'}`}></div>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -408,9 +457,37 @@ export default function PreferenciasPage() {
                         {/* PESTAÑA PERSONALIZACIÓN */}
                         {activeTab === 'personalizacion' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
+
+                                {/* BLOQUE 1: IDENTIDAD VISUAL */}
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <div>
-                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Configuración de Texto</h3>
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad Visual</h3>
+
+                                    <div className="space-y-6">
+                                        {/* Color de Marca con Selector Visual */}
+                                        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Color de Marca</label>
+                                            <div className="flex items-center gap-3">
+                                                {/* Cuadro de color visual */}
+                                                <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shrink-0 shadow-sm">
+                                                    <input
+                                                        type="color"
+                                                        value={appearanceData.primaryColor || '#000000'}
+                                                        onChange={(e) => setAppearanceData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                                                        className="absolute -inset-2 w-[200%] h-[200%] cursor-pointer border-none"
+                                                    />
+                                                </div>
+                                                {/* Input de texto para el código Hex */}
+                                                <input
+                                                    type="text"
+                                                    value={appearanceData.primaryColor || '#000000'}
+                                                    onChange={(e) => setAppearanceData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                                                    className="flex-1 h-[48px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none uppercase shadow-none transition-all focus:ring-1 focus:ring-black"
+                                                    placeholder="#000000"
+                                                />
+                                            </div>
+                                            <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Presiona el cuadro para abrir la paleta de colores</p>
+                                        </div>
+
                                         <PrefInput
                                             label="Nombre de la Marca"
                                             placeholder="Ej: VDL GROUP"
@@ -418,6 +495,8 @@ export default function PreferenciasPage() {
                                             onChange={(v) => setAppearanceData(prev => ({ ...prev, brandName: v }))}
                                         />
                                     </div>
+
+                                    {/* Opciones de Estilo de Logo (Texto) */}
                                     <div className="bg-[#F7F8FA] rounded-2xl p-1 border border-gray-100/50">
                                         <div className="flex items-center justify-between p-4 px-4">
                                             <div className="leading-tight">
@@ -447,17 +526,42 @@ export default function PreferenciasPage() {
                                     </div>
                                 </div>
 
+                                {/* BLOQUE 2: LOGO PRINCIPAL */}
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Logo de Empresa</h3>
+
+                                    {/* Control de Tamaño del Logo */}
+                                    <div className="space-y-4 px-1">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                                Ancho del Logo: <span className="text-black">{appearanceData.logoWidth || 120}px</span>
+                                            </label>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="50"
+                                            max="350"
+                                            step="5"
+                                            value={appearanceData.logoWidth || 120}
+                                            onChange={(e) => setAppearanceData(prev => ({ ...prev, logoWidth: parseInt(e.target.value) }))}
+                                            className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-black"
+                                        />
+                                        <div className="flex justify-between text-[7px] font-black text-zinc-400 uppercase tracking-tighter">
+                                            <span>Pequeño</span>
+                                            <span>Grande</span>
+                                        </div>
+                                    </div>
+
                                     <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Imagen del Logo</label>
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Imagen del Logo (Horizontal recomendado)</label>
                                         <div className="relative bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[160px] overflow-hidden group">
                                             {appearanceData.logo ? (
                                                 <div className="flex flex-col items-center space-y-4 w-full">
                                                     <img
-                                                        src={`https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${appearanceData.logo.asset._ref.replace('image-', '').replace('-png', '.png').replace('-jpg', '.jpg').replace('-webp', '.webp')}`}
+                                                        src={appearanceData.logo.asset?._ref ? urlFor(appearanceData.logo).url() : ""}
                                                         alt="Logo Preview"
-                                                        className="h-16 w-auto object-contain"
+                                                        style={{ width: `${appearanceData.logoWidth || 120}px` }}
+                                                        className="h-auto object-contain transition-all duration-300"
                                                     />
                                                     <button
                                                         onClick={() => setAppearanceData(prev => ({ ...prev, logo: null }))}
@@ -468,7 +572,7 @@ export default function PreferenciasPage() {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Haz clic o arrastra para seleccionar logo</p>
+                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Seleccionar logo principal</p>
                                                     <input
                                                         type="file"
                                                         accept="image/*"
@@ -480,10 +584,59 @@ export default function PreferenciasPage() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* BLOQUE 3: FAVICON (Icono de pestaña) */}
+                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Icono de Navegador (Favicon)</h3>
+                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Imagen del Icono (Cuadrada)</label>
+                                        <div className="relative bg-[#F7F8FA] rounded-2xl p-6 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[130px] overflow-hidden group">
+                                            {appearanceData.favicon ? (
+                                                <div className="flex flex-col items-center space-y-3 w-full">
+                                                    <img
+                                                        src={appearanceData.favicon.asset?._ref ? urlFor(appearanceData.favicon).width(64).url() : ""}
+                                                        alt="Favicon Preview"
+                                                        className="w-8 h-8 object-contain rounded shadow-sm"
+                                                    />
+                                                    <button
+                                                        onClick={() => setAppearanceData(prev => ({ ...prev, favicon: null }))}
+                                                        className="text-[8px] font-black uppercase text-red-500 hover:underline transition-all"
+                                                    >
+                                                        Quitar icono
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Subir Favicon</p>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0]
+                                                            if (!file) return
+                                                            setIsSubmitting(true)
+                                                            const formData = new FormData()
+                                                            formData.append('file', file)
+                                                            const result = await uploadSanityImage(formData)
+                                                            if (result.success) {
+                                                                setAppearanceData(prev => ({ ...prev, favicon: { _type: 'image', asset: { _ref: result.assetId } } }))
+                                                            }
+                                                            setIsSubmitting(false)
+                                                        }}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* BLOQUE 4: BANNER PRINCIPAL (HERO) */}
                                 <div className="lg:col-span-2 bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <div className="border-b border-gray-50 pb-5">
-                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">Banner Principal</h3>
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">Banner Principal (Hero)</h3>
                                     </div>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3 text-left">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none block">Imagen del Banner</label>
@@ -493,8 +646,9 @@ export default function PreferenciasPage() {
                                                         <img
                                                             src={appearanceData.heroImage instanceof File
                                                                 ? URL.createObjectURL(appearanceData.heroImage)
-                                                                : `https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${appearanceData.heroImage.asset._ref.replace('image-', '').replace('-png', '.png').replace('-jpg', '.jpg').replace('-webp', '.webp')}`}
+                                                                : urlFor(appearanceData.heroImage).url()}
                                                             className="w-full h-full object-cover"
+                                                            alt="Hero preview"
                                                         />
                                                     ) : (
                                                         <span className="text-[8px] font-black text-zinc-300 uppercase">Sin imagen</span>
@@ -514,6 +668,7 @@ export default function PreferenciasPage() {
                                                 </label>
                                             </div>
                                         </div>
+
                                         <div className="space-y-3 text-left">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none block">Alineación de Fotografía</label>
                                             <select
@@ -525,8 +680,9 @@ export default function PreferenciasPage() {
                                                 <option value="center">Centro (Recomendado)</option>
                                                 <option value="bottom">Inferior (Enfocar abajo)</option>
                                             </select>
-                                            <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Úsalo si el auto queda cortado en la pantalla</p>
+                                            <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Ajusta el enfoque si el auto queda cortado</p>
                                         </div>
+
                                         <div className="md:col-span-2 space-y-4">
                                             <PrefInput
                                                 label="Título del Banner"
