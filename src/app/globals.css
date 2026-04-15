@@ -1,22 +1,20 @@
 @import "tailwindcss";
 
 /* 1. VARIABLES GLOBALES 
-   Centralizamos los colores para que el mantenimiento sea fácil.
+   Aquí añadimos las variables de Marca Blanca que se sobreescribirán desde el layout.
 */
 :root {
   --background: #F7F8F9;
-  /* Fondo gris ultra claro (Kavak) */
   --foreground: #000000;
-  /* Texto negro principal */
   --card-bg: #ffffff;
-  /* Blanco para tarjetas */
   --border-color: #E5E7EB;
-  /* Gris suave para líneas */
+
+  /* Valores por defecto para que el editor no sufra */
+  --primary: #000000;
+  --primary-foreground: #ffffff;
 }
 
-/* 2. ESTILOS BASE 
-   Configuración global del cuerpo de la página.
-*/
+/* 2. ESTILOS BASE */
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -25,48 +23,33 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 3. CLASES PERSONALIZADAS (CSS PURO)
-   Escribimos CSS estándar para que VS Code no marque errores de "Unknown at rule".
-   Usamos estas clases en el HTML como cualquier otra clase de Tailwind.
+/* 3. UTILIDADES DE MARCA BLANCA (DINÁMICAS)
+   Estas clases se adaptan al color que elijas en el Admin.
 */
-
-/* nav-link: Enlaces del menú superior */
-.nav-link {
-  font-size: 12px;
-  font-weight: 700;
-  color: #4B5563;
-  /* Gris oscuro */
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: color 0.2s ease;
-}
-
-.nav-link:hover {
-  color: #000000;
-  /* Negro al pasar el mouse */
-}
-
-/* focus-none: Quita el borde azul de los inputs */
-.focus-none:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-/* card-base: Estructura de tarjeta blanca plana */
-.card-base {
-  background-color: #ffffff;
-  border: 1px solid #E5E7EB;
-  border-radius: 1rem;
-  /* 16px */
-  overflow: hidden;
-}
-
-/* 4. UTILIDADES ESPECÍFICAS */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
 @layer utilities {
+  .bg-primary {
+    background-color: var(--primary);
+  }
+
+  .text-primary {
+    color: var(--primary);
+  }
+
+  .text-primary-foreground {
+    color: var(--primary-foreground);
+  }
+
+  .border-primary {
+    border-color: var(--primary);
+  }
+
+  /* EFECTO DE FOCO CORREGIDO: Sin errores de VS Code */
+  .ring-primary:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+
+  /* Utilidad para quitar scrollbars */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -75,4 +58,45 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+/* 4. TUS CLASES PERSONALIZADAS PREVIAS */
+
+.nav-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4B5563;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--primary);
+}
+
+.focus-none:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.card-base {
+  background-color: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+/* 5. MEJORAS DE UI */
+.bg-primary {
+  transition: background-color 0.3s ease, filter 0.2s ease, transform 0.1s ease;
+}
+
+.bg-primary:hover {
+  filter: brightness(1.1);
+  /* Aclara un poco el botón al pasar el mouse */
+}
+
+.bg-primary:active {
+  transform: scale(0.98);
 }

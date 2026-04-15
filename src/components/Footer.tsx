@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useSettings } from '@/context/SettingsContext'
 import { urlFor } from '@/sanity/lib/image'
 
@@ -17,7 +16,6 @@ export default function Footer({ config: propConfig }: { config?: any }) {
 
     /**
      * Renderiza el logo en formato texto basándose en la configuración de Sanity.
-     * El color del texto secundario ahora es dinámico.
      */
     const renderTextLogo = () => {
         const displayName = isJoined ? brandName.replace(/\s+/g, '') : brandName;
@@ -31,10 +29,8 @@ export default function Footer({ config: propConfig }: { config?: any }) {
         return (
             <>
                 {firstWord}
-                <span
-                    className={`font-light ${isJoined ? 'ml-0' : 'ml-1'}`}
-                    style={{ color: primaryColor }}
-                >
+                {/* CORRECCIÓN: Usamos text-zinc-400 en lugar del color primario para que se vea en fondo negro */}
+                <span className={`font-light text-zinc-400 ${isJoined ? 'ml-0' : 'ml-1'}`}>
                     {restOfName}
                 </span>
             </>
@@ -51,24 +47,27 @@ export default function Footer({ config: propConfig }: { config?: any }) {
                 {/* 1. Logo y descripción */}
                 <div className="md:col-span-4 space-y-6">
                     <div className="space-y-4">
-                        <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase text-white block">
+                        <Link href="/" className="block">
                             {logoUrl ? (
-                                <div className="relative h-8 w-32">
-                                    <Image
+                                <div style={{ width: `${appearance?.logoWidth || 140}px` }} className="relative">
+                                    <img
                                         src={logoUrl}
                                         alt={brandName}
-                                        fill
-                                        className="object-contain object-left brightness-0 invert" // Hacemos el logo blanco para el fondo negro
-                                        priority
+                                        className="w-full h-auto object-contain brightness-0 invert"
                                     />
                                 </div>
                             ) : (
-                                renderTextLogo()
+                                <div className="text-2xl font-black italic tracking-tighter uppercase text-white">
+                                    {brandName.split(" ")[0]}
+                                    <span className="font-light ml-1 text-zinc-500">
+                                        {brandName.split(" ").slice(1).join(" ")}
+                                    </span>
+                                </div>
                             )}
                         </Link>
 
                         <p className="text-zinc-400 text-sm leading-relaxed max-w-xs font-medium">
-                            {config?.footerDescription || "Tu socio de confianza en la compra y venta de vehículos seleccionados."}
+                            {config?.footerDescription || ""}
                         </p>
                     </div>
                 </div>

@@ -202,6 +202,7 @@ export default function PreferenciasPage() {
     const handleSaveGlobal = async () => {
         setIsSubmitting(true)
         try {
+            // 1. Subir Hero si es nuevo
             let heroImageRef = appearanceData.heroImage;
             if (appearanceData.heroImage instanceof File) {
                 const formData = new FormData();
@@ -212,14 +213,37 @@ export default function PreferenciasPage() {
                 }
             }
 
-            const settingsPayload = { ...settings };
+            // 2. Subir Logo si es nuevo (ESTO FALTABA)
+            let logoRef = appearanceData.logo;
+            if (appearanceData.logo instanceof File) {
+                const formData = new FormData();
+                formData.append('file', appearanceData.logo);
+                const result = await uploadSanityImage(formData);
+                if (result.success && result.assetId) {
+                    logoRef = { _type: 'image', asset: { _type: "reference", _ref: result.assetId } }
+                }
+            }
+
+            // 3. Subir Favicon si es nuevo (ESTO FALTABA)
+            let faviconRef = appearanceData.favicon;
+            if (appearanceData.favicon instanceof File) {
+                const formData = new FormData();
+                formData.append('file', appearanceData.favicon);
+                const result = await uploadSanityImage(formData);
+                if (result.success && result.assetId) {
+                    faviconRef = { _type: 'image', asset: { _type: "reference", _ref: result.assetId } }
+                }
+            }
 
             const appearancePayload = {
                 _id: 'appearance-settings',
+                _type: 'appearance',
                 brandName: appearanceData.brandName,
                 primaryColor: appearanceData.primaryColor,
-                logo: appearanceData.logo?.asset?._ref ? appearanceData.logo : undefined,
-                favicon: appearanceData.favicon,
+                logoWidth: Number(appearanceData.logoWidth),
+                // Usamos las referencias procesadas
+                logo: logoRef?.asset?._ref ? { _type: 'image', asset: logoRef.asset } : undefined,
+                favicon: faviconRef?.asset?._ref ? { _type: 'image', asset: faviconRef.asset } : undefined,
                 splitText: appearanceData.splitText,
                 isJoined: appearanceData.isJoined,
                 minDepositPercent: Number(appearanceData.minDepositPercent),
@@ -233,7 +257,7 @@ export default function PreferenciasPage() {
                 }
             };
 
-            const response = await saveGlobalPreferences(settingsPayload, appearancePayload, contact);
+            const response = await saveGlobalPreferences(settings, appearancePayload, contact);
 
             if (response.success) {
                 alert('Ajustes guardados correctamente')
