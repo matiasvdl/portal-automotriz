@@ -24,9 +24,12 @@ export const appearance = defineType({
         }),
         defineField({
             name: 'logoWidth',
-            title: 'Ancho del Logo (px)',
+            title: 'Altura máxima del logo (px)',
             type: 'number',
-            initialValue: 120,
+            description:
+                'Altura máxima visible en header y pie (48–72 px). El nombre técnico del campo sigue siendo logoWidth por compatibilidad.',
+            initialValue: 64, // alinear con CONTENT_DEFAULTS.logoMaxHeightPx en src/lib/content-defaults.ts
+            validation: (Rule) => Rule.min(48).max(72).integer(),
         }),
         // --- NUEVO: CAMPO PARA EL FAVICON ---
         defineField({

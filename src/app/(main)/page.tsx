@@ -2,6 +2,7 @@ import { client } from '@/sanity/lib/client'
 import Link from 'next/link'
 import CarCard from "@/components/CarCard"
 import { urlFor } from '@/sanity/lib/image'
+import { CONTENT_DEFAULTS, resolvePrimaryColor } from '@/lib/content-defaults'
 
 export const revalidate = 0
 
@@ -39,7 +40,7 @@ async function getData() {
       footerLinks,
       footerTagline
     },
-    "appearance": *[_type == "appearance"][0] {
+    "appearance": *[_id == "appearance-settings"][0] {
       hero,
       primaryColor
     }
@@ -51,31 +52,33 @@ export default async function HomePage() {
   const { cars, reviews, appearance } = await getData()
 
   const hero = appearance?.hero;
-  const primaryColor = appearance?.primaryColor || '#000000';
+  const primaryColor = resolvePrimaryColor(appearance?.primaryColor);
 
-  const heroImageUrl = hero?.image?.asset
-    ? urlFor(hero.image).url()
-    : "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1920"
+  const heroImageUrl = hero?.image?.asset ? urlFor(hero.image).url() : null
+  const heroTitle = hero?.title?.trim() || CONTENT_DEFAULTS.heroTitle
+  const heroSubtitle = hero?.subtitle?.trim() || CONTENT_DEFAULTS.heroSubtitle
 
   return (
     <div
       className="flex flex-col flex-grow"
       style={{ '--primary': primaryColor } as React.CSSProperties}
     >
-      {/* 1. HERO / BANNER DINÁMICO */}
-      <header className="relative h-[450px] bg-zinc-900 flex items-center justify-center overflow-hidden">
-        <img
-          src={heroImageUrl}
-          className="absolute inset-0 w-full h-full object-cover opacity-60 transition-all duration-700"
-          style={{ objectPosition: hero?.position || 'center' }}
-          alt={hero?.title || "Hero Banner"}
-        />
-        <div className="relative z-10 text-center text-white px-4 max-w-3xl">
-          <h1 className="text-4xl font-extrabold tracking-tight mb-1 leading-tight uppercase">
-            {hero?.title || 'Transforma tu camino'}
+      {/* 1. HERO / BANNER (imagen desde Sanity; si no hay, solo fondo) */}
+      <header className="relative flex min-h-[min(60vh,560px)] flex-col items-center justify-center overflow-hidden bg-zinc-900 px-4 py-12 md:min-h-[400px] md:h-[450px] md:py-0">
+        {heroImageUrl ? (
+          <img
+            src={heroImageUrl}
+            className="absolute inset-0 h-full w-full object-cover opacity-60 transition-all duration-700"
+            style={{ objectPosition: hero?.position || 'center' }}
+            alt={heroTitle}
+          />
+        ) : null}
+        <div className="relative z-10 max-w-3xl px-2 text-center text-white">
+          <h1 className="mb-1 text-3xl font-extrabold uppercase leading-tight tracking-tight sm:text-4xl">
+            {heroTitle}
           </h1>
-          <p className="text-lg font-medium opacity-80 mb-5">
-            {hero?.subtitle || 'Comprar y vender un auto nunca fue tan simple.'}
+          <p className="mb-5 text-base font-medium opacity-80 sm:text-lg">
+            {heroSubtitle}
           </p>
 
           <div className="bg-white p-1 rounded-xl flex max-w-xl mx-auto border border-gray-200 shadow-sm">

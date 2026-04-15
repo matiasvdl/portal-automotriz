@@ -3,40 +3,40 @@
 import { useSettings } from '@/context/SettingsContext'
 import Image from 'next/image'
 import { urlFor } from '@/sanity/lib/image'
+import { CONTENT_DEFAULTS, resolveBrandLabel } from '@/lib/content-defaults'
 
 export default function Hero() {
-    // 1. AHORA EXTRAEMOS appearance EN LUGAR DE config
-    const { appearance } = useSettings()
-    // 2. BUSCAMOS EL HERO DENTRO DE appearance
+    const { appearance, config } = useSettings()
     const hero = appearance?.hero
+    const brandName = resolveBrandLabel(appearance, config)
 
-    const DEFAULT_BANNER = '/images/porsche-banner.jpg'
-
-    // Lógica para obtener la URL de la imagen de Sanity
-    const heroImageUrl = hero?.image?.asset
-        ? urlFor(hero.image).url()
-        : DEFAULT_BANNER
+    const heroImageUrl = hero?.image?.asset ? urlFor(hero.image).url() : null
+    const title = hero?.title?.trim() || CONTENT_DEFAULTS.heroTitle
+    const subtitle = hero?.subtitle?.trim() || CONTENT_DEFAULTS.heroSubtitle
 
     return (
-        <section className="relative h-[60vh] min-h-[400px] w-full overflow-hidden bg-black">
-            <Image
-                src={heroImageUrl}
-                alt={hero?.title || "Banner VDL Motors"}
-                fill
-                priority
-                className="object-cover transition-opacity duration-700"
-                style={{
-                    objectPosition: hero?.position || 'center',
-                    opacity: 0.6
-                }}
-            />
+        <section className="relative flex min-h-[50vh] w-full flex-col items-center justify-center overflow-hidden bg-zinc-900 px-4 py-14 text-center text-white md:min-h-[400px] md:h-[60vh] md:py-0">
+            {heroImageUrl ? (
+                <Image
+                    src={heroImageUrl}
+                    alt={hero?.title?.trim() || `${brandName} — ${title}`}
+                    fill
+                    priority
+                    sizes="100vw"
+                    className="object-cover transition-opacity duration-700"
+                    style={{
+                        objectPosition: hero?.position || 'center',
+                        opacity: 0.6,
+                    }}
+                />
+            ) : null}
 
-            <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-                <h1 className="text-3xl font-black uppercase tracking-tighter md:text-5xl lg:text-6xl">
-                    {hero?.title || 'TRANSFORMA TU CAMINO'}
+            <div className="relative z-10 flex max-w-4xl flex-col items-center px-2">
+                <h1 className="text-2xl font-black uppercase tracking-tighter sm:text-3xl md:text-5xl lg:text-6xl">
+                    {title}
                 </h1>
-                <p className="mt-2 text-xs font-bold uppercase tracking-widest text-zinc-300 md:text-sm">
-                    {hero?.subtitle || 'Comprar y vender un auto nunca fue tan simple.'}
+                <p className="mt-2 max-w-2xl text-[10px] font-bold uppercase tracking-widest text-zinc-300 sm:text-xs md:text-sm">
+                    {subtitle}
                 </p>
             </div>
         </section>

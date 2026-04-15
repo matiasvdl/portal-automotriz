@@ -3,14 +3,14 @@
 import Link from 'next/link'
 import { useSettings } from '@/context/SettingsContext'
 import { urlFor } from '@/sanity/lib/image'
+import { resolveBrandLabel, resolveLogoMaxHeightPx } from '@/lib/content-defaults'
 
 export default function Footer({ config: propConfig }: { config?: any }) {
     const { appearance, config: contextConfig } = useSettings();
     const config = propConfig || contextConfig;
 
     // --- PASO A: Extraemos datos dinámicos ---
-    const primaryColor = appearance?.primaryColor || '#000000';
-    const brandName = appearance?.brandName?.trim() || "VDL MOTORS";
+    const brandName = resolveBrandLabel(appearance, config);
     const splitText = appearance?.splitText !== false;
     const isJoined = appearance?.isJoined === true;
 
@@ -39,6 +39,8 @@ export default function Footer({ config: propConfig }: { config?: any }) {
 
     // Obtención segura de la URL del logo
     const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null;
+    const logoMaxH = resolveLogoMaxHeightPx(appearance?.logoWidth);
+    const year = new Date().getFullYear();
 
     return (
         <footer className="bg-black text-white pt-16 pb-8 border-t border-white/5">
@@ -49,11 +51,20 @@ export default function Footer({ config: propConfig }: { config?: any }) {
                     <div className="space-y-4">
                         <Link href="/" className="block">
                             {logoUrl ? (
-                                <div style={{ width: `${appearance?.logoWidth || 140}px` }} className="relative">
+                                <div
+                                    className="relative flex max-w-full items-center justify-start"
+                                    style={{ maxHeight: logoMaxH }}
+                                >
                                     <img
                                         src={logoUrl}
                                         alt={brandName}
-                                        className="w-full h-auto object-contain object-left"
+                                        className="h-auto w-auto max-h-full max-w-full object-contain object-left"
+                                        style={{
+                                            maxHeight: logoMaxH,
+                                            maxWidth: '100%',
+                                            width: 'auto',
+                                            height: 'auto',
+                                        }}
                                     />
                                 </div>
                             ) : (
@@ -99,7 +110,7 @@ export default function Footer({ config: propConfig }: { config?: any }) {
             <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] gap-4">
                 <Link href="/admin/ingresar" className="cursor-default hover:text-gray-500 transition-none ml-0.5">
                     <p className="text-center md:text-left select-none">
-                        © 2026 {config?.siteName || brandName} | TODOS LOS DERECHOS RESERVADOS
+                        © {year} {config?.siteName?.trim() || brandName} | TODOS LOS DERECHOS RESERVADOS
                     </p>
                 </Link>
 

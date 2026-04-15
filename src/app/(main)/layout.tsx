@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { SettingsProvider } from '@/context/SettingsContext';
 import { Metadata } from 'next';
 import { urlFor, getContrastColor } from '@/sanity/lib/image';
+import { CONTENT_DEFAULTS, resolvePrimaryColor } from '@/lib/content-defaults';
 
 // --- PASO B y C: SEO, FAVICON Y OPENGRAPH DINÁMICO ---
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
         "appearance": *[_id == "appearance-settings"][0]{ logo, favicon } 
     }`, {}, { next: { revalidate: 0 } });
 
-    const name = data?.siteName || 'Portal Automotriz';
+    const name = data?.siteName?.trim() || CONTENT_DEFAULTS.siteDisplayName;
     const description = data?.seoDescriptions?.home || 'Compra y venta de vehículos seleccionados.';
 
     const rawUrl = data?.siteUrl || 'localhost:3000';
@@ -76,7 +77,13 @@ export default async function MainLayout({ children }: { children: React.ReactNo
             primaryColor,
             minDepositPercent, 
             minIncome, 
-            minWorkExperience  
+            minWorkExperience,
+            hero {
+                title,
+                subtitle,
+                image,
+                position
+            }
         }`, {}, { cache: 'no-store' }),
         client.fetch(`*[_type == "contactSettings"][0]`, {}, { cache: 'no-store' })
     ]);
@@ -86,7 +93,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     }
 
     // --- LÓGICA DE COLOR DINÁMICO ---
-    const primary = appearance?.primaryColor || '#000000';
+    const primary = resolvePrimaryColor(appearance?.primaryColor);
     const foreground = getContrastColor(primary); // Calcula si el texto debe ser blanco o negro
 
     const configCompleta = { ...config, ...contact };

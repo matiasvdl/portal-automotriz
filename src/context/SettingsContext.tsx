@@ -32,6 +32,7 @@ interface AppearanceSettings {
     primaryColor?: string
     brandName?: string
     logo?: any // Se mantiene como 'any' por la complejidad del objeto de imagen de Sanity
+    /** Altura máxima del logo (px). El campo Sanity conserva el nombre `logoWidth`. */
     logoWidth?: number
     splitText?: boolean
     isJoined?: boolean

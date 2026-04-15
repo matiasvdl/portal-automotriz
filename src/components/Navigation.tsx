@@ -5,6 +5,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useSettings } from '@/context/SettingsContext'
 import { urlFor } from '@/sanity/lib/image'
+import {
+    resolveBrandLabel,
+    resolveLogoMaxHeightPx,
+    resolvePrimaryColor,
+} from '@/lib/content-defaults'
 
 export default function Navigation({ config: propConfig }: { config?: any }) {
     // Obtenemos los datos de apariencia y configuración desde el contexto
@@ -13,7 +18,7 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
     const config = propConfig || contextConfig;
 
     // --- PASO A: Extraemos el color primario dinámico ---
-    const primaryColor = appearance?.primaryColor || '#000000';
+    const primaryColor = resolvePrimaryColor(appearance?.primaryColor);
 
     // Definición de los elementos del menú de navegación
     const menuItems = config?.navMenu?.length > 0 ? config.navMenu : [
@@ -23,7 +28,7 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
     ];
 
     // --- LÓGICA DE MARCA ---
-    const brandName = appearance?.brandName?.trim() || "VDL MOTORS";
+    const brandName = resolveBrandLabel(appearance, config);
     const splitText = appearance?.splitText !== false;
     const isJoined = appearance?.isJoined === true;
 
@@ -55,21 +60,33 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
     };
 
     const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null;
+    const logoMaxH = resolveLogoMaxHeightPx(appearance?.logoWidth);
 
     return (
-        <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 h-20 flex items-center shadow-none text-left font-sans">
+        <nav className="sticky top-0 z-50 flex h-20 items-center overflow-visible border-b border-gray-100 bg-white text-left font-sans shadow-none">
             <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
 
-                {/* LOGO */}
-                <div className="flex items-center">
+                {/* LOGO: altura máxima desde admin; ancho proporcional con object-contain */}
+                <div className="flex min-w-0 flex-1 items-center justify-start lg:flex-none">
                     <Link href="/" className="text-2xl font-black italic tracking-tighter uppercase flex items-center text-black">
                         {logoUrl ? (
-                            <div style={{ width: `${appearance?.logoWidth || 120}px` }} className="relative aspect-video">
+                            <div
+                                className="relative flex max-w-full shrink-0 items-center justify-start"
+                                style={{ maxHeight: logoMaxH }}
+                            >
                                 <Image
                                     src={logoUrl}
                                     alt={brandName}
-                                    fill
-                                    className="object-contain object-left"
+                                    width={logoMaxH}
+                                    height={logoMaxH}
+                                    sizes={`(max-width: 1024px) 50vw, ${logoMaxH}px`}
+                                    className="h-auto w-auto max-h-full max-w-full object-contain object-left"
+                                    style={{
+                                        maxHeight: logoMaxH,
+                                        maxWidth: '100%',
+                                        width: 'auto',
+                                        height: 'auto',
+                                    }}
                                     priority
                                 />
                             </div>
