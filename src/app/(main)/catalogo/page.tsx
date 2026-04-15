@@ -3,6 +3,16 @@ import CatalogFilters from '@/components/CatalogFilters'
 
 export const revalidate = 0
 
+// PASO B: SEO DINÁMICO DESDE SANITY
+export async function generateMetadata() {
+    const config = await client.fetch(`*[_type == "siteConfig"][0]{ seoDescriptions }`)
+
+    return {
+        title: 'Catálogo de Autos',
+        description: config?.seoDescriptions?.catalogo || 'Explora nuestra selección de vehículos usados y seminuevos con garantía y financiamiento.'
+    }
+}
+
 async function getCars() {
     const query = `*[_type == "car"] | order(_createdAt desc) {
     _id, 
@@ -31,6 +41,9 @@ export default async function CatalogoPage() {
 
     return (
         <main className="min-h-screen bg-[#F7F8F9]">
+            {/* Paso A: CatalogFilters debe usar el hook useSettings() 
+                para aplicar el primaryColor a los botones y filtros. 
+            */}
             <CatalogFilters initialCars={cars} />
         </main>
     )

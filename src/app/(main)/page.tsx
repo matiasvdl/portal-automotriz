@@ -1,9 +1,17 @@
 import { client } from '@/sanity/lib/client'
 import Link from 'next/link'
 import CarCard from "@/components/CarCard"
-import { urlFor } from '@/sanity/lib/image' // Necesitamos esto para la imagen
+import { urlFor } from '@/sanity/lib/image'
 
 export const revalidate = 0
+
+// PASO B: METADATOS DINÁMICOS DESDE SANITY
+export async function generateMetadata() {
+  const config = await client.fetch(`*[_type == "siteConfig"][0]{ seoDescriptions }`)
+  return {
+    description: config?.seoDescriptions?.home || 'Comprar y vender un auto nunca fue tan simple. Explora nuestro catálogo de vehículos seleccionados.'
+  }
+}
 
 async function getData() {
   const query = `{
@@ -31,9 +39,9 @@ async function getData() {
       footerLinks,
       footerTagline
     },
-    // AGREGAMOS ESTO PARA TRAER EL HERO DESDE SANITY
     "appearance": *[_type == "appearance"][0] {
-      hero
+      hero,
+      primaryColor
     }
   }`
   return await client.fetch(query)
@@ -42,16 +50,18 @@ async function getData() {
 export default async function HomePage() {
   const { cars, reviews, appearance } = await getData()
 
-  // Extraemos los datos del hero
   const hero = appearance?.hero;
+  const primaryColor = appearance?.primaryColor || '#000000';
 
-  // Configuramos la imagen dinámica o un fallback
   const heroImageUrl = hero?.image?.asset
     ? urlFor(hero.image).url()
     : "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1920"
 
   return (
-    <div className="flex flex-col flex-grow">
+    <div
+      className="flex flex-col flex-grow"
+      style={{ '--primary': primaryColor } as React.CSSProperties}
+    >
       {/* 1. HERO / BANNER DINÁMICO */}
       <header className="relative h-[450px] bg-zinc-900 flex items-center justify-center overflow-hidden">
         <img
@@ -74,7 +84,10 @@ export default async function HomePage() {
               placeholder="Busca por marca o modelo..."
               className="flex-grow bg-transparent text-black py-3 px-4 outline-none text-sm font-medium placeholder:text-gray-400"
             />
-            <button className="bg-black text-white px-8 py-3 rounded-lg text-[11px] font-bold uppercase hover:bg-zinc-950 transition-colors">
+            <button
+              className="text-white px-8 py-3 rounded-lg text-[11px] font-bold uppercase transition-colors"
+              style={{ backgroundColor: 'var(--primary)' }}
+            >
               Buscar
             </button>
           </div>
@@ -86,7 +99,7 @@ export default async function HomePage() {
         <div className="flex justify-between items-baseline mb-8">
           <div className="space-y-2">
             <h2 className="text-xl font-black tracking-tight text-black uppercase">Recién llegados</h2>
-            <div className="h-1 w-12 bg-black"></div>
+            <div className="h-1 w-12" style={{ backgroundColor: 'var(--primary)' }}></div>
           </div>
           <Link href="/catalogo" className="text-[11px] font-bold text-[#666666] hover:text-black uppercase tracking-[0.15em] transition-colors">
             Ver todos los autos
@@ -105,7 +118,7 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10 space-y-2 text-left">
             <h2 className="text-xl font-black tracking-tight text-black uppercase">Reseña de nuestros clientes</h2>
-            <div className="h-1 w-12 bg-black"></div>
+            <div className="h-1 w-12" style={{ backgroundColor: 'var(--primary)' }}></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -117,6 +130,7 @@ export default async function HomePage() {
                 text={review.comment}
                 rating={review.rating}
                 badge={review.badge}
+                primaryColor={primaryColor}
               />
             ))}
           </div>
@@ -126,12 +140,15 @@ export default async function HomePage() {
   )
 }
 
-function ReviewCard({ name, date, text, rating, badge }: { name: string; date: string; text: string; rating: number; badge?: string }) {
+function ReviewCard({ name, date, text, rating, badge, primaryColor }: { name: string; date: string; text: string; rating: number; badge?: string; primaryColor: string }) {
   return (
     <div className="bg-[#F7F8F9] border border-gray-200 p-6 rounded-2xl text-left h-full transition-colors hover:border-gray-300">
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0 text-base">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0 text-base"
+            style={{ backgroundColor: 'var(--primary)' }}
+          >
             {name.charAt(0)}
           </div>
           <div className="flex flex-col gap-0.5">
@@ -140,7 +157,10 @@ function ReviewCard({ name, date, text, rating, badge }: { name: string; date: s
             </span>
             <div className="flex items-center gap-1.5">
               <h4 className="font-extrabold text-black uppercase text-[12px] tracking-tighter leading-none">{name}</h4>
-              <div className="w-3 h-3 bg-zinc-900 rounded-full flex items-center justify-center shrink-0">
+              <div
+                className="w-3 h-3 rounded-full flex items-center justify-center shrink-0"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
                 <svg viewBox="0 0 24 24" className="w-1.5 h-1.5 text-white fill-current" stroke="currentColor" strokeWidth="4">
                   <path d="M20 6L9 17L4 12" fill="none" />
                 </svg>
@@ -151,7 +171,12 @@ function ReviewCard({ name, date, text, rating, badge }: { name: string; date: s
         </div>
         <div className="flex gap-0.5">
           {[...Array(5)].map((_, i) => (
-            <svg key={i} className={`w-3 h-3 ${i < rating ? 'text-zinc-800' : 'text-zinc-200'} fill-current`} viewBox="0 0 20 20">
+            <svg
+              key={i}
+              className="w-3 h-3 fill-current"
+              viewBox="0 0 20 20"
+              style={{ color: i < rating ? 'var(--primary)' : '#e5e7eb' }}
+            >
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           ))}

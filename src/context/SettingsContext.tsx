@@ -28,6 +28,8 @@ interface SiteConfig {
  * Incluye la marca, el logo, los parámetros de financiamiento y el BANNER PRINCIPAL (hero).
  */
 interface AppearanceSettings {
+    Sitename?: string
+    primaryColor?: string
     brandName?: string
     logo?: any // Se mantiene como 'any' por la complejidad del objeto de imagen de Sanity
     splitText?: boolean
@@ -35,7 +37,6 @@ interface AppearanceSettings {
     minDepositPercent?: number
     minIncome?: number
     minWorkExperience?: string
-    // --- HERO TRASLADADO AQUÍ ---
     hero?: {
         title?: string;
         subtitle?: string;

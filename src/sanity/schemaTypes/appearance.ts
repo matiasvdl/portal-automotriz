@@ -5,6 +5,12 @@ export const appearance = defineType({
     title: 'Personalización',
     type: 'document',
     fields: [
+        {
+            name: 'primaryColor',
+            title: 'Color Primario',
+            type: 'string',
+            description: 'Hexadecimal (ej: #000000)'
+        },
         defineField({
             name: 'brandName',
             title: 'Nombre de la Marca',

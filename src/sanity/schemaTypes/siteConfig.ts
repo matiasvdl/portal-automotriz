@@ -108,6 +108,20 @@ export const siteConfig = {
             name: 'lastLegalUpdate',
             title: 'Última actualización legal',
             type: 'date',
+        },
+        {
+            name: 'seoDescriptions',
+            title: 'Descripciones SEO por Página',
+            type: 'object',
+            fields: [
+                { name: 'home', title: 'Descripción Inicio', type: 'text', rows: 2 },
+                { name: 'catalogo', title: 'Descripción Catálogo', type: 'text', rows: 2 },
+                { name: 'vender', title: 'Descripción Vender', type: 'text', rows: 2 },
+                { name: 'financiamiento', title: 'Descripción Financiamiento', type: 'text', rows: 2 },
+                { name: 'contacto', title: 'Descripción Contacto', type: 'text', rows: 2 },
+                { name: 'faq', title: 'Descripción FAQ', type: 'text', rows: 2 },
+                { name: 'terminos', title: 'Descripción Términos y Condiciones', type: 'text', rows: 2 },
+            ]
         }
     ]
 }

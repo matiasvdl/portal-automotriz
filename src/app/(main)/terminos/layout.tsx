@@ -1,9 +1,20 @@
 import { Metadata } from "next";
+import { client } from '@/sanity/lib/client'
 
-export const metadata: Metadata = {
-    title: "Términos y Condiciones | VDL Motors",
-    description: "Consulta los términos legales y condiciones de uso de VDL Motors.",
-};
+// PASO B: Convertimos los metadatos estáticos en dinámicos
+export async function generateMetadata(): Promise<Metadata> {
+    // Buscamos el nombre del sitio y las descripciones en Sanity
+    const config = await client.fetch(`*[_type == "siteConfig"][0]{ siteName, seoDescriptions }`)
+
+    // Si no hay nombre en Sanity, usamos "Portal Automotriz" como respaldo
+    const name = config?.siteName || 'Portal Automotriz'
+    const description = config?.seoDescriptions?.terminos || `Consulta los términos legales y condiciones de uso de ${name}.`
+
+    return {
+        title: `Términos y Condiciones | ${name}`,
+        description: description,
+    };
+}
 
 export default function TerminosLayout({
     children,
