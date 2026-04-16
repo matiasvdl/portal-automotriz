@@ -15,6 +15,7 @@ import {
     deleteSanityDocument,
     updateSanityDocument
 } from '@/app/actions/preferencesActions'
+import { deleteBrandAction, deleteBrandModelAction } from '@/app/actions/brandActions'
 import { urlFor } from '@/sanity/lib/image'
 import {
     CONTENT_DEFAULTS,
@@ -108,9 +109,21 @@ interface RutaOption {
     value: string;
 }
 
-// Añadimos 'seo' a los tipos de pestañas
-type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas' | 'legales' | 'seo';
-const TABS: TabType[] = ['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'seo', 'legales']
+type BrandModel = {
+    _key: string
+    modelName: string
+    versions?: string[]
+}
+
+type BrandEntry = {
+    _id: string
+    name: string
+    models?: BrandModel[]
+}
+
+// Añadimos pestañas nuevas de configuración
+type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas' | 'legales' | 'seo' | 'marcas';
+const TABS: TabType[] = ['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'seo', 'marcas', 'legales']
 
 function isSanityImageValue(value: SanityImageValue | File | null | undefined): value is SanityImageValue {
     return Boolean(
@@ -208,6 +221,7 @@ export default function PreferenciasPage() {
 
     const [allReviews, setAllReviews] = useState<ReviewItem[]>([])
     const [faqs, setFaqs] = useState<FaqItem[]>([])
+    const [brands, setBrands] = useState<BrandEntry[]>([])
     const [newFaq, setNewFaq] = useState({ question: '', answer: '', order: 0 })
 
     const [newReview, setNewReview] = useState({
@@ -220,6 +234,19 @@ export default function PreferenciasPage() {
 
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
+
+    const loadBrands = async () => {
+        const brandList = await client.fetch<BrandEntry[]>(
+            `*[_type == "brand"] | order(name asc){
+                _id,
+                name,
+                models
+            }`,
+            {},
+            { cache: 'no-store' }
+        )
+        setBrands(brandList)
+    }
 
     // --- EFECTO DE SEGURIDAD ---
     useEffect(() => {
@@ -288,6 +315,7 @@ export default function PreferenciasPage() {
 
                 if (reviews) setAllReviews(reviews)
                 if (faqData) setFaqs(faqData)
+                await loadBrands()
                 if (contactData) {
                     setContact({
                         _id: contactData._id || 'global-contact',
@@ -300,6 +328,40 @@ export default function PreferenciasPage() {
         }
         fetchSanityData()
     }, [])
+
+    const handleDeleteBrand = async (brand: BrandEntry) => {
+        if (!confirm(`¿Eliminar la marca ${brand.name}?`)) return
+
+        setIsSubmitting(true)
+        try {
+            const result = await deleteBrandAction(brand.name)
+            if (!result.success) {
+                alert(result.error || 'No se pudo eliminar la marca')
+                return
+            }
+
+            await loadBrands()
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleDeleteModel = async (brandName: string, modelName: string) => {
+        if (!confirm(`¿Eliminar el modelo ${modelName} de ${brandName}?`)) return
+
+        setIsSubmitting(true)
+        try {
+            const result = await deleteBrandModelAction(brandName, modelName)
+            if (!result.success) {
+                alert(result.error || 'No se pudo eliminar el modelo')
+                return
+            }
+
+            await loadBrands()
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -539,7 +601,7 @@ export default function PreferenciasPage() {
                                 onClick={() => setActiveTab(tab)}
                                 className={`px-4 sm:px-5 py-2.5 sm:py-2 rounded-full text-[8px] sm:text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
-                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : tab === 'seo' ? 'SEO' : tab === 'legales' ? 'Legales' : 'Reseñas'}
+                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : tab === 'seo' ? 'SEO' : tab === 'marcas' ? 'Marcas' : tab === 'legales' ? 'Legales' : 'Reseñas'}
                             </button>
                         ))}
                     </div>
@@ -1020,7 +1082,7 @@ export default function PreferenciasPage() {
                         {activeTab === 'seo' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Google & Posicionamiento (SEO)</h3>
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Páginas Principales (SEO)</h3>
                                     <div className="space-y-6">
                                         <SEOTextarea label="Inicio (Home)" value={settings.seoDescriptions.home} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, home: v } })} />
                                         <SEOTextarea label="Catálogo General" value={settings.seoDescriptions.catalogo} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, catalogo: v } })} />
@@ -1173,6 +1235,93 @@ export default function PreferenciasPage() {
                                             )}
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'marcas' && (
+                            <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-5 shadow-none">
+                                <div className="flex items-center justify-between border-b border-gray-50 pb-5 leading-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Marcas y Modelos</h3>
+                                    <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-400">
+                                        Corrige errores escritos
+                                    </span>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {brands.length === 0 ? (
+                                        <p className="text-[9px] font-bold uppercase tracking-tighter text-zinc-400">
+                                            Aún no hay marcas registradas.
+                                        </p>
+                                    ) : (
+                                        brands.map((brand) => (
+                                            <div key={brand._id} className="rounded-[20px] border border-gray-100 bg-[#F7F8FA] p-4 space-y-3">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p className="text-[9px] font-black uppercase text-black leading-none">
+                                                            {brand.name}
+                                                        </p>
+                                                        <p className="mt-1 text-[8px] font-bold uppercase tracking-tighter text-zinc-400">
+                                                            {brand.models?.length || 0} modelos
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void handleDeleteBrand(brand)}
+                                                        disabled={isSubmitting}
+                                                        className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                                        title="Eliminar marca"
+                                                        aria-label="Eliminar marca"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+
+                                                {(brand.models?.length || 0) > 0 && (
+                                                    <div className="space-y-2">
+                                                        {brand.models?.map((model) => (
+                                                            <div key={model._key} className="flex items-start justify-between gap-3 rounded-2xl bg-white px-4 py-3 border border-gray-100">
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="text-[8px] font-black uppercase text-zinc-700 leading-none">
+                                                                        {model.modelName}
+                                                                    </p>
+                                                                    <p className="mt-1 text-[7px] font-bold uppercase tracking-tighter text-zinc-400">
+                                                                        {(model.versions?.length || 0)} versiones
+                                                                    </p>
+                                                                    {(model.versions?.length || 0) > 0 && (
+                                                                        <div className="mt-2 flex flex-wrap gap-2">
+                                                                            {model.versions?.map((version) => (
+                                                                                <span
+                                                                                    key={`${model._key}-${version}`}
+                                                                                    className="rounded-full border border-gray-200 bg-[#F7F8FA] px-2.5 py-1 text-[7px] font-bold uppercase tracking-tight text-zinc-500"
+                                                                                >
+                                                                                    {version}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => void handleDeleteModel(brand.name, model.modelName)}
+                                                                    disabled={isSubmitting}
+                                                                    className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                                                    title="Eliminar modelo"
+                                                                    aria-label="Eliminar modelo"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}

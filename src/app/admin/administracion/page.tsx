@@ -261,6 +261,7 @@ export default function AdministracionPage() {
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     <div className="lg:col-span-2 space-y-7 order-2 lg:order-1">

@@ -291,17 +291,19 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
                     </aside>
                 </div>
 
-                <section className="mt-5 pt-6 border-t border-gray-100">
-                    <div className="mb-6">
-                        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">Más opciones</p>
-                        <h2 className="text-xl font-black uppercase tracking-tighter">{config?.catalogContent?.recommendedTitle?.trim() || 'Vehículos Recomendados'}</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {recommendedCars.map((recommendedCar) => (
-                            <CarCard key={recommendedCar._id} car={recommendedCar} />
-                        ))}
-                    </div>
-                </section>
+                {recommendedCars.length > 0 && (
+                    <section className="mt-5 pt-6 border-t border-gray-100">
+                        <div className="mb-6">
+                            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">Más opciones</p>
+                            <h2 className="text-xl font-black uppercase tracking-tighter">{config?.catalogContent?.recommendedTitle?.trim() || 'Vehículos Recomendados'}</h2>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {recommendedCars.map((recommendedCar) => (
+                                <CarCard key={recommendedCar._id} car={recommendedCar} />
+                            ))}
+                        </div>
+                    </section>
+                )}
             </div>
 
             {isModalOpen && (

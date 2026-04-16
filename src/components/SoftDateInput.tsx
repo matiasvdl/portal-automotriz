@@ -105,9 +105,11 @@ export default function SoftDateInput({
             ? 'w-full h-8 bg-gray-50 border border-transparent rounded-lg px-2 pr-9 text-[10px] font-bold outline-none text-left leading-none shadow-none'
             : 'w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 pr-12 text-[11px] font-bold outline-none text-left leading-none shadow-none'
 
-    const panelClassName = isCompact
-        ? 'absolute left-0 top-[calc(100%+8px)] z-30 w-[280px] rounded-2xl border border-gray-200 bg-white p-3 shadow-none'
-        : 'absolute left-0 right-0 top-[calc(100%+8px)] z-30 rounded-2xl border border-gray-200 bg-white p-3 shadow-none'
+    const panelClassName = variant === 'public'
+        ? 'absolute left-0 top-[calc(100%+8px)] z-30 w-[260px] rounded-2xl border border-gray-200 bg-white p-2.5 shadow-none'
+        : isCompact
+            ? 'absolute left-0 top-[calc(100%+8px)] z-30 w-[248px] rounded-2xl border border-gray-200 bg-white p-2.5 shadow-none'
+            : 'absolute left-0 top-[calc(100%+8px)] z-30 w-[272px] rounded-2xl border border-gray-200 bg-white p-2.5 shadow-none'
 
     return (
         <div className="relative" ref={containerRef}>
@@ -136,27 +138,27 @@ export default function SoftDateInput({
 
             {isOpen && (
                 <div className={panelClassName}>
-                    <div className="mb-3 flex items-center justify-between">
+                    <div className="mb-2 flex items-center justify-between">
                         <button
                             type="button"
                             onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1, 12))}
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-[#F7F8FA] hover:text-black"
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-[#F7F8FA] hover:text-black"
                         >
-                            <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+                            <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.5} />
                         </button>
-                        <p className="text-[11px] font-black capitalize text-black">{monthLabel}</p>
+                        <p className="text-[10px] font-black capitalize text-black">{monthLabel}</p>
                         <button
                             type="button"
                             onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1, 12))}
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-[#F7F8FA] hover:text-black"
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-[#F7F8FA] hover:text-black"
                         >
-                            <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
+                            <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.5} />
                         </button>
                     </div>
 
-                    <div className="mb-2 grid grid-cols-7 gap-1">
+                    <div className="mb-1.5 grid grid-cols-7 gap-1">
                         {DAY_LABELS.map((day) => (
-                            <span key={day} className="py-1 text-center text-[9px] font-bold uppercase text-zinc-400">
+                            <span key={day} className="py-0.5 text-center text-[8px] font-bold uppercase text-zinc-400">
                                 {day}
                             </span>
                         ))}
@@ -176,7 +178,7 @@ export default function SoftDateInput({
                                         onChange(isoValue)
                                         setIsOpen(false)
                                     }}
-                                    className={`h-9 rounded-xl text-[10px] font-bold transition-colors ${
+                                    className={`h-7 rounded-lg text-[9px] font-bold transition-colors ${
                                         isSelected
                                             ? 'text-white'
                                             : isCurrentMonth
@@ -193,14 +195,14 @@ export default function SoftDateInput({
                         })}
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between">
+                    <div className="mt-2 flex items-center justify-between">
                         <button
                             type="button"
                             onClick={() => {
                                 onChange('')
                                 setIsOpen(false)
                             }}
-                            className="text-[10px] font-bold text-zinc-400 transition-colors hover:text-black"
+                            className="text-[9px] font-bold text-zinc-400 transition-colors hover:text-black"
                         >
                             Borrar
                         </button>
@@ -213,7 +215,7 @@ export default function SoftDateInput({
                                 setCurrentMonth(today)
                                 setIsOpen(false)
                             }}
-                            className="text-[10px] font-bold transition-colors"
+                            className="text-[9px] font-bold transition-colors"
                             style={{ color: primaryColor }}
                         >
                             Hoy

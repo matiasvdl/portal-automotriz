@@ -13,6 +13,7 @@ interface HomeCar {
   slug: string
   make: string
   model: string
+  version?: string
   year: number
   listPrice: number
   financedPrice: number
@@ -68,6 +69,7 @@ async function getData() {
       _id,
       make,
       model,
+      version,
       year,
       listPrice,
       financedPrice,

@@ -12,6 +12,7 @@ import { syncBrandDatabaseAction } from '@/app/actions/brandActions' // Acción 
 import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
 import AdminSoftSelect from '@/components/AdminSoftSelect'
+import AdminCombobox from '@/components/AdminCombobox'
 
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 // Usamos el cliente de lectura para evitar errores de token en el navegador
@@ -101,9 +102,6 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
 
     // --- ESTADOS PARA LA BASE DE DATOS DE MARCAS/MODELOS ---
     const [dbBrands, setDbBrands] = useState<BrandOption[]>([])
-    const [isManualMake, setIsManualMake] = useState(false)
-    const [isManualModel, setIsManualModel] = useState(false)
-    const [isManualVersion, setIsManualVersion] = useState(false)
 
     const mainImagesRef = useRef<HTMLInputElement>(null)
     const exteriorImagesRef = useRef<HTMLInputElement>(null)
@@ -214,15 +212,6 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     })
                     setTags(car.features || [])
 
-                    // DETECTAR SI LOS VALORES ACTUALES SON MANUALES (NO ESTÁN EN LA DB)
-                    const brandInDb = brands.find((b: BrandOption) => b.name === car.make)
-                    if (!brandInDb && car.make) setIsManualMake(true)
-
-                    const modelInDb = brandInDb?.models?.find((m: BrandModel) => m.modelName === car.model)
-                    if (!modelInDb && car.model) setIsManualModel(true)
-
-                    const versionInDb = modelInDb?.versions?.includes(car.version)
-                    if (!versionInDb && car.version) setIsManualVersion(true)
                 }
             } catch (error) {
                 console.error("Error al cargar datos:", error)
@@ -381,120 +370,46 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Identidad y Comercial</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
-                            {/* MARCA DINÁMICA */}
+                            {/* MARCA: BUSCADOR / ESCRITURA */}
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Marca</label>
-                                {!isManualMake ? (
-                                    <AdminSoftSelect
-                                        value={formData.make}
-                                        onChange={(value) => {
-                                            if (value === 'ADD_NEW') {
-                                                setIsManualMake(true)
-                                                handleChange('make', '')
-                                            } else {
-                                                handleChange('make', value)
-                                                handleChange('model', '')
-                                                handleChange('version', '')
-                                            }
-                                        }}
-                                        options={[
-                                            { value: '', label: 'Seleccionar...' },
-                                            ...dbBrands.map((b) => ({ value: b.name, label: b.name })),
-                                            { value: 'ADD_NEW', label: '+ AGREGAR NUEVA MARCA...' },
-                                        ]}
-                                    />
-                                ) : (
-                                    <div className="relative">
-                                        <input
-                                            autoFocus
-                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
-                                            value={formData.make}
-                                            onChange={(e) => handleChange('make', e.target.value)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => { setIsManualMake(false); handleChange('make', ''); }}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
-                                        >✕</button>
-                                    </div>
-                                )}
+                                <AdminCombobox
+                                    value={formData.make}
+                                    onChange={(value) => {
+                                        handleChange('make', value)
+                                        handleChange('model', '')
+                                        handleChange('version', '')
+                                    }}
+                                    options={dbBrands.map((brand) => ({ value: brand.name, label: brand.name }))}
+                                    placeholder="Escribe o busca una marca..."
+                                />
                             </div>
 
-                            {/* MODELO DINÁMICO */}
+                            {/* MODELO: BUSCADOR / ESCRITURA */}
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Modelo</label>
-                                {!isManualModel ? (
-                                    <AdminSoftSelect
-                                        value={formData.model}
-                                        disabled={!formData.make}
-                                        onChange={(value) => {
-                                            if (value === 'ADD_NEW') {
-                                                setIsManualModel(true)
-                                                handleChange('model', '')
-                                            } else {
-                                                handleChange('model', value)
-                                                handleChange('version', '')
-                                            }
-                                        }}
-                                        options={[
-                                            { value: '', label: 'Seleccionar...' },
-                                            ...(currentBrandData?.models?.map((m: BrandModel) => ({ value: m.modelName, label: m.modelName })) || []),
-                                            ...(formData.make ? [{ value: 'ADD_NEW', label: '+ AGREGAR NUEVO MODELO...' }] : []),
-                                        ]}
-                                    />
-                                ) : (
-                                    <div className="relative">
-                                        <input
-                                            autoFocus
-                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
-                                            value={formData.model}
-                                            onChange={(e) => handleChange('model', e.target.value)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => { setIsManualModel(false); handleChange('model', ''); }}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
-                                        >✕</button>
-                                    </div>
-                                )}
+                                <AdminCombobox
+                                    value={formData.model}
+                                    disabled={!formData.make}
+                                    onChange={(value) => {
+                                        handleChange('model', value)
+                                        handleChange('version', '')
+                                    }}
+                                    options={(currentBrandData?.models?.map((model: BrandModel) => ({ value: model.modelName, label: model.modelName })) || [])}
+                                    placeholder="Escribe o busca un modelo..."
+                                />
                             </div>
 
-                            {/* VERSIÓN DINÁMICA */}
+                            {/* VERSIÓN: BUSCADOR / ESCRITURA */}
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Versión</label>
-                                {!isManualVersion ? (
-                                    <AdminSoftSelect
-                                        value={formData.version}
-                                        disabled={!formData.model}
-                                        onChange={(value) => {
-                                            if (value === 'ADD_NEW') {
-                                                setIsManualVersion(true)
-                                                handleChange('version', '')
-                                            } else {
-                                                handleChange('version', value)
-                                            }
-                                        }}
-                                        options={[
-                                            { value: '', label: 'Seleccionar...' },
-                                            ...(currentModelData?.versions?.map((v: string) => ({ value: v, label: v })) || []),
-                                            ...(formData.model ? [{ value: 'ADD_NEW', label: '+ AGREGAR NUEVA VERSIÓN...' }] : []),
-                                        ]}
-                                    />
-                                ) : (
-                                    <div className="relative">
-                                        <input
-                                            autoFocus
-                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
-                                            value={formData.version}
-                                            onChange={(e) => handleChange('version', e.target.value)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => { setIsManualVersion(false); handleChange('version', ''); }}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
-                                        >✕</button>
-                                    </div>
-                                )}
+                                <AdminCombobox
+                                    value={formData.version}
+                                    disabled={!formData.model}
+                                    onChange={(value) => handleChange('version', value)}
+                                    options={(currentModelData?.versions?.map((version: string) => ({ value: version, label: version })) || [])}
+                                    placeholder="Escribe o busca una versión..."
+                                />
                             </div>
 
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
@@ -536,7 +451,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Ficha Técnica</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                            <div className="md:col-span-2"><FormGroup label="Motor" value={formData.engine} onChange={(v) => handleChange('engine', v)} /></div>
+                            <FormGroup label="Motor" value={formData.engine} onChange={(v) => handleChange('engine', v)} />
                             <FormSelect label="Carrocería" value={formData.body} options={['SUV', 'Sedán', 'Hatchback', 'Camioneta', 'Coupé', 'Van']} onChange={(v) => handleChange('body', v)} />
                             <FormSelect label="Transmisión" value={formData.transmission} options={['Automática', 'Manual']} onChange={(v) => handleChange('transmission', v)} />
                             <FormSelect label="Tracción" value={formData.drivetrain} options={['Delantera', 'Trasera', '4x4', '4x2']} onChange={(v) => handleChange('drivetrain', v)} />

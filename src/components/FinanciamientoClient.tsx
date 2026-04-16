@@ -170,7 +170,7 @@ export default function FinanciamientoClient() {
 
         const message = `Hola ${siteName}! Solicito evaluación de crédito automotriz.%0A` +
             `- Cliente: ${formData.firstName} ${formData.lastName}%0A` +
-            `- RUT: ${formData.rut}%0A` +
+            `- RUT o Pasaporte: ${formData.rut}%0A` +
             `- Auto: ${formData.carInterest}%0A` +
             `- Pie Solicitado: $${formData.downPayment}%0A` +
             `- Plazo: ${formData.termMonths}%0A` +
@@ -205,7 +205,7 @@ export default function FinanciamientoClient() {
                                         <InputField label="Apellido" name="lastName" placeholder="Pérez" value={formData.lastName} onChange={handleChange} primaryColor={primaryColor} />
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <InputField label="RUT" name="rut" placeholder="12.345.678-9" value={formData.rut} onChange={handleChange} primaryColor={primaryColor} />
+                                        <InputField label="RUT o Pasaporte" name="rut" placeholder="12.345.678-9" value={formData.rut} onChange={handleChange} primaryColor={primaryColor} />
                                         <InputField label="Fecha de Nacimiento" name="birthDate" type="date" value={formData.birthDate} onChange={handleChange} primaryColor={primaryColor} />
                                     </div>
                                     <FormSelect label="Nacionalidad" name="nationality" value={formData.nationality} options={['Chilena', 'Extranjera']} onChange={handleSelectChange} primaryColor={primaryColor} />
