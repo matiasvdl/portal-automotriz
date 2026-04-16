@@ -10,13 +10,13 @@ import { toggleCarStatusAction } from '@/app/actions/carActions'
 export default function DashboardPage() {
     const [cars, setCars] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [isSelectionMode, setIsSelectionMode] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [isProcessing, setIsProcessing] = useState(false)
     const router = useRouter()
-
-    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
     const fetchCars = async () => {
         try {
-            // Añadimos "status" a la consulta para saber si está activo o no
             const query = `*[_type == "car"] | order(_createdAt desc) {
                 _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage, category, engine, status,
                 "slug": slug.current,
@@ -50,21 +50,36 @@ export default function DashboardPage() {
         }
     }
 
-    // --- NUEVA FUNCIÓN PARA CAMBIAR ESTADO RÁPIDAMENTE ---
-    const handleToggleStatus = async (e: React.MouseEvent, id: string, currentStatus: boolean) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Actualización optimista: Cambiamos el color en la pantalla de inmediato
-        const previousCars = [...cars];
-        setCars(cars.map(car => car._id === id ? { ...car, status: !currentStatus } : car));
-
-        const result = await toggleCarStatusAction(id, !!currentStatus);
-
-        if (!result.success) {
-            alert("No se pudo cambiar el estado.");
-            setCars(previousCars); // Si falla, volvemos atrás
+    // --- LÓGICA DE GESTIÓN DE ESTADOS ---
+    const handleStatusModeToggle = async () => {
+        // Si ya hay seleccionados y pulsamos el botón verde, procesamos el cambio
+        if (isSelectionMode && selectedIds.length > 0) {
+            setIsProcessing(true)
+            try {
+                const promises = selectedIds.map(id => {
+                    const car = cars.find(c => c._id === id)
+                    return toggleCarStatusAction(id, !!car?.status)
+                })
+                await Promise.all(promises)
+                await fetchCars() // Recargamos para ver los cambios
+                setSelectedIds([])
+                setIsSelectionMode(false)
+            } catch (error) {
+                alert("Error al actualizar los vehículos.")
+            } finally {
+                setIsProcessing(false)
+            }
+        } else {
+            // Si no hay nada seleccionado, simplemente entramos/salimos del modo
+            setIsSelectionMode(!isSelectionMode)
+            setSelectedIds([])
         }
+    }
+
+    const toggleSelectCar = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        )
     }
 
     if (loading) return <div className="min-h-screen bg-[#F7F8FA]" />
@@ -85,31 +100,58 @@ export default function DashboardPage() {
                         </h1>
                     </div>
 
-                    <Link
-                        href="/admin/nuevo"
-                        className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap mb-0.5 leading-none"
-                    >
-                        Nuevo vehículo
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        {/* BOTÓN DINÁMICO: CAMBIAR ESTADO */}
+                        <button
+                            onClick={handleStatusModeToggle}
+                            disabled={isProcessing}
+                            className={`${isSelectionMode
+                                ? (selectedIds.length > 0 ? 'bg-green-600 text-white shadow-green-200' : 'bg-zinc-200 text-zinc-500 shadow-none')
+                                : 'bg-white border border-zinc-200 text-zinc-600 hover:border-black hover:text-black'
+                                } text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl transition-all active:scale-95 whitespace-nowrap mb-0.5 leading-none`}
+                        >
+                            {isProcessing ? 'Procesando...' :
+                                isSelectionMode ? (selectedIds.length > 0 ? `Aplicar Cambio (${selectedIds.length})` : 'Cancelar Selección') :
+                                    'Cambiar Estado'}
+                        </button>
+
+                        <Link
+                            href="/admin/nuevo"
+                            className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap mb-0.5 leading-none"
+                        >
+                            Nuevo vehículo
+                        </Link>
+                    </div>
                 </header>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 pb-40">
                     {cars.map((car) => (
                         <div key={car._id} className="w-full relative group">
 
-                            {/* BOTÓN ESTADO (Activa/Desactivada) */}
-                            <button
-                                onClick={(e) => handleToggleStatus(e, car._id, car.status)}
-                                className={`absolute top-3 left-3 z-30 px-3 py-1.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 backdrop-blur-md ${car.status
-                                        ? 'bg-green-500/90 text-white'
-                                        : 'bg-zinc-400/90 text-white'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-1.5">
-                                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${car.status ? 'bg-white' : 'bg-zinc-200'}`}></div>
-                                    {car.status ? 'Activa' : 'Oculta'}
+                            {/* INDICADOR DE ESTADO DISCRETO */}
+                            {!isSelectionMode && (
+                                <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/90 backdrop-blur-md border border-zinc-100 shadow-sm transition-opacity">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${car.status ? 'bg-green-500' : 'bg-zinc-300'}`}></div>
+                                    <span className="text-[7px] font-black uppercase tracking-widest text-zinc-500">
+                                        {car.status ? 'Activo' : 'Oculto'}
+                                    </span>
                                 </div>
-                            </button>
+                            )}
+
+                            {/* CHECKBOX DE SELECCIÓN (MODO EDICIÓN) */}
+                            {isSelectionMode && (
+                                <div
+                                    onClick={() => toggleSelectCar(car._id)}
+                                    className={`absolute top-3 left-3 z-40 w-7 h-7 rounded-xl border-2 flex items-center justify-center cursor-pointer transition-all ${selectedIds.includes(car._id)
+                                        ? 'bg-black border-black text-white scale-110'
+                                        : 'bg-white border-zinc-200 text-transparent'
+                                        }`}
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                            )}
 
                             {/* BOTÓN ELIMINAR */}
                             <button
@@ -121,9 +163,12 @@ export default function DashboardPage() {
                                 </svg>
                             </button>
 
-                            <Link href={`/admin/editar/${car._id}`} className="flex flex-col h-full">
+                            <div
+                                onClick={() => isSelectionMode ? toggleSelectCar(car._id) : router.push(`/admin/editar/${car._id}`)}
+                                className={`flex flex-col h-full cursor-pointer transition-all ${isSelectionMode && selectedIds.includes(car._id) ? 'opacity-100 ring-2 ring-black rounded-2xl' : ''}`}
+                            >
                                 <AdminCarCard car={car} />
-                            </Link>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -137,7 +182,7 @@ function AdminCarCard({ car }: { car: any }) {
     const oldPrice = car.listPrice || 0;
 
     return (
-        <div className={`bg-white border rounded-2xl overflow-hidden flex flex-col h-full transition-all ${!car.status ? 'opacity-70 grayscale-[0.5] border-gray-200' : 'border-gray-100'}`}>
+        <div className={`bg-white border rounded-2xl overflow-hidden flex flex-col h-full transition-all ${!car.status ? 'grayscale-[0.8] opacity-60 border-gray-200' : 'border-gray-100'}`}>
 
             <div className="aspect-[4/3] relative bg-gray-50 border-b border-gray-100 overflow-hidden text-left">
                 <img
@@ -159,7 +204,6 @@ function AdminCarCard({ car }: { car: any }) {
                         {car.make} {car.model}
                     </h4>
 
-                    {/* CARACTERÍSTICAS */}
                     <div className="flex items-start gap-5 text-left">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Kilómetros</span>
@@ -167,18 +211,14 @@ function AdminCarCard({ car }: { car: any }) {
                                 {car.mileage ? car.mileage.toLocaleString('es-CL') : '0'} KM
                             </span>
                         </div>
-
                         <div className="h-6 w-[1px] bg-gray-100 shrink-0"></div>
-
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Motor</span>
                             <span className="text-[11px] font-bold text-zinc-700 uppercase italic leading-none whitespace-nowrap">
                                 {car.engine ? `${car.engine}L` : '-'}
                             </span>
                         </div>
-
                         <div className="h-6 w-[1px] bg-gray-100 shrink-0"></div>
-
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Combustible</span>
                             <span className="text-[11px] font-bold text-zinc-700 uppercase italic leading-none whitespace-nowrap">
