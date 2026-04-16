@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { client, writeClient } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
+import { toggleCarStatusAction } from '@/app/actions/carActions'
 
 export default function DashboardPage() {
     const [cars, setCars] = useState<any[]>([])
@@ -15,8 +16,9 @@ export default function DashboardPage() {
 
     const fetchCars = async () => {
         try {
+            // Añadimos "status" a la consulta para saber si está activo o no
             const query = `*[_type == "car"] | order(_createdAt desc) {
-                _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage, category, engine,
+                _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage, category, engine, status,
                 "slug": slug.current,
                 "imageUrl": images[0].asset->url
             }`
@@ -48,6 +50,23 @@ export default function DashboardPage() {
         }
     }
 
+    // --- NUEVA FUNCIÓN PARA CAMBIAR ESTADO RÁPIDAMENTE ---
+    const handleToggleStatus = async (e: React.MouseEvent, id: string, currentStatus: boolean) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Actualización optimista: Cambiamos el color en la pantalla de inmediato
+        const previousCars = [...cars];
+        setCars(cars.map(car => car._id === id ? { ...car, status: !currentStatus } : car));
+
+        const result = await toggleCarStatusAction(id, !!currentStatus);
+
+        if (!result.success) {
+            alert("No se pudo cambiar el estado.");
+            setCars(previousCars); // Si falla, volvemos atrás
+        }
+    }
+
     if (loading) return <div className="min-h-screen bg-[#F7F8FA]" />
 
     return (
@@ -56,7 +75,7 @@ export default function DashboardPage() {
             <AdminNavigation />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-                <header className="flex justify-between items-end mb-9 gap-4 px-1 sm:px-0">
+                <header className="flex justify-between items-end mb-9 gap-4 px-1 sm:px-0 text-left">
                     <div className="text-left flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">
                             Gestión de stock
@@ -68,7 +87,7 @@ export default function DashboardPage() {
 
                     <Link
                         href="/admin/nuevo"
-                        className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap mb-0.5"
+                        className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap mb-0.5 leading-none"
                     >
                         Nuevo vehículo
                     </Link>
@@ -77,7 +96,22 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 pb-40">
                     {cars.map((car) => (
                         <div key={car._id} className="w-full relative group">
-                            {/* BOTÓN ELIMINAR: Aparece solo en hover gracias a group-hover:opacity-100 */}
+
+                            {/* BOTÓN ESTADO (Activa/Desactivada) */}
+                            <button
+                                onClick={(e) => handleToggleStatus(e, car._id, car.status)}
+                                className={`absolute top-3 left-3 z-30 px-3 py-1.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 backdrop-blur-md ${car.status
+                                        ? 'bg-green-500/90 text-white'
+                                        : 'bg-zinc-400/90 text-white'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-1.5">
+                                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${car.status ? 'bg-white' : 'bg-zinc-200'}`}></div>
+                                    {car.status ? 'Activa' : 'Oculta'}
+                                </div>
+                            </button>
+
+                            {/* BOTÓN ELIMINAR */}
                             <button
                                 onClick={(e) => handleDelete(e, car._id, `${car.make} ${car.model}`)}
                                 className="absolute top-3 right-3 z-30 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 active:scale-95"
@@ -103,9 +137,9 @@ function AdminCarCard({ car }: { car: any }) {
     const oldPrice = car.listPrice || 0;
 
     return (
-        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col h-full transition-all">
+        <div className={`bg-white border rounded-2xl overflow-hidden flex flex-col h-full transition-all ${!car.status ? 'opacity-70 grayscale-[0.5] border-gray-200' : 'border-gray-100'}`}>
 
-            <div className="aspect-[4/3] relative bg-gray-50 border-b border-gray-100 overflow-hidden">
+            <div className="aspect-[4/3] relative bg-gray-50 border-b border-gray-100 overflow-hidden text-left">
                 <img
                     src={car.imageUrl || 'https://via.placeholder.com/600x450?text=Sin+Imagen'}
                     alt={`${car.make} ${car.model}`}
@@ -125,8 +159,8 @@ function AdminCarCard({ car }: { car: any }) {
                         {car.make} {car.model}
                     </h4>
 
-                    {/* CARACTERÍSTICAS: Alineadas a la izquierda con gap exacto */}
-                    <div className="flex items-start gap-5">
+                    {/* CARACTERÍSTICAS */}
+                    <div className="flex items-start gap-5 text-left">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Kilómetros</span>
                             <span className="text-[11px] font-bold text-zinc-700 italic leading-none whitespace-nowrap">
@@ -154,7 +188,7 @@ function AdminCarCard({ car }: { car: any }) {
                     </div>
                 </div>
 
-                <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-left">
                     <div className="flex flex-col text-left leading-none">
                         <span className="text-[8px] font-black text-gray-300 uppercase mb-0.5 leading-none line-through italic">
                             ${oldPrice.toLocaleString('es-CL')}

@@ -59,3 +59,23 @@ export async function deleteCarAction(id: string) {
         return { success: false, error: "Error al eliminar el registro" }
     }
 }
+
+// NUEVA FUNCIÓN: Cambia el estado de activo/desactivado rápidamente desde el Dashboard
+export async function toggleCarStatusAction(id: string, currentStatus: boolean) {
+    try {
+        await writeClient
+            .patch(id)
+            .set({ status: !currentStatus }) // Invierte el estado actual
+            .commit()
+
+        // Revalidamos las rutas para que el cambio sea instantáneo en toda la web
+        revalidatePath('/admin/dashboard')
+        revalidatePath('/catalogo')
+        revalidatePath('/')
+
+        return { success: true, newStatus: !currentStatus }
+    } catch (error) {
+        console.error("Error al cambiar estado:", error)
+        return { success: false }
+    }
+}
