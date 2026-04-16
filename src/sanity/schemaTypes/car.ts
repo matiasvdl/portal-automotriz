@@ -8,10 +8,19 @@ export const car = defineType({
         defineField({ name: 'make', title: 'Marca', type: 'string' }),
         defineField({ name: 'model', title: 'Modelo', type: 'string' }),
         defineField({
+            name: 'version',
+            title: 'Versión',
+            type: 'string',
+            placeholder: 'Ej: Limited, Sport, etc (opcional)'
+        }),
+        defineField({
             name: 'slug',
             title: 'Enlace (Slug)',
             type: 'slug',
-            options: { source: (doc: any) => `${doc.make}-${doc.model}-${doc.year}` },
+            // Actualizado para incluir la versión en el enlace automáticamente
+            options: {
+                source: (doc: any) => `${doc.make}-${doc.model}${doc.version ? '-' + doc.version : ''}-${doc.year}`
+            },
             validation: Rule => Rule.required()
         }),
         defineField({ name: 'year', title: 'Año', type: 'number' }),
@@ -27,7 +36,6 @@ export const car = defineType({
                     { title: 'Recién Llegado', value: 'Recién Llegado' },
                     { title: 'Oferta de la Semana', value: 'Oferta de la Semana' },
                     { title: 'Reserva Online', value: 'Reserva Online' },
-                    { title: 'Garantía VDL', value: 'Garantía VDL' },
                     { title: 'Único Dueño', value: 'Único Dueño' },
                     { title: 'Oportunidad', value: 'Oportunidad' },
                     { title: 'Vendido', value: 'Vendido' },
@@ -151,7 +159,6 @@ export const car = defineType({
                 { name: 'potencia', title: 'Potencia (Ej: 110 HP)', type: 'string' },
             ]
         }),
-        // NUEVO BLOQUE: HISTORIAL Y MANTENCIONES
         defineField({
             name: 'specsHistory',
             title: 'Especificaciones: Historial',
@@ -253,6 +260,7 @@ export const car = defineType({
             name: 'description',
             title: 'Descripción',
             type: 'text',
+            placeholder: 'Escribe aquí los detalles del vehículo...'
         }),
         defineField({
             name: 'status',

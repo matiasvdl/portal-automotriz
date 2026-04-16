@@ -25,10 +25,22 @@ interface SanityImage {
 }
 
 interface CarFormData {
-    make: string; model: string; slug: string; year: number;
-    category: string; listPrice: number; financedPrice: number; mileage: number;
-    engine: string; body: string; transmission: string; drivetrain: string;
-    fuel: string; color: string; location: string;
+    make: string;
+    model: string;
+    version: string; // NUEVO CAMPO
+    slug: string;
+    year: number;
+    category: string;
+    listPrice: number;
+    financedPrice: number;
+    mileage: number;
+    engine: string;
+    body: string;
+    transmission: string;
+    drivetrain: string;
+    fuel: string;
+    color: string;
+    location: string;
     specsGeneral: { cilindrada: string; cilindros: string; potencia: string };
     specsHistory: { duenos: string; mantenciones: string; historial: string };
     specsExterior: { puertas: string; rin: string; tipoRin: string; luces: string };
@@ -53,12 +65,24 @@ export default function NuevoVehiculoPage() {
     const exteriorImagesRef = useRef<HTMLInputElement>(null)
     const interiorImagesRef = useRef<HTMLInputElement>(null)
 
-    // ESTADO CON LOS 46 CAMPOS EXACTOS
+    // ESTADO CON LOS CAMPOS EXACTOS
     const [formData, setFormData] = useState<CarFormData>({
-        make: '', model: '', slug: '', year: new Date().getFullYear(),
-        category: 'Seminuevo', listPrice: 0, financedPrice: 0, mileage: 0,
-        engine: '', body: 'SUV', transmission: 'Automática', drivetrain: 'Delantera',
-        fuel: 'Bencina', color: 'Blanco', location: 'Metropolitana de Santiago',
+        make: '',
+        model: '',
+        version: '', // NUEVO CAMPO
+        slug: '',
+        year: new Date().getFullYear(),
+        category: 'Seminuevo',
+        listPrice: 0,
+        financedPrice: 0,
+        mileage: 0,
+        engine: '',
+        body: 'SUV',
+        transmission: 'Automática',
+        drivetrain: 'Delantera',
+        fuel: 'Bencina',
+        color: 'Blanco',
+        location: 'Metropolitana de Santiago',
         specsGeneral: { cilindrada: '', cilindros: '', potencia: '' },
         specsHistory: { duenos: '', mantenciones: '', historial: '' },
         specsExterior: { puertas: '', rin: '', tipoRin: '', luces: '' },
@@ -67,7 +91,9 @@ export default function NuevoVehiculoPage() {
         specsInterior: { pasajeros: '', materialAsientos: '' },
         specsEntertainment: { pantalla: '', carplay: '', bluetooth: '', radio: '' },
         description: '',
-        images: [], exteriorImages: [], interiorImages: []
+        images: [],
+        exteriorImages: [],
+        interiorImages: []
     })
 
     // --- MANEJADORES ---
@@ -83,7 +109,9 @@ export default function NuevoVehiculoPage() {
     }
 
     const generateSlug = () => {
-        const generated = `${formData.make}-${formData.model}-${formData.year}`
+        // Lógica actualizada para incluir la versión en el slug si existe
+        const versionPart = formData.version ? `-${formData.version}` : ''
+        const generated = `${formData.make}-${formData.model}${versionPart}-${formData.year}`
             .toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
         handleChange('slug', generated)
     }
@@ -200,6 +228,9 @@ export default function NuevoVehiculoPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                             <FormGroup label="Marca" value={formData.make} onChange={(v) => handleChange('make', v)} />
                             <FormGroup label="Modelo" value={formData.model} onChange={(v) => handleChange('model', v)} />
+                            {/* NUEVO CAMPO: VERSIÓN */}
+                            <FormGroup label="Versión" value={formData.version} onChange={(v) => handleChange('version', v)} />
+
                             <div className="flex flex-col space-y-2 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Enlace (Slug)</label>
                                 <div className="flex gap-2 h-[42px]">
@@ -208,7 +239,7 @@ export default function NuevoVehiculoPage() {
                                 </div>
                             </div>
                             <FormGroup label="Año" type="number" value={formData.year} onChange={(v) => handleChange('year', parseInt(v) || 0)} />
-                            <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reserva Online', 'Garantía VDL', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(v) => handleChange('category', v)} />
+                            <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reserva Online', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(v) => handleChange('category', v)} />
                             <FormGroup label="Precio Lista" type="number" value={formData.listPrice} onChange={(v) => handleChange('listPrice', parseInt(v) || 0)} />
                             <FormGroup label="Precio Financiado" type="number" value={formData.financedPrice} onChange={(v) => handleChange('financedPrice', parseInt(v) || 0)} />
                             <FormGroup label="Kilometraje" type="number" value={formData.mileage} onChange={(v) => handleChange('mileage', parseInt(v) || 0)} />
