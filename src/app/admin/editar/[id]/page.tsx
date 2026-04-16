@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { client as readClient } from '@/sanity/lib/client'
 import { uploadSanityImage } from '@/app/actions/vehiculosActions'
 import { saveCarAction, deleteCarAction } from '@/app/actions/carActions'
+import { syncBrandDatabaseAction } from '@/app/actions/brandActions' // Acción para sincronizar la base de datos
 import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
 
@@ -27,7 +28,7 @@ interface SanityImage {
 interface CarFormData {
     make: string;
     model: string;
-    version: string; // NUEVO CAMPO
+    version: string;
     slug: string;
     year: number;
     category: string;
@@ -62,7 +63,11 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     const [tags, setTags] = useState<string[]>([])
     const [currentTag, setCurrentTag] = useState('')
 
-    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+    // --- ESTADOS PARA LA BASE DE DATOS DE MARCAS/MODELOS ---
+    const [dbBrands, setDbBrands] = useState<any[]>([])
+    const [isManualMake, setIsManualMake] = useState(false)
+    const [isManualModel, setIsManualModel] = useState(false)
+    const [isManualVersion, setIsManualVersion] = useState(false)
 
     const mainImagesRef = useRef<HTMLInputElement>(null)
     const exteriorImagesRef = useRef<HTMLInputElement>(null)
@@ -71,7 +76,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     const [formData, setFormData] = useState<CarFormData>({
         make: '',
         model: '',
-        version: '', // NUEVO CAMPO
+        version: '',
         slug: '',
         year: new Date().getFullYear(),
         category: 'Seminuevo',
@@ -99,15 +104,20 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     })
 
     useEffect(() => {
-        const fetchCar = async () => {
+        const loadData = async () => {
             try {
-                // Usamos el cliente de lectura para obtener los datos iniciales
+                // 1. Cargar la base de datos de marcas
+                const brands = await readClient.fetch(`*[_type == "brand"] | order(name asc) { name, models }`)
+                setDbBrands(brands)
+
+                // 2. Cargar los datos del vehículo actual
                 const car = await readClient.fetch(`*[_type == "car" && _id == $id][0]`, { id })
+
                 if (car) {
                     setFormData({
                         make: car.make || '',
                         model: car.model || '',
-                        version: car.version || '', // MAPEO DEL NUEVO CAMPO
+                        version: car.version || '',
                         slug: car.slug?.current || '',
                         year: car.year || new Date().getFullYear(),
                         category: car.category || 'Seminuevo',
@@ -167,14 +177,24 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         interiorImages: car.interiorImages || []
                     })
                     setTags(car.features || [])
+
+                    // DETECTAR SI LOS VALORES ACTUALES SON MANUALES (NO ESTÁN EN LA DB)
+                    const brandInDb = brands.find((b: any) => b.name === car.make)
+                    if (!brandInDb && car.make) setIsManualMake(true)
+
+                    const modelInDb = brandInDb?.models?.find((m: any) => m.modelName === car.model)
+                    if (!modelInDb && car.model) setIsManualModel(true)
+
+                    const versionInDb = modelInDb?.versions?.includes(car.version)
+                    if (!versionInDb && car.version) setIsManualVersion(true)
                 }
             } catch (error) {
-                console.error(error)
+                console.error("Error al cargar datos:", error)
             } finally {
                 setIsLoading(false)
             }
         }
-        fetchCar()
+        loadData()
     }, [id])
 
     const handleChange = (field: keyof CarFormData, value: string | number) => {
@@ -189,14 +209,12 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     }
 
     const generateSlug = () => {
-        // Lógica actualizada para incluir la versión en el slug si existe
         const versionPart = formData.version ? `-${formData.version}` : ''
         const generated = `${formData.make}-${formData.model}${versionPart}-${formData.year}`
             .toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
         handleChange('slug', generated)
     }
 
-    // CORRECCIÓN PARA VERCEL: Ahora usamos la Server Action para subir imágenes nuevas
     const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>, field: 'images' | 'exteriorImages' | 'interiorImages') => {
         const files = e.target.files; if (!files || files.length === 0) return
         setIsSubmitting(true)
@@ -224,16 +242,11 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         setFormData(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }))
     }
 
-    // --- NUEVA FUNCIÓN: MOVER IMÁGENES (PARA REORDENAR) ---
     const moveImage = (field: 'images' | 'exteriorImages' | 'interiorImages', index: number, direction: 'left' | 'right') => {
         const newImages = [...formData[field]]
         const targetIndex = direction === 'left' ? index - 1 : index + 1
-
         if (targetIndex < 0 || targetIndex >= newImages.length) return
-
-        // Intercambio de posiciones
         [newImages[index], newImages[targetIndex]] = [newImages[targetIndex], newImages[index]]
-
         setFormData(prev => ({ ...prev, [field]: newImages }))
     }
 
@@ -259,13 +272,15 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         setIsSubmitting(true)
 
         try {
+            // Sincronizar base de datos de marcas si hay valores nuevos
+            await syncBrandDatabaseAction(formData.make, formData.model, formData.version)
+
             const doc = {
                 ...formData,
                 slug: { _type: 'slug', current: formData.slug },
                 features: tags
             }
 
-            // Usamos la acción de servidor para guardar los cambios
             await saveCarAction(id, doc)
             router.push('/admin/dashboard')
         } catch (error) {
@@ -279,15 +294,23 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         if (confirm('¿Estás seguro de que deseas eliminar este vehículo permanentemente?')) {
             setIsSubmitting(true)
             try {
-                // Usamos la acción de servidor para eliminar
-                await deleteCarAction(id)
-                router.push('/admin/dashboard')
+                const result = await deleteCarAction(id)
+                if (result.success) {
+                    router.push('/admin/dashboard')
+                } else {
+                    alert(result.error || "No se pudo eliminar.")
+                    setIsSubmitting(false)
+                }
             } catch (error) {
                 alert('Error al eliminar el vehículo.')
                 setIsSubmitting(false)
             }
         }
     }
+
+    // --- LÓGICA DE OPCIONES DINÁMICAS ---
+    const currentBrandData = dbBrands.find(b => b.name === formData.make)
+    const currentModelData = currentBrandData?.models?.find((m: any) => m.modelName === formData.model)
 
     if (isLoading) return null
 
@@ -296,12 +319,11 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
             <AdminNavigation />
 
             <main className="max-w-7xl mx-auto px-6 py-8">
-                <header className="flex justify-between items-end mb-9 gap-4">
-                    <div className="text-left flex-1">
+                <header className="flex justify-between items-end mb-9 gap-4 text-left">
+                    <div className="flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">Editor de inventario</p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Editar Vehículo</h1>
                     </div>
-                    {/* ACCIONES DESKTOP */}
                     <div className="hidden sm:flex items-center gap-3">
                         <button
                             onClick={handleDelete}
@@ -322,10 +344,126 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Identidad y Comercial</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                            <FormGroup label="Marca" value={formData.make} onChange={(val: string) => handleChange('make', val)} />
-                            <FormGroup label="Modelo" value={formData.model} onChange={(val: string) => handleChange('model', val)} />
-                            {/* NUEVO CAMPO: VERSIÓN */}
-                            <FormGroup label="Versión" value={formData.version} onChange={(val: string) => handleChange('version', val)} />
+
+                            {/* MARCA DINÁMICA */}
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Marca</label>
+                                {!isManualMake ? (
+                                    <select
+                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer"
+                                        value={formData.make}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'ADD_NEW') {
+                                                setIsManualMake(true)
+                                                handleChange('make', '')
+                                            } else {
+                                                handleChange('make', e.target.value)
+                                                handleChange('model', '')
+                                                handleChange('version', '')
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        {dbBrands.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+                                        <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVA MARCA...</option>
+                                    </select>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            autoFocus
+                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
+                                            value={formData.make}
+                                            onChange={(e) => handleChange('make', e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsManualMake(false); handleChange('make', ''); }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
+                                        >✕</button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* MODELO DINÁMICO */}
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Modelo</label>
+                                {!isManualModel ? (
+                                    <select
+                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer disabled:opacity-50"
+                                        value={formData.model}
+                                        disabled={!formData.make}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'ADD_NEW') {
+                                                setIsManualModel(true)
+                                                handleChange('model', '')
+                                            } else {
+                                                handleChange('model', e.target.value)
+                                                handleChange('version', '')
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        {currentBrandData?.models?.map((m: any) => (
+                                            <option key={m.modelName} value={m.modelName}>{m.modelName}</option>
+                                        ))}
+                                        {formData.make && <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVO MODELO...</option>}
+                                    </select>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            autoFocus
+                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
+                                            value={formData.model}
+                                            onChange={(e) => handleChange('model', e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsManualModel(false); handleChange('model', ''); }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
+                                        >✕</button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* VERSIÓN DINÁMICA */}
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Versión</label>
+                                {!isManualVersion ? (
+                                    <select
+                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer disabled:opacity-50"
+                                        value={formData.version}
+                                        disabled={!formData.model}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'ADD_NEW') {
+                                                setIsManualVersion(true)
+                                                handleChange('version', '')
+                                            } else {
+                                                handleChange('version', e.target.value)
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        {currentModelData?.versions?.map((v: string) => (
+                                            <option key={v} value={v}>{v}</option>
+                                        ))}
+                                        {formData.model && <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVA VERSIÓN...</option>}
+                                    </select>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            autoFocus
+                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
+                                            value={formData.version}
+                                            onChange={(e) => handleChange('version', e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsManualVersion(false); handleChange('version', ''); }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
+                                        >✕</button>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Enlace (Slug)</label>
@@ -342,89 +480,86 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         </div>
                     </div>
 
-                    {/* BLOQUE 2: FICHA TÉCNICA */}
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Ficha Técnica</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                            <div className="md:col-span-2">
-                                <FormGroup label="Motor (Cilindrada/Potencia)" value={formData.engine} onChange={(val: string) => handleChange('engine', val)} />
-                            </div>
-                            <FormSelect label="Carrocería" value={formData.body} options={['SUV', 'Sedán', 'Hatchback', 'Camioneta', 'Coupé', 'Van']} onChange={(val: string) => handleChange('body', val)} />
-                            <FormSelect label="Transmisión" value={formData.transmission} options={['Automática', 'Manual']} onChange={(val: string) => handleChange('transmission', val)} />
-                            <FormSelect label="Tracción" value={formData.drivetrain} options={['Delantera', 'Trasera', '4x4', '4x2']} onChange={(val: string) => handleChange('drivetrain', val)} />
-                            <FormSelect label="Combustible" value={formData.fuel} options={['Bencina', 'Diésel', 'Híbrido', 'Eléctrico']} onChange={(val: string) => handleChange('fuel', val)} />
-                            <FormSelect label="Color" value={formData.color} options={['Blanco', 'Negro', 'Gris', 'Azul', 'Rojo', 'Plateado']} onChange={(val: string) => handleChange('color', val)} />
-                            <div className="md:col-span-1">
-                                <FormGroup label="Ubicación" value={formData.location} onChange={(val: string) => handleChange('location', val)} />
-                            </div>
+                            <div className="md:col-span-2"><FormGroup label="Motor" value={formData.engine} onChange={(v) => handleChange('engine', v)} /></div>
+                            <FormSelect label="Carrocería" value={formData.body} options={['SUV', 'Sedán', 'Hatchback', 'Camioneta', 'Coupé', 'Van']} onChange={(v) => handleChange('body', v)} />
+                            <FormSelect label="Transmisión" value={formData.transmission} options={['Automática', 'Manual']} onChange={(v) => handleChange('transmission', v)} />
+                            <FormSelect label="Tracción" value={formData.drivetrain} options={['Delantera', 'Trasera', '4x4', '4x2']} onChange={(v) => handleChange('drivetrain', v)} />
+                            <FormSelect label="Combustible" value={formData.fuel} options={['Bencina', 'Diésel', 'Híbrido', 'Eléctrico']} onChange={(v) => handleChange('fuel', v)} />
+                            <FormSelect label="Color" value={formData.color} options={['Blanco', 'Negro', 'Gris', 'Azul', 'Rojo', 'Plateado']} onChange={(v) => handleChange('color', v)} />
+                            <div className="md:col-span-1"><FormGroup label="Ubicación" value={formData.location} onChange={(v) => handleChange('location', v)} /></div>
                         </div>
                     </div>
 
-                    {/* BLOQUE 3: GENERAL E HISTORIAL */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: General</h3>
-                            <FormGroup label="Cilindrada" value={formData.specsGeneral?.cilindrada} onChange={(val: string) => handleNestedChange('specsGeneral', 'cilindrada', val)} />
-                            <FormGroup label="Cilindros" value={formData.specsGeneral?.cilindros} onChange={(val: string) => handleNestedChange('specsGeneral', 'cilindros', val)} />
-                            <FormGroup label="Potencia" value={formData.specsGeneral?.potencia} onChange={(val: string) => handleNestedChange('specsGeneral', 'potencia', val)} />
+                            <div className="grid grid-cols-1 gap-5">
+                                <FormGroup label="Cilindrada" value={formData.specsGeneral.cilindrada} onChange={(v) => handleNestedChange('specsGeneral', 'cilindrada', v)} />
+                                <FormGroup label="Cilindros" value={formData.specsGeneral.cilindros} onChange={(v) => handleNestedChange('specsGeneral', 'cilindros', v)} />
+                                <FormGroup label="Potencia" value={formData.specsGeneral.potencia} onChange={(v) => handleNestedChange('specsGeneral', 'potencia', v)} />
+                            </div>
                         </div>
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: Historial</h3>
-                            <FormGroup label="Dueños" value={formData.specsHistory?.duenos} onChange={(val: string) => handleNestedChange('specsHistory', 'duenos', val)} />
-                            <FormGroup label="Mantenciones" value={formData.specsHistory?.mantenciones} onChange={(val: string) => handleNestedChange('specsHistory', 'mantenciones', val)} />
-                            <FormGroup label="Historial Autofact" value={formData.specsHistory?.historial} onChange={(val: string) => handleNestedChange('specsHistory', 'historial', val)} />
+                            <div className="grid grid-cols-1 gap-5">
+                                <FormGroup label="Dueños" value={formData.specsHistory.duenos} onChange={(v) => handleNestedChange('specsHistory', 'duenos', v)} />
+                                <FormGroup label="Mantenciones" value={formData.specsHistory.mantenciones} onChange={(v) => handleNestedChange('specsHistory', 'mantenciones', v)} />
+                                <FormGroup label="Historial Autofact" value={formData.specsHistory.historial} onChange={(v) => handleNestedChange('specsHistory', 'historial', v)} />
+                            </div>
                         </div>
                     </div>
 
-                    {/* BLOQUE 4: EXTERIOR E INTERIOR */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Exterior</h3>
                             <div className="grid grid-cols-2 gap-5">
-                                <FormGroup label="Número de Puertas" value={formData.specsExterior.puertas} onChange={(val: string) => handleNestedChange('specsExterior', 'puertas', val)} />
-                                <FormGroup label="Diámetro de Rin" value={formData.specsExterior.rin} onChange={(val: string) => handleNestedChange('specsExterior', 'rin', val)} />
-                                <FormGroup label="Tipo de Rin" value={formData.specsExterior.tipoRin} onChange={(val: string) => handleNestedChange('specsExterior', 'tipoRin', val)} />
-                                <FormGroup label="Tipo de Luces" value={formData.specsExterior.luces} onChange={(val: string) => handleNestedChange('specsExterior', 'luces', val)} />
+                                <FormGroup label="Número de Puertas" value={formData.specsExterior.puertas} onChange={(v) => handleNestedChange('specsExterior', 'puertas', v)} />
+                                <FormGroup label="Diámetro de Rin" value={formData.specsExterior.rin} onChange={(v) => handleNestedChange('specsExterior', 'rin', v)} />
+                                <FormGroup label="Tipo de Rin" value={formData.specsExterior.tipoRin} onChange={(v) => handleNestedChange('specsExterior', 'tipoRin', v)} />
+                                <FormGroup label="Tipo de Luces" value={formData.specsExterior.luces} onChange={(v) => handleNestedChange('specsExterior', 'luces', v)} />
                             </div>
                         </div>
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Interior</h3>
-                            <FormGroup label="Número de Pasajeros" value={formData.specsInterior.pasajeros} onChange={(val: string) => handleNestedChange('specsInterior', 'pasajeros', val)} />
-                            <FormGroup label="Material Asientos" value={formData.specsInterior.materialAsientos} onChange={(val: string) => handleNestedChange('specsInterior', 'materialAsientos', val)} />
+                            <div className="grid grid-cols-1 gap-5">
+                                <FormGroup label="Número de Pasajeros" value={formData.specsInterior.pasajeros} onChange={(v) => handleNestedChange('specsInterior', 'pasajeros', v)} />
+                                <FormGroup label="Material Asientos" value={formData.specsInterior.materialAsientos} onChange={(v) => handleNestedChange('specsInterior', 'materialAsientos', v)} />
+                            </div>
                         </div>
                     </div>
 
-                    {/* BLOQUE 5: DETALLES ADICIONALES */}
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Detalles Técnicos Adicionales</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div className="space-y-6">
                                 <p className="text-[9px] font-black text-zinc-600 uppercase leading-none ml-1">Confort</p>
-                                <FormGroup label="Botón de Encendido" value={formData.specsComfort.encendido} onChange={(val: string) => handleNestedChange('specsComfort', 'encendido', val)} />
-                                <FormGroup label="Control de Crucero" value={formData.specsComfort.crucero} onChange={(val: string) => handleNestedChange('specsComfort', 'crucero', val)} />
-                                <FormGroup label="Sensor de Distancia" value={formData.specsComfort.sensorDistancia} onChange={(val: string) => handleNestedChange('specsComfort', 'sensorDistancia', val)} />
-                                <FormGroup label="Aire Acondicionado" value={formData.specsComfort.aire} onChange={(val: string) => handleNestedChange('specsComfort', 'aire', val)} />
-                                <FormGroup label="Asistencia Estacionamiento" value={formData.specsComfort.estacionamiento} onChange={(val: string) => handleNestedChange('specsComfort', 'estacionamiento', val)} />
+                                <FormGroup label="Botón de Encendido" value={formData.specsComfort.encendido} onChange={(v) => handleNestedChange('specsComfort', 'encendido', v)} />
+                                <FormGroup label="Control de Crucero" value={formData.specsComfort.crucero} onChange={(v) => handleNestedChange('specsComfort', 'crucero', v)} />
+                                <FormGroup label="Sensor de Distancia" value={formData.specsComfort.sensorDistancia} onChange={(v) => handleNestedChange('specsComfort', 'sensorDistancia', v)} />
+                                <FormGroup label="Aire Acondicionado" value={formData.specsComfort.aire} onChange={(v) => handleNestedChange('specsComfort', 'aire', v)} />
+                                <FormGroup label="Asistencia Estacionamiento" value={formData.specsComfort.estacionamiento} onChange={(v) => handleNestedChange('specsComfort', 'estacionamiento', v)} />
                             </div>
                             <div className="space-y-6">
                                 <p className="text-[9px] font-black text-zinc-600 uppercase leading-none ml-1">Seguridad</p>
-                                <FormGroup label="Bolsas de Aire Delanteras" value={formData.specsSecurity.airbagsDelanteros} onChange={(val: string) => handleNestedChange('specsSecurity', 'airbagsDelanteros', val)} />
-                                <FormGroup label="Número total de Airbags" value={formData.specsSecurity.airbagsTotales} onChange={(val: string) => handleNestedChange('specsSecurity', 'airbagsTotales', val)} />
-                                <FormGroup label="Cantidad discos freno" value={formData.specsSecurity.frenosDisco} onChange={(val: string) => handleNestedChange('specsSecurity', 'frenosDisco', val)} />
-                                <FormGroup label="Frenos ABS" value={formData.specsSecurity.abs} onChange={(val: string) => handleNestedChange('specsSecurity', 'abs', val)} />
-                                <FormGroup label="Control estabilidad" value={formData.specsSecurity.estabilidad} onChange={(val: string) => handleNestedChange('specsSecurity', 'estabilidad', val)} />
+                                <FormGroup label="Bolsas de Aire Delanteras" value={formData.specsSecurity.airbagsDelanteros} onChange={(v) => handleNestedChange('specsSecurity', 'airbagsDelanteros', v)} />
+                                <FormGroup label="Número total de Airbags" value={formData.specsSecurity.airbagsTotales} onChange={(v) => handleNestedChange('specsSecurity', 'airbagsTotales', v)} />
+                                <FormGroup label="Cantidad discos freno" value={formData.specsSecurity.frenosDisco} onChange={(v) => handleNestedChange('specsSecurity', 'frenosDisco', v)} />
+                                <FormGroup label="Frenos ABS" value={formData.specsSecurity.abs} onChange={(v) => handleNestedChange('specsSecurity', 'abs', v)} />
+                                <FormGroup label="Control estabilidad" value={formData.specsSecurity.estabilidad} onChange={(v) => handleNestedChange('specsSecurity', 'estabilidad', v)} />
                             </div>
                             <div className="space-y-6">
                                 <p className="text-[9px] font-black text-zinc-600 uppercase leading-none ml-1">Entretenimiento</p>
-                                <FormGroup label="Pantalla Táctil" value={formData.specsEntertainment.pantalla} onChange={(val: string) => handleNestedChange('specsEntertainment', 'pantalla', val)} />
-                                <FormGroup label="Apple CarPlay / Android Auto" value={formData.specsEntertainment.carplay} onChange={(val: string) => handleNestedChange('specsEntertainment', 'carplay', val)} />
-                                <FormGroup label="Bluetooth" value={formData.specsEntertainment.bluetooth} onChange={(val: string) => handleNestedChange('specsEntertainment', 'bluetooth', val)} />
-                                <FormGroup label="Radio" value={formData.specsEntertainment.radio} onChange={(val: string) => handleNestedChange('specsEntertainment', 'radio', val)} />
+                                <FormGroup label="Pantalla Táctil" value={formData.specsEntertainment.pantalla} onChange={(v) => handleNestedChange('specsEntertainment', 'pantalla', v)} />
+                                <FormGroup label="Apple CarPlay / Android Auto" value={formData.specsEntertainment.carplay} onChange={(v) => handleNestedChange('specsEntertainment', 'carplay', v)} />
+                                <FormGroup label="Bluetooth" value={formData.specsEntertainment.bluetooth} onChange={(v) => handleNestedChange('specsEntertainment', 'bluetooth', v)} />
+                                <FormGroup label="Radio" value={formData.specsEntertainment.radio} onChange={(v) => handleNestedChange('specsEntertainment', 'radio', v)} />
                             </div>
                         </div>
                     </div>
 
-                    {/* BLOQUE 6: MULTIMEDIA Y EXTRAS */}
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-3 shadow-none text-left">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Multimedia y Extras</h3>
                         <div className="space-y-2.5 text-left">
@@ -459,7 +594,6 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         <input type="file" multiple className="hidden" ref={interiorImagesRef} onChange={(e) => handleImageUpload(e, 'interiorImages')} />
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 leading-none pt-1">
-                            {/* PASAMOS LA FUNCIÓN moveImage A LOS COMPONENTES */}
                             <ImageUploadPlaceholder
                                 label="Imágenes Principales"
                                 images={formData.images}
@@ -494,7 +628,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                 </form>
             </main>
 
-            {/* ACCIONES MÓVIL: Barra Inferior */}
+            {/* ACCIONES MÓVIL */}
             <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-4 z-[110] flex items-center gap-3">
                 <button
                     onClick={handleDelete}
@@ -519,7 +653,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     )
 }
 
-// --- AUXILIARES TIPADOS ---
+// --- AUXILIARES ---
 interface FGProps { label: string; value: string | number | undefined; onChange: (v: string) => void; type?: string; placeholder?: string; }
 function FormGroup({ label, value, onChange, type = "text", placeholder = "" }: FGProps) {
     return (
@@ -555,7 +689,6 @@ function FormSelect({ label, value, options, onChange }: FSProps) {
     )
 }
 
-// COMPONENTE DE IMÁGENES ACTUALIZADO CON ORDENAMIENTO
 function ImageUploadPlaceholder({ label, images, field, onClick, onRemove, onMove }: any) {
     return (
         <div className="flex flex-col space-y-3 text-left leading-none">
@@ -571,48 +704,20 @@ function ImageUploadPlaceholder({ label, images, field, onClick, onRemove, onMov
                     {images.map((img: any, i: number) => (
                         <div key={img._key || i} className="relative aspect-video group leading-none overflow-hidden rounded-2xl border border-zinc-100">
                             <img src={urlFor(img).width(200).url()} className="w-full h-full object-cover" alt="Preview" />
-
-                            {/* OVERLAY DE ACCIONES (SOLO VISIBLE EN HOVER) */}
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-
-                                {/* MOVER IZQUIERDA */}
                                 {i > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); onMove(field, i, 'left'); }}
-                                        className="w-7 h-7 bg-white/20 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-all backdrop-blur-sm"
-                                    >
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); onMove(field, i, 'left'); }} className="w-7 h-7 bg-white/20 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-all backdrop-blur-sm">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
                                     </button>
                                 )}
-
-                                {/* ELIMINAR */}
-                                <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); onRemove(field, i); }}
-                                    className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all"
-                                >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-
-                                {/* MOVER DERECHA */}
+                                <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(field, i); }} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg></button>
                                 {i < images.length - 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); onMove(field, i, 'right'); }}
-                                        className="w-7 h-7 bg-white/20 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-all backdrop-blur-sm"
-                                    >
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); onMove(field, i, 'right'); }} className="w-7 h-7 bg-white/20 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-all backdrop-blur-sm">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                                     </button>
                                 )}
                             </div>
-
-                            {/* ETIQUETA DE PORTADA (SOLO PARA LA PRIMERA IMAGEN PRINCIPAL) */}
-                            {field === 'images' && i === 0 && (
-                                <div className="absolute top-2 left-2 bg-black text-white text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-md z-10">
-                                    Portada
-                                </div>
-                            )}
+                            {field === 'images' && i === 0 && <div className="absolute top-2 left-2 bg-black text-white text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-md z-10">Portada</div>}
                         </div>
                     ))}
                 </div>
