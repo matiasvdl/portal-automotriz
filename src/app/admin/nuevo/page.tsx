@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, ChangeEvent, KeyboardEvent } from 'react'
+import { useState, useRef, ChangeEvent, KeyboardEvent, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 // Importamos el cliente de lectura para la previsualización y la acción de subida para el proceso
@@ -9,6 +9,7 @@ import { uploadSanityImage } from '@/app/actions/vehiculosActions'
 import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
 import { saveCarAction } from '@/app/actions/carActions'
+import { syncBrandDatabaseAction } from '@/app/actions/brandActions' // NUEVA ACCIÓN PARA SINCRONIZAR
 
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 // Usamos el cliente de lectura porque el builder no necesita token de escritura
@@ -60,6 +61,12 @@ export default function NuevoVehiculoPage() {
     const [tags, setTags] = useState<string[]>([])
     const [currentTag, setCurrentTag] = useState('')
 
+    // --- ESTADOS PARA LA BASE DE DATOS DE MARCAS/MODELOS ---
+    const [dbBrands, setDbBrands] = useState<any[]>([])
+    const [isManualMake, setIsManualMake] = useState(false)
+    const [isManualModel, setIsManualModel] = useState(false)
+    const [isManualVersion, setIsManualVersion] = useState(false)
+
     // Referencias para inputs de archivos
     const mainImagesRef = useRef<HTMLInputElement>(null)
     const exteriorImagesRef = useRef<HTMLInputElement>(null)
@@ -95,6 +102,19 @@ export default function NuevoVehiculoPage() {
         exteriorImages: [],
         interiorImages: []
     })
+
+    // --- CARGAR BASE DE DATOS DE MARCAS AL INICIAR ---
+    useEffect(() => {
+        const fetchBrands = async () => {
+            try {
+                const data = await readClient.fetch(`*[_type == "brand"] | order(name asc) { name, models }`)
+                setDbBrands(data)
+            } catch (error) {
+                console.error("Error al cargar marcas:", error)
+            }
+        }
+        fetchBrands()
+    }, [])
 
     // --- MANEJADORES ---
     const handleChange = (field: keyof CarFormData, value: string | number) => {
@@ -188,12 +208,17 @@ export default function NuevoVehiculoPage() {
         setIsSubmitting(true)
 
         try {
+            // 1. Sincronizar la base de datos de marcas si se escribieron valores nuevos
+            await syncBrandDatabaseAction(formData.make, formData.model, formData.version)
+
+            // 2. Preparar documento
             const doc = {
                 ...formData,
                 slug: { _type: 'slug', current: formData.slug },
                 features: tags
             }
 
+            // 3. Guardar el vehículo
             await saveCarAction(null, doc)
 
             router.push('/admin/dashboard')
@@ -203,6 +228,10 @@ export default function NuevoVehiculoPage() {
             setIsSubmitting(false)
         }
     }
+
+    // --- LÓGICA DE OPCIONES DINÁMICAS BASADA EN LA DB ---
+    const currentBrandData = dbBrands.find(b => b.name === formData.make)
+    const currentModelData = currentBrandData?.models?.find((m: any) => m.modelName === formData.model)
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-32 sm:pb-40 text-left">
@@ -226,10 +255,129 @@ export default function NuevoVehiculoPage() {
                     <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Identidad y Comercial</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                            <FormGroup label="Marca" value={formData.make} onChange={(v) => handleChange('make', v)} />
-                            <FormGroup label="Modelo" value={formData.model} onChange={(v) => handleChange('model', v)} />
-                            {/* NUEVO CAMPO: VERSIÓN */}
-                            <FormGroup label="Versión" value={formData.version} onChange={(v) => handleChange('version', v)} />
+
+                            {/* MARCA: SELECT DINÁMICO */}
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Marca</label>
+                                {!isManualMake ? (
+                                    <select
+                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer"
+                                        value={formData.make}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'ADD_NEW') {
+                                                setIsManualMake(true)
+                                                handleChange('make', '')
+                                            } else {
+                                                handleChange('make', e.target.value)
+                                                handleChange('model', '')
+                                                handleChange('version', '')
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        {dbBrands.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+                                        <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVA MARCA...</option>
+                                    </select>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            autoFocus
+                                            placeholder="Escribe la marca..."
+                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
+                                            value={formData.make}
+                                            onChange={(e) => handleChange('make', e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsManualMake(false); handleChange('make', ''); }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
+                                        >✕</button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* MODELO: SELECT DINÁMICO */}
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Modelo</label>
+                                {!isManualModel ? (
+                                    <select
+                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer disabled:opacity-50"
+                                        value={formData.model}
+                                        disabled={!formData.make}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'ADD_NEW') {
+                                                setIsManualModel(true)
+                                                handleChange('model', '')
+                                            } else {
+                                                handleChange('model', e.target.value)
+                                                handleChange('version', '')
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        {currentBrandData?.models?.map((m: any) => (
+                                            <option key={m.modelName} value={m.modelName}>{m.modelName}</option>
+                                        ))}
+                                        {formData.make && <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVO MODELO...</option>}
+                                    </select>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            autoFocus
+                                            placeholder="Escribe el modelo..."
+                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
+                                            value={formData.model}
+                                            onChange={(e) => handleChange('model', e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsManualModel(false); handleChange('model', ''); }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
+                                        >✕</button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* VERSIÓN: SELECT DINÁMICO */}
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Versión</label>
+                                {!isManualVersion ? (
+                                    <select
+                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer disabled:opacity-50"
+                                        value={formData.version}
+                                        disabled={!formData.model}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'ADD_NEW') {
+                                                setIsManualVersion(true)
+                                                handleChange('version', '')
+                                            } else {
+                                                handleChange('version', e.target.value)
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        {currentModelData?.versions?.map((v: string) => (
+                                            <option key={v} value={v}>{v}</option>
+                                        ))}
+                                        {formData.model && <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVA VERSIÓN...</option>}
+                                    </select>
+                                ) : (
+                                    <div className="relative">
+                                        <input
+                                            autoFocus
+                                            placeholder="Escribe la versión..."
+                                            className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black transition-all"
+                                            value={formData.version}
+                                            onChange={(e) => handleChange('version', e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsManualVersion(false); handleChange('version', ''); }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-400 hover:text-black"
+                                        >✕</button>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="flex flex-col space-y-2 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Enlace (Slug)</label>
