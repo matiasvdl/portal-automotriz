@@ -61,15 +61,44 @@ export async function generateMetadata() {
 }
 
 // --- 2. DISEÑO GLOBAL ---
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [config, appearance, contact] = await Promise.all([
+    client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' }),
+    client.fetch(`*[_id == "appearance-settings"][0]{
+      brandName,
+      logo,
+      favicon,
+      logoWidth,
+      splitText,
+      isJoined,
+      primaryColor,
+      minDepositPercent,
+      minIncome,
+      minWorkExperience,
+      hero {
+        title,
+        subtitle,
+        image,
+        position
+      }
+    }`, {}, { cache: 'no-store' }),
+    client.fetch(
+      `coalesce(*[_id == "contact-settings" && _type == "contact"][0], *[_type == "contact"][0], *[_type == "contactSettings"][0])`,
+      {},
+      { cache: 'no-store' }
+    )
+  ])
+
+  const configCompleta = { ...(config || {}), ...(contact || {}) }
+
   return (
     <html lang="es">
       <body className="antialiased min-h-screen flex flex-col">
-        <SettingsProvider>
+        <SettingsProvider config={configCompleta} appearance={appearance || {}}>
           <AuthProvider>
             <main className="flex-grow flex flex-col">
               {children}

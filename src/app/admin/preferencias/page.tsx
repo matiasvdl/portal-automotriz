@@ -37,6 +37,22 @@ type SanityImageValue = {
     asset: SanityAssetReference
 }
 
+type SanityFaqDocument = {
+    _id: string
+    question: string
+    answer: string
+    order?: number
+}
+
+type SanityReviewDocument = {
+    _id: string
+    name: string
+    date: string
+    rating: number
+    comment: string
+    badge: string
+}
+
 type ReviewItem = {
     _id: string
     name: string
@@ -93,6 +109,46 @@ interface RutaOption {
 // Añadimos 'seo' a los tipos de pestañas
 type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas' | 'legales' | 'seo';
 const TABS: TabType[] = ['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'seo', 'legales']
+
+function isSanityImageValue(value: SanityImageValue | File | null | undefined): value is SanityImageValue {
+    return Boolean(
+        value &&
+        !(value instanceof File) &&
+        value._type === 'image' &&
+        value.asset?._type === 'reference' &&
+        typeof value.asset?._ref === 'string'
+    )
+}
+
+function createImageReference(assetId: string): SanityImageValue {
+    return {
+        _type: 'image',
+        asset: {
+            _type: 'reference',
+            _ref: assetId,
+        },
+    }
+}
+
+function toFaqItem(document: SanityFaqDocument): FaqItem {
+    return {
+        _id: document._id,
+        question: document.question,
+        answer: document.answer,
+        order: document.order,
+    }
+}
+
+function toReviewItem(document: SanityReviewDocument): ReviewItem {
+    return {
+        _id: document._id,
+        name: document.name,
+        date: document.date,
+        rating: document.rating,
+        comment: document.comment,
+        badge: document.badge,
+    }
+}
 
 export default function PreferenciasPage() {
     const { data: session, status } = useSession()
@@ -278,7 +334,7 @@ export default function PreferenciasPage() {
                 formData.append('file', appearanceData.heroImage);
                 const result = await uploadSanityImage(formData);
                 if (result.success && result.assetId) {
-                    heroImageRef = { _type: 'image', asset: { _type: "reference", _ref: result.assetId } }
+                    heroImageRef = createImageReference(result.assetId)
                 }
             }
 
@@ -289,7 +345,7 @@ export default function PreferenciasPage() {
                 formData.append('file', appearanceData.logo);
                 const result = await uploadSanityImage(formData);
                 if (result.success && result.assetId) {
-                    logoRef = { _type: 'image', asset: { _type: "reference", _ref: result.assetId } }
+                    logoRef = createImageReference(result.assetId)
                 }
             }
 
@@ -300,7 +356,7 @@ export default function PreferenciasPage() {
                 formData.append('file', appearanceData.favicon);
                 const result = await uploadSanityImage(formData);
                 if (result.success && result.assetId) {
-                    faviconRef = { _type: 'image', asset: { _type: "reference", _ref: result.assetId } }
+                    faviconRef = createImageReference(result.assetId)
                 }
             }
 
@@ -311,8 +367,8 @@ export default function PreferenciasPage() {
                 primaryColor: appearanceData.primaryColor,
                 logoWidth: clampLogoMaxHeightPx(Number(appearanceData.logoWidth)),
                 // Usamos las referencias procesadas
-                logo: logoRef?.asset?._ref ? { _type: 'image', asset: logoRef.asset } : undefined,
-                favicon: faviconRef?.asset?._ref ? { _type: 'image', asset: faviconRef.asset } : undefined,
+                logo: isSanityImageValue(logoRef) ? { _type: 'image', asset: logoRef.asset } : undefined,
+                favicon: isSanityImageValue(faviconRef) ? { _type: 'image', asset: faviconRef.asset } : undefined,
                 splitText: appearanceData.splitText,
                 isJoined: appearanceData.isJoined,
                 minDepositPercent: Number(appearanceData.minDepositPercent),
@@ -322,7 +378,7 @@ export default function PreferenciasPage() {
                     title: appearanceData.heroTitle,
                     subtitle: appearanceData.heroSubtitle,
                     position: appearanceData.heroPosition,
-                    image: heroImageRef?.asset ? { _type: 'image', asset: heroImageRef.asset } : undefined
+                    image: isSanityImageValue(heroImageRef) ? { _type: 'image', asset: heroImageRef.asset } : undefined
                 }
             };
 
@@ -389,7 +445,7 @@ export default function PreferenciasPage() {
         try {
             const result = await createSanityDocument('faq', newFaq)
             if (result.success && result.data) {
-                setFaqs(prev => [...prev, result.data])
+                setFaqs(prev => [...prev, toFaqItem(result.data as unknown as SanityFaqDocument)])
                 setNewFaq({ question: '', answer: '', order: faqs.length + 1 })
                 alert("Pregunta agregada")
             } else {
@@ -416,7 +472,7 @@ export default function PreferenciasPage() {
         try {
             const result = await createSanityDocument('review', newReview)
             if (result.success && result.data) {
-                setAllReviews(prev => [result.data as ReviewItem, ...prev])
+                setAllReviews(prev => [toReviewItem(result.data as unknown as SanityReviewDocument), ...prev])
                 setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
                 alert("Reseña publicada")
             } else {
@@ -630,7 +686,7 @@ export default function PreferenciasPage() {
                                                 {appearanceData.favicon ? (
                                                     <div className="flex flex-col items-center space-y-3 w-full">
                                                         <img
-                                                            src={appearanceData.favicon.asset?._ref ? urlFor(appearanceData.favicon).width(64).url() : ""}
+                                                            src={isSanityImageValue(appearanceData.favicon) ? urlFor(appearanceData.favicon).width(64).url() : ""}
                                                             alt="Favicon Preview"
                                                             className="w-8 h-8 object-contain rounded shadow-sm"
                                                         />
@@ -655,7 +711,9 @@ export default function PreferenciasPage() {
                                                                 formData.append('file', file)
                                                                 const result = await uploadSanityImage(formData)
                                                                 if (result.success) {
-                                                                    setAppearanceData(prev => ({ ...prev, favicon: { _type: 'image', asset: { _ref: result.assetId } } }))
+                                                                    if (result.assetId) {
+                                                                        setAppearanceData(prev => ({ ...prev, favicon: createImageReference(result.assetId) }))
+                                                                    }
                                                                 }
                                                                 setIsSubmitting(false)
                                                             }}
@@ -739,7 +797,7 @@ export default function PreferenciasPage() {
                                                         }}
                                                     >
                                                         <img
-                                                            src={appearanceData.logo.asset?._ref ? urlFor(appearanceData.logo).url() : ""}
+                                                            src={isSanityImageValue(appearanceData.logo) ? urlFor(appearanceData.logo).url() : ""}
                                                             alt="Logo Preview"
                                                             style={{
                                                                 maxHeight: clampLogoMaxHeightPx(

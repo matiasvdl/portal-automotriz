@@ -13,12 +13,25 @@ export default function LoginPage() {
     const [showSupportToast, setShowSupportToast] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    const brandName = appearance?.brandName || config?.siteName || ''
-    const firstWord = brandName.split(' ')[0] || brandName
-    const restWords = brandName.split(' ').slice(1).join(' ')
+    const companyName = 'VDL GROUP'
+    const splitText = appearance?.splitText !== false
+    const isJoined = appearance?.isJoined === true
+    const companyFirstWord = companyName.split(' ')[0] || companyName
+    const companyDisplayName = companyName.replace(/\s+/g, '')
+    const companyRestWords = companyDisplayName.substring(companyFirstWord.length)
+    const siteName = config?.siteName || appearance?.brandName || ''
+    const siteFirstWord = siteName.split(' ')[0] || siteName
+    const siteDisplayName = isJoined ? siteName.replace(/\s+/g, '') : siteName
+    const siteRestWords = splitText
+        ? (
+            isJoined
+                ? siteDisplayName.substring(siteFirstWord.length)
+                : siteName.substring(siteFirstWord.length)
+        )
+        : ''
 
-    const WHATSAPP_NUMBER = config?.whatsappNumber || ''
-    const WHATSAPP_MESSAGE = encodeURIComponent(
+    const whatsappNumber = config?.whatsappNumber || ''
+    const whatsappMessage = encodeURIComponent(
         config?.supportMessage || 'Hola, olvidé mi contraseña del panel y necesito ayuda para recuperar el acceso.'
     )
 
@@ -56,7 +69,7 @@ export default function LoginPage() {
             <div className="hidden lg:flex lg:w-[60%] h-full bg-black relative flex-col p-8 justify-between">
                 <Link href="/" className="z-20 inline-block">
                     <p className="text-2xl font-black tracking-tighter uppercase text-white italic leading-none text-left">
-                        {firstWord}<span className="font-light text-zinc-400">{restWords ? ` ${restWords}` : ''}</span>
+                        {companyFirstWord}<span className="font-light text-zinc-400">{companyRestWords}</span>
                     </p>
                 </Link>
             </div>
@@ -66,7 +79,16 @@ export default function LoginPage() {
                     <header className="text-left space-y-4">
                         <Link href="/" className="z-20 inline-block">
                             <p className="text-2xl font-black tracking-tighter uppercase text-black italic leading-none">
-                                {firstWord}<span className="font-light text-zinc-700">{restWords ? ` ${restWords}` : ''}</span>
+                                {splitText ? (
+                                    <>
+                                        {siteFirstWord}
+                                        <span className={`font-light text-zinc-700${isJoined ? '' : ''}`}>
+                                            {siteRestWords}
+                                        </span>
+                                    </>
+                                ) : (
+                                    siteDisplayName
+                                )}
                             </p>
                         </Link>
 
@@ -129,9 +151,9 @@ export default function LoginPage() {
                     </form>
                 </div>
 
-                {showSupportToast && WHATSAPP_NUMBER && (
+                {showSupportToast && whatsappNumber && (
                     <a
-                        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`}
+                        href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="fixed bottom-6 right-6 bg-white border border-zinc-100 px-5 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] flex items-center gap-4 z-[200]"
@@ -164,7 +186,7 @@ export default function LoginPage() {
 
                 <div className="absolute bottom-6 right-7 z-18">
                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-                        © {brandName}
+                        © VDL GROUP SpA
                     </p>
                 </div>
             </div>

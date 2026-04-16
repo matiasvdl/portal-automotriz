@@ -66,7 +66,7 @@ async function getCar(slug: string) {
 }
 
 async function getRecommendedCars(currentId: string) {
-    const query = `*[_type == "car" && _id != $currentId][0...4] {
+    const query = `*[_type == "car" && _id != $currentId && status != false][0...4] {
         _id,
         "slug": slug.current,
         make,

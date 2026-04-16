@@ -3,12 +3,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { client } from '@/sanity/lib/client'
 import { urlFor } from '@/sanity/lib/image'
 import { useSettings } from '@/context/SettingsContext'
-import { resolveBrandLabel } from '@/lib/content-defaults'
+import { resolveBrandLabel, resolveLogoMaxHeightPx } from '@/lib/content-defaults'
 
 interface NavigationUserData {
     image?: { asset?: unknown }
@@ -41,6 +42,8 @@ export default function AdminNavigation() {
     const brandName = resolveBrandLabel(appearance, config)
     const firstWord = brandName.split(' ')[0] || brandName
     const restWords = brandName.split(' ').slice(1).join(' ')
+    const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null
+    const logoMaxH = resolveLogoMaxHeightPx(appearance?.logoWidth)
 
     // IMPORTANTE: Extraemos el rol de la sesión
     const userRole = session?.user?.role
@@ -51,8 +54,33 @@ export default function AdminNavigation() {
 
                 {/* Logo */}
                 <div className="flex items-center">
-                    <Link href="/admin/dashboard" className="text-2xl font-black italic uppercase tracking-tighter text-black">
-                        {firstWord}<span className="font-light text-zinc-700">{restWords ? ` ${restWords}` : ''}</span>
+                    <Link href="/admin/dashboard" className="text-2xl font-black italic uppercase tracking-tighter text-black flex items-center">
+                        {logoUrl ? (
+                            <div
+                                className="relative flex max-w-full shrink-0 items-center justify-start"
+                                style={{ maxHeight: logoMaxH }}
+                            >
+                                <Image
+                                    src={logoUrl}
+                                    alt={brandName}
+                                    width={logoMaxH}
+                                    height={logoMaxH}
+                                    sizes={`${logoMaxH}px`}
+                                    className="h-auto w-auto max-h-full max-w-full object-contain object-left"
+                                    style={{
+                                        maxHeight: logoMaxH,
+                                        maxWidth: '100%',
+                                        width: 'auto',
+                                        height: 'auto',
+                                    }}
+                                    priority
+                                />
+                            </div>
+                        ) : (
+                            <>
+                                {firstWord}<span className="font-light text-zinc-700">{restWords ? ` ${restWords}` : ''}</span>
+                            </>
+                        )}
                     </Link>
                 </div>
 

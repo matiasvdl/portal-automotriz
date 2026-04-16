@@ -84,9 +84,9 @@ export function resolveBrandLabel(
     appearance: { brandName?: string | null } | undefined,
     config: { siteName?: string | null } | undefined
 ): string {
-    const fromAppearance = appearance?.brandName?.trim()
-    if (fromAppearance) return fromAppearance
     const fromSite = config?.siteName?.trim()
     if (fromSite) return fromSite
+    const fromAppearance = appearance?.brandName?.trim()
+    if (fromAppearance) return fromAppearance
     return CONTENT_DEFAULTS.siteDisplayName
 }
