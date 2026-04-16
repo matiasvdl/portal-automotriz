@@ -18,6 +18,21 @@ function urlFor(source: any) {
     return builder.image(source)
 }
 
+// --- FUNCIONES DE FORMATO CHILENO (MILÉSIMAS CON PUNTOS) ---
+const formatChileanNumber = (value: number | string) => {
+    if (value === 0 || value === '0') return '0';
+    if (!value) return '';
+    // Quitamos cualquier cosa que no sea número
+    const num = value.toString().replace(/\D/g, '');
+    // Insertamos los puntos cada 3 dígitos
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+const parseChileanNumber = (value: string) => {
+    // Quitamos los puntos para volver a tener un número entero puro para la base de datos
+    return parseInt(value.replace(/\./g, '')) || 0;
+};
+
 // --- INTERFACES PARA TYPESCRIPT ---
 interface SanityImage {
     _type: 'image';
@@ -474,9 +489,30 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                             </div>
                             <FormGroup label="Año" type="number" value={formData.year} onChange={(val: string) => handleChange('year', parseInt(val) || 0)} />
                             <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reserva Online', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(val: string) => handleChange('category', val)} />
-                            <FormGroup label="Precio Lista" type="number" value={formData.listPrice} onChange={(val: string) => handleChange('listPrice', parseInt(val) || 0)} />
-                            <FormGroup label="Precio Financiado" type="number" value={formData.financedPrice} onChange={(val: string) => handleChange('financedPrice', parseInt(val) || 0)} />
-                            <FormGroup label="Kilometraje" type="number" value={formData.mileage} onChange={(val: string) => handleChange('mileage', parseInt(val) || 0)} />
+
+                            {/* PRECIO LISTA CON PUNTOS */}
+                            <FormGroup
+                                label="Precio Lista"
+                                type="text"
+                                value={formatChileanNumber(formData.listPrice)}
+                                onChange={(val: string) => handleChange('listPrice', parseChileanNumber(val))}
+                            />
+
+                            {/* PRECIO FINANCIADO CON PUNTOS */}
+                            <FormGroup
+                                label="Precio Financiado"
+                                type="text"
+                                value={formatChileanNumber(formData.financedPrice)}
+                                onChange={(val: string) => handleChange('financedPrice', parseChileanNumber(val))}
+                            />
+
+                            {/* KILOMETRAJE CON PUNTOS */}
+                            <FormGroup
+                                label="Kilometraje"
+                                type="text"
+                                value={formatChileanNumber(formData.mileage)}
+                                onChange={(val: string) => handleChange('mileage', parseChileanNumber(val))}
+                            />
                         </div>
                     </div>
 
@@ -570,7 +606,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                                     onChange={(e) => setCurrentTag(e.target.value)}
                                     onKeyDown={addTag}
                                     placeholder="Aire Acondicionado, Bluetooth, Llantas..."
-                                    className="flex-1 bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black leading-none"
+                                    className="flex-1 bg-[#F7F8FA] border-none rounded-xl px-5 py-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black leading-none"
                                 />
                                 <button
                                     type="button"

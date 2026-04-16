@@ -18,6 +18,18 @@ function urlFor(source: any) {
     return builder.image(source)
 }
 
+// --- FUNCIONES DE FORMATO CHILENO ---
+const formatChileanNumber = (value: number | string) => {
+    if (value === 0 || value === '0') return '0';
+    if (!value) return '';
+    const num = value.toString().replace(/\D/g, '');
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+const parseChileanNumber = (value: string) => {
+    return parseInt(value.replace(/\./g, '')) || 0;
+};
+
 // --- INTERFACES PARA TYPESCRIPT (0 ERRORES) ---
 interface SanityImage {
     _type: 'image';
@@ -388,9 +400,30 @@ export default function NuevoVehiculoPage() {
                             </div>
                             <FormGroup label="Año" type="number" value={formData.year} onChange={(v) => handleChange('year', parseInt(v) || 0)} />
                             <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reserva Online', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(v) => handleChange('category', v)} />
-                            <FormGroup label="Precio Lista" type="number" value={formData.listPrice} onChange={(v) => handleChange('listPrice', parseInt(v) || 0)} />
-                            <FormGroup label="Precio Financiado" type="number" value={formData.financedPrice} onChange={(v) => handleChange('financedPrice', parseInt(v) || 0)} />
-                            <FormGroup label="Kilometraje" type="number" value={formData.mileage} onChange={(v) => handleChange('mileage', parseInt(v) || 0)} />
+
+                            {/* PRECIO LISTA CON PUNTOS */}
+                            <FormGroup
+                                label="Precio Lista"
+                                type="text"
+                                value={formatChileanNumber(formData.listPrice)}
+                                onChange={(v) => handleChange('listPrice', parseChileanNumber(v))}
+                            />
+
+                            {/* PRECIO FINANCIADO CON PUNTOS */}
+                            <FormGroup
+                                label="Precio Financiado"
+                                type="text"
+                                value={formatChileanNumber(formData.financedPrice)}
+                                onChange={(v) => handleChange('financedPrice', parseChileanNumber(v))}
+                            />
+
+                            {/* KILOMETRAJE CON PUNTOS */}
+                            <FormGroup
+                                label="Kilometraje"
+                                type="text"
+                                value={formatChileanNumber(formData.mileage)}
+                                onChange={(v) => handleChange('mileage', parseChileanNumber(v))}
+                            />
                         </div>
                     </div>
 
