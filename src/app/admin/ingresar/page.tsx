@@ -2,22 +2,25 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { useSettings } from '@/context/SettingsContext'
 
 export default function LoginPage() {
-    const { config } = useSettings()
+    const { config, appearance } = useSettings()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState(false)
     const [showSupportToast, setShowSupportToast] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const router = useRouter()
 
-    // Datos conectados a tu Sanity
-    const WHATSAPP_NUMBER = config?.whatsappNumber || "56 9 3708 4907084907"; // Número de WhatsApp de soporte, con código de país
-    const WHATSAPP_MESSAGE = encodeURIComponent(config?.supportMessage || "Hola, olvidé mi contraseña del Panel VDL y necesito ayuda para recuperar el acceso."); // Mensaje predefinido para el soporte
+    const brandName = appearance?.brandName || config?.siteName || ''
+    const firstWord = brandName.split(' ')[0] || brandName
+    const restWords = brandName.split(' ').slice(1).join(' ')
+
+    const WHATSAPP_NUMBER = config?.whatsappNumber || ''
+    const WHATSAPP_MESSAGE = encodeURIComponent(
+        config?.supportMessage || 'Hola, olvidé mi contraseña del panel y necesito ayuda para recuperar el acceso.'
+    )
 
     useEffect(() => {
         if (error || showSupportToast) {
@@ -32,45 +35,38 @@ export default function LoginPage() {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsSubmitting(true)
-        setError(false) // Limpiamos errores previos
+        setError(false)
 
         const result = await signIn('credentials', {
             username: email,
-            password: password,
-            redirect: false, // Queremos manejar nosotros el movimiento
+            password,
+            redirect: false,
         })
 
         if (result?.error) {
             setError(true)
-            setIsSubmitting(false) // Aquí sí lo apagamos
+            setIsSubmitting(false)
         } else {
-            // SI TODO SALIÓ BIEN:
-            // Usamos window.location en lugar de router.push 
-            // Esto obliga al navegador a refrescar y reconocer la nueva cookie
             window.location.href = '/admin/dashboard'
         }
     }
 
     return (
         <div className="fixed inset-0 min-h-screen flex antialiased font-sans z-[100] bg-white overflow-hidden">
-
-            {/* LADO IZQUIERDO: CORPORATIVO */}
             <div className="hidden lg:flex lg:w-[60%] h-full bg-black relative flex-col p-8 justify-between">
                 <Link href="/" className="z-20 inline-block">
                     <p className="text-2xl font-black tracking-tighter uppercase text-white italic leading-none text-left">
-                        VDL<span className="font-light text-zinc-400">GROUP</span>
+                        {firstWord}<span className="font-light text-zinc-400">{restWords ? ` ${restWords}` : ''}</span>
                     </p>
                 </Link>
             </div>
 
-            {/* LADO DERECHO: FORMULARIO */}
             <div className="w-full lg:w-[40%] h-full flex items-center justify-center bg-white relative">
-
                 <div className="max-w-[340px] w-full px-6 lg:px-0 space-y-5">
                     <header className="text-left space-y-4">
                         <Link href="/" className="z-20 inline-block">
                             <p className="text-2xl font-black tracking-tighter uppercase text-black italic leading-none">
-                                VDL<span className="font-light text-zinc-700">MOTORS</span>
+                                {firstWord}<span className="font-light text-zinc-700">{restWords ? ` ${restWords}` : ''}</span>
                             </p>
                         </Link>
 
@@ -92,7 +88,7 @@ export default function LoginPage() {
                             <input
                                 type="text"
                                 value={email}
-                                onChange={(e) => { setEmail(e.target.value); if (error) setError(false); }}
+                                onChange={(e) => { setEmail(e.target.value); if (error) setError(false) }}
                                 placeholder="INGRESE SU CORREO O USUARIO"
                                 required
                                 className="w-full bg-[#F7F7F7] border border-gray-200 px-4 py-3 rounded-xl text-[9px] font-black text-zinc-600 focus:outline-none focus:border-black uppercase placeholder:text-zinc-400"
@@ -106,7 +102,7 @@ export default function LoginPage() {
                             <input
                                 type="password"
                                 value={password}
-                                onChange={(e) => { setPassword(e.target.value); if (error) setError(false); }}
+                                onChange={(e) => { setPassword(e.target.value); if (error) setError(false) }}
                                 placeholder="••••••••"
                                 required
                                 className={`w-full bg-[#F7F7F7] border ${error ? 'border-red-500/50' : 'border-gray-200'} px-4 py-3 rounded-xl text-[11px] font-black text-zinc-600 focus:outline-none focus:border-black placeholder:text-zinc-400`}
@@ -115,7 +111,7 @@ export default function LoginPage() {
                             <div className="flex justify-end pr-1 pt-0">
                                 <button
                                     type="button"
-                                    onClick={() => { setShowSupportToast(true); setError(false); }}
+                                    onClick={() => { setShowSupportToast(true); setError(false) }}
                                     className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest hover:text-black transition-colors"
                                 >
                                     ¿Olvidaste tu contraseña?
@@ -123,7 +119,6 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        {/* BOTÓN SIN EFECTO SCALE/REBOTE */}
                         <button
                             type="submit"
                             disabled={isSubmitting}
@@ -134,8 +129,7 @@ export default function LoginPage() {
                     </form>
                 </div>
 
-                {/* --- NOTIFICACIÓN DE SOPORTE (ESTÁTICA) --- */}
-                {showSupportToast && (
+                {showSupportToast && WHATSAPP_NUMBER && (
                     <a
                         href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`}
                         target="_blank"
@@ -154,7 +148,6 @@ export default function LoginPage() {
                     </a>
                 )}
 
-                {/* --- TOAST DE ERROR (ESTÁTICO) --- */}
                 {error && (
                     <div className="fixed bottom-6 right-6 bg-white border border-gray-100 p-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] flex items-center gap-4 z-[200]">
                         <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
@@ -169,10 +162,9 @@ export default function LoginPage() {
                     </div>
                 )}
 
-                {/* Copyright */}
                 <div className="absolute bottom-6 right-7 z-18">
                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-                        © VDL Group SpA
+                        © {brandName}
                     </p>
                 </div>
             </div>

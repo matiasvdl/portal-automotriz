@@ -1,20 +1,65 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { CSSProperties, HTMLInputTypeAttribute } from 'react'
 import { client } from '@/sanity/lib/client'
 import { useSettings } from '@/context/SettingsContext'
 
-export default function FinanciamientoClient() {
-    const { contact, appearance } = useSettings()
+interface FinanceCarOption {
+    make: string
+    model: string
+    listPrice: number
+}
 
-    // PASO A: Color primario dinámico
+type FinanceFormData = {
+    firstName: string
+    lastName: string
+    rut: string
+    phone: string
+    birthDate: string
+    nationality: string
+    employmentStatus: string
+    income: string
+    entryDate: string
+    dicom: string
+    carInterest: string
+    downPayment: string
+    termMonths: string
+    additionalInquiries: string
+}
+
+type FinanceFieldProps = {
+    label: string
+    name: keyof FinanceFormData
+    placeholder?: string
+    value: string
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+    primaryColor: string
+    type?: HTMLInputTypeAttribute
+}
+
+type FinanceSelectProps = {
+    label: string
+    name: keyof FinanceFormData
+    value: string
+    options: string[]
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+    primaryColor: string
+}
+
+export default function FinanciamientoClient() {
+    const { contact, appearance, config } = useSettings()
+
     const primaryColor = appearance?.primaryColor || '#000000'
-    const siteName = appearance?.brandName || 'nuestra automotora'
+    const siteName = appearance?.brandName || config?.siteName || ''
+    const minPercent = appearance?.minDepositPercent || 30
+    const minIncomeValue = appearance?.minIncome || 500000
+    const minWorkText = appearance?.minWorkExperience || 'Mínimo 1 año de continuidad laboral.'
 
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [availableCars, setAvailableCars] = useState<any[]>([])
+    const [availableCars, setAvailableCars] = useState<FinanceCarOption[]>([])
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<FinanceFormData>({
         firstName: '',
         lastName: '',
         rut: '',
@@ -32,67 +77,77 @@ export default function FinanciamientoClient() {
     })
 
     const formatCLP = (value: string) => {
-        const cleanValue = value.replace(/\D/g, "");
-        if (!cleanValue) return "";
-        return new Intl.NumberFormat('es-CL').format(parseInt(cleanValue));
+        const cleanValue = value.replace(/\D/g, '')
+        if (!cleanValue) return ''
+        return new Intl.NumberFormat('es-CL').format(parseInt(cleanValue))
     }
 
     useEffect(() => {
         const fetchCars = async () => {
             try {
-                const query = `*[_type == "car"] | order(make asc) { make, model, listPrice }`
-                const cars = await client.fetch(query)
+                const query = `*[_type == "car" && status != false] | order(make asc) { make, model, listPrice }`
+                const cars = await client.fetch<FinanceCarOption[]>(query)
                 setAvailableCars(cars)
 
                 if (cars.length > 0) {
-                    setFormData(prev => ({
+                    const firstCarInterest = `${cars[0].make} ${cars[0].model}`
+                    const firstCarDeposit = formatCLP(
+                        Math.floor((cars[0].listPrice * minPercent) / 100).toString()
+                    )
+
+                    setFormData((prev) => ({
                         ...prev,
-                        carInterest: `${cars[0].make} ${cars[0].model}`
+                        carInterest: firstCarInterest,
+                        downPayment: firstCarDeposit
                     }))
                 }
-            } catch (error) {
-                console.error("Error al cargar autos")
+            } catch {
+                console.error('Error al cargar autos')
             }
         }
+
         fetchCars()
-    }, [])
+    }, [minPercent])
 
-    const minPercent = appearance?.minDepositPercent || 30;
-    const minIncomeValue = appearance?.minIncome || 500000;
-    const minWorkText = appearance?.minWorkExperience || "Mínimo 1 año de continuidad laboral.";
-
-    const selectedCarData = availableCars.find(c => `${c.make} ${c.model}` === formData.carInterest);
-    const calculatedDeposit = selectedCarData?.listPrice ? (selectedCarData.listPrice * minPercent) / 100 : 0;
-
-    useEffect(() => {
-        if (calculatedDeposit > 0) {
-            setFormData(prev => ({
-                ...prev,
-                downPayment: formatCLP(Math.floor(calculatedDeposit).toString())
-            }))
-        }
-    }, [formData.carInterest, calculatedDeposit])
+    const selectedCarData = availableCars.find((car) => `${car.make} ${car.model}` === formData.carInterest)
+    const calculatedDeposit = selectedCarData?.listPrice ? (selectedCarData.listPrice * minPercent) / 100 : 0
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+        const { name, value } = e.target
+
         if (name === 'downPayment' || name === 'income') {
-            setFormData({ ...formData, [name]: formatCLP(value) });
-        } else {
-            setFormData({ ...formData, [name]: value });
+            setFormData({ ...formData, [name]: formatCLP(value) })
+            return
         }
+
+        if (name === 'carInterest') {
+            const nextCar = availableCars.find((car) => `${car.make} ${car.model}` === value)
+            const nextDownPayment = nextCar
+                ? formatCLP(Math.floor((nextCar.listPrice * minPercent) / 100).toString())
+                : formData.downPayment
+
+            setFormData({
+                ...formData,
+                carInterest: value,
+                downPayment: nextDownPayment,
+            })
+            return
+        }
+
+        setFormData({ ...formData, [name]: value })
     }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        const userDownPayment = parseInt(formData.downPayment.replace(/\./g, '')) || 0;
+        const userDownPayment = parseInt(formData.downPayment.replace(/\./g, '')) || 0
 
         if (userDownPayment < calculatedDeposit) {
-            alert(`El pie mínimo para este vehículo es de $${Math.floor(calculatedDeposit).toLocaleString('es-CL')} (${minPercent}%).`);
-            return;
+            alert(`El pie mínimo para este vehículo es de $${Math.floor(calculatedDeposit).toLocaleString('es-CL')} (${minPercent}%).`)
+            return
         }
 
         setIsSubmitting(true)
-        const destinationNumber = contact.whatsapp.replace(/\D/g, '') || "56937084907"
+        const destinationNumber = contact.whatsapp.replace(/\D/g, '')
 
         const message = `Hola ${siteName}! Solicito evaluación de crédito automotriz.%0A` +
             `- Cliente: ${formData.firstName} ${formData.lastName}%0A` +
@@ -111,17 +166,16 @@ export default function FinanciamientoClient() {
             <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
                 <header className="mb-8 text-left">
                     <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">
-                        Gestión de créditos
+                        {config?.financeContent?.eyebrow?.trim() || 'Gestión de créditos'}
                     </p>
                     <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
-                        Financiamiento Automotriz
+                        {config?.financeContent?.title?.trim() || 'Financiamiento Automotriz'}
                     </h1>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     <form onSubmit={handleSubmit} className="lg:col-span-7 order-2 lg:order-1">
                         <div className="bg-white rounded-[25px] border border-gray-100 p-7 space-y-9 shadow-none">
-
                             <section className="space-y-6">
                                 <h3 className="text-[9px] font-black uppercase tracking-widest text-zinc-800 border-b border-gray-50 pb-4 leading-none">
                                     01. Datos del Solicitante
@@ -164,7 +218,7 @@ export default function FinanciamientoClient() {
                                         label="Auto de Interés"
                                         name="carInterest"
                                         value={formData.carInterest}
-                                        options={availableCars.map(c => `${c.make} ${c.model}`)}
+                                        options={availableCars.map((car) => `${car.make} ${car.model}`)}
                                         onChange={handleChange}
                                         primaryColor={primaryColor}
                                     />
@@ -202,7 +256,7 @@ export default function FinanciamientoClient() {
                                         placeholder="Ej: ¿Reciben auto en parte de pago?, ¿Tienen seguro automotriz?, etc."
                                         rows={4}
                                         className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-medium outline-none resize-none leading-relaxed transition-all placeholder:text-zinc-300 shadow-none"
-                                        style={{ '--tw-ring-color': primaryColor } as any}
+                                        style={{ '--tw-ring-color': primaryColor } as CSSProperties}
                                     />
                                 </div>
                             </section>
@@ -225,7 +279,7 @@ export default function FinanciamientoClient() {
 
                     <aside className="lg:col-span-5 order-1 lg:order-2 space-y-4">
                         <div className="bg-white rounded-[25px] p-8 border border-gray-100 shadow-none">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-6 leading-none">Requisitos para el Crédito</h4>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-6 leading-none">{config?.financeContent?.requirementsTitle?.trim() || 'Requisitos para el Crédito'}</h4>
                             <div className="space-y-6">
                                 <FeatureItem title="Antigüedad" desc={minWorkText} />
                                 <FeatureItem title="Renta Mínima" desc={`Ingresos desde $${new Intl.NumberFormat('es-CL').format(minIncomeValue)} líquidos mensuales.`} />
@@ -233,8 +287,8 @@ export default function FinanciamientoClient() {
                                 <FeatureItem title="Pie Mínimo" desc={`Se requiere al menos un ${minPercent}% de pie según perfil.`} />
                             </div>
                             <div className="mt-10 pt-6 border-t border-gray-100 text-center leading-tight">
-                                <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest mb-2 leading-none">Cotiza en línea vía WhatsApp</p>
-                                <p className="text-[10px] font-black text-black uppercase italic tracking-tight leading-none" style={{ color: primaryColor }}>Evaluación 100% Digital</p>
+                                <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest mb-2 leading-none">{config?.financeContent?.whatsappLabel?.trim() || 'Cotiza en línea vía WhatsApp'}</p>
+                                <p className="text-[10px] font-black text-black uppercase italic tracking-tight leading-none" style={{ color: primaryColor }}>{config?.financeContent?.digitalTitle?.trim() || 'Evaluación 100% Digital'}</p>
                             </div>
                         </div>
 
@@ -243,8 +297,8 @@ export default function FinanciamientoClient() {
                                 <svg className="w-4 h-4" style={{ color: primaryColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                             </div>
                             <div className="leading-tight">
-                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">Proceso Seguro</p>
-                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter mt-0.5 leading-none">Evaluación directa con {siteName}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">{config?.financeContent?.trustTitle?.trim() || 'Proceso Seguro'}</p>
+                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter mt-0.5 leading-none">{config?.financeContent?.trustSubtitle?.trim() || `Evaluación directa con ${siteName}`}</p>
                             </div>
                         </div>
                     </aside>
@@ -254,7 +308,7 @@ export default function FinanciamientoClient() {
     )
 }
 
-function InputField({ label, name, placeholder, value, onChange, primaryColor, type = "text" }: any) {
+function InputField({ label, name, placeholder, value, onChange, primaryColor, type = "text" }: FinanceFieldProps) {
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
@@ -266,13 +320,13 @@ function InputField({ label, name, placeholder, value, onChange, primaryColor, t
                 placeholder={placeholder}
                 required
                 className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none transition-all placeholder:text-zinc-300 placeholder:font-normal shadow-none"
-                style={{ '--tw-ring-color': primaryColor } as any}
+                style={{ '--tw-ring-color': primaryColor } as CSSProperties}
             />
         </div>
     )
 }
 
-function FormSelect({ label, name, value, options, onChange, primaryColor }: any) {
+function FormSelect({ label, name, value, options, onChange, primaryColor }: FinanceSelectProps) {
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
@@ -282,7 +336,7 @@ function FormSelect({ label, name, value, options, onChange, primaryColor }: any
                     value={value}
                     onChange={onChange}
                     className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-black uppercase outline-none appearance-none cursor-pointer leading-none shadow-none"
-                    style={{ '--tw-ring-color': primaryColor } as any}
+                    style={{ '--tw-ring-color': primaryColor } as CSSProperties}
                 >
                     {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>

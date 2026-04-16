@@ -1,11 +1,25 @@
-function AdminCarCard({ car }: { car: any }) {
+/* eslint-disable @next/next/no-img-element */
+interface AdminCar {
+    _id: string
+    make: string
+    model: string
+    year: number
+    listPrice: number
+    financedPrice: number
+    fuel?: string
+    transmission?: string
+    mileage?: number
+    category?: string
+    engine?: string
+    imageUrl?: string
+}
+
+export default function AdminCarCard({ car }: { car: AdminCar }) {
     const displayPrice = car.financedPrice || car.listPrice || 0;
     const oldPrice = car.listPrice || 0;
 
     return (
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col h-full transition-all">
-
-            {/* IMAGEN Y BADGE */}
             <div className="aspect-[4/3] relative bg-gray-50 border-b border-gray-100 overflow-hidden">
                 <img
                     src={car.imageUrl || 'https://via.placeholder.com/600x450?text=Sin+Imagen'}
@@ -17,7 +31,6 @@ function AdminCarCard({ car }: { car: any }) {
                 </div>
             </div>
 
-            {/* INFORMACIÓN: Alineada a la izquierda */}
             <div className="p-5 flex-grow flex flex-col justify-between space-y-4 text-left">
                 <div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 italic leading-none">
@@ -27,7 +40,6 @@ function AdminCarCard({ car }: { car: any }) {
                         {car.make} {car.model}
                     </h4>
 
-                    {/* CARACTERÍSTICAS: Alineadas a la izquierda con gap fijo */}
                     <div className="flex items-start gap-5">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Kilómetros</span>
@@ -56,7 +68,6 @@ function AdminCarCard({ car }: { car: any }) {
                     </div>
                 </div>
 
-                {/* PRECIO Y ACCIÓN */}
                 <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                     <div className="flex flex-col text-left leading-none">
                         <span className="text-[8px] font-black text-gray-300 uppercase mb-0.5 leading-none line-through italic">

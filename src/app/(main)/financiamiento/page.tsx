@@ -9,7 +9,7 @@ export async function generateMetadata() {
         title: 'Financiamiento',
         description: config?.seoDescriptions?.financiamiento || 'Solicita tu evaluación de crédito automotriz de forma 100% digital.',
         openGraph: {
-            title: `Financiamiento | ${config?.siteName || 'Portal Automotriz'}`,
+            title: `Financiamiento | ${config?.siteName || ''}`,
         }
     }
 }

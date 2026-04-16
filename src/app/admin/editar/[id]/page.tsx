@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useRef, ChangeEvent, KeyboardEvent, useEffect, use } from 'react'
 import Link from 'next/link'
@@ -14,7 +15,7 @@ import AdminNavigation from '@/components/AdminNavigation'
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 // Usamos el cliente de lectura para evitar errores de token en el navegador
 const builder = imageUrlBuilder(readClient)
-function urlFor(source: any) {
+function urlFor(source: SanityImage) {
     return builder.image(source)
 }
 
@@ -70,6 +71,25 @@ interface CarFormData {
     interiorImages: SanityImage[];
 }
 
+interface BrandModel {
+    modelName: string;
+    versions?: string[];
+}
+
+interface BrandOption {
+    name: string;
+    models?: BrandModel[];
+}
+
+type NestedCarGroupKey =
+    | 'specsGeneral'
+    | 'specsHistory'
+    | 'specsExterior'
+    | 'specsComfort'
+    | 'specsSecurity'
+    | 'specsInterior'
+    | 'specsEntertainment';
+
 export default function EditarVehiculoPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params)
     const router = useRouter()
@@ -79,7 +99,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     const [currentTag, setCurrentTag] = useState('')
 
     // --- ESTADOS PARA LA BASE DE DATOS DE MARCAS/MODELOS ---
-    const [dbBrands, setDbBrands] = useState<any[]>([])
+    const [dbBrands, setDbBrands] = useState<BrandOption[]>([])
     const [isManualMake, setIsManualMake] = useState(false)
     const [isManualModel, setIsManualModel] = useState(false)
     const [isManualVersion, setIsManualVersion] = useState(false)
@@ -194,10 +214,10 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     setTags(car.features || [])
 
                     // DETECTAR SI LOS VALORES ACTUALES SON MANUALES (NO ESTÁN EN LA DB)
-                    const brandInDb = brands.find((b: any) => b.name === car.make)
+                    const brandInDb = brands.find((b: BrandOption) => b.name === car.make)
                     if (!brandInDb && car.make) setIsManualMake(true)
 
-                    const modelInDb = brandInDb?.models?.find((m: any) => m.modelName === car.model)
+                    const modelInDb = brandInDb?.models?.find((m: BrandModel) => m.modelName === car.model)
                     if (!modelInDb && car.model) setIsManualModel(true)
 
                     const versionInDb = modelInDb?.versions?.includes(car.version)
@@ -216,10 +236,10 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         setFormData(prev => ({ ...prev, [field]: value }))
     }
 
-    const handleNestedChange = (group: keyof CarFormData, field: string, value: string) => {
+    const handleNestedChange = (group: NestedCarGroupKey, field: string, value: string) => {
         setFormData(prev => ({
             ...prev,
-            [group]: { ...(prev[group] as Record<string, any>), [field]: value }
+            [group]: { ...prev[group], [field]: value }
         }))
     }
 
@@ -249,7 +269,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
             })
             const uploaded = await Promise.all(uploadPromises)
             setFormData(prev => ({ ...prev, [field]: [...prev[field], ...uploaded] }))
-        } catch (error) { alert("Error al subir imagen") }
+        } catch { alert("Error al subir imagen") }
         finally { setIsSubmitting(false) }
     }
 
@@ -298,7 +318,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
 
             await saveCarAction(id, doc)
             router.push('/admin/dashboard')
-        } catch (error) {
+        } catch {
             alert('Error al guardar.')
         } finally {
             setIsSubmitting(false)
@@ -316,7 +336,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     alert(result.error || "No se pudo eliminar.")
                     setIsSubmitting(false)
                 }
-            } catch (error) {
+            } catch {
                 alert('Error al eliminar el vehículo.')
                 setIsSubmitting(false)
             }
@@ -325,7 +345,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
 
     // --- LÓGICA DE OPCIONES DINÁMICAS ---
     const currentBrandData = dbBrands.find(b => b.name === formData.make)
-    const currentModelData = currentBrandData?.models?.find((m: any) => m.modelName === formData.model)
+    const currentModelData = currentBrandData?.models?.find((m: BrandModel) => m.modelName === formData.model)
 
     if (isLoading) return null
 
@@ -418,7 +438,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                                         }}
                                     >
                                         <option value="">Seleccionar...</option>
-                                        {currentBrandData?.models?.map((m: any) => (
+                                        {currentBrandData?.models?.map((m: BrandModel) => (
                                             <option key={m.modelName} value={m.modelName}>{m.modelName}</option>
                                         ))}
                                         {formData.make && <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVO MODELO...</option>}
@@ -725,7 +745,21 @@ function FormSelect({ label, value, options, onChange }: FSProps) {
     )
 }
 
-function ImageUploadPlaceholder({ label, images, field, onClick, onRemove, onMove }: any) {
+function ImageUploadPlaceholder({
+    label,
+    images,
+    field,
+    onClick,
+    onRemove,
+    onMove
+}: {
+    label: string;
+    images: SanityImage[];
+    field: 'images' | 'exteriorImages' | 'interiorImages';
+    onClick: () => void;
+    onRemove: (field: 'images' | 'exteriorImages' | 'interiorImages', index: number) => void;
+    onMove: (field: 'images' | 'exteriorImages' | 'interiorImages', index: number, direction: 'left' | 'right') => void;
+}) {
     return (
         <div className="flex flex-col space-y-3 text-left leading-none">
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label} {images?.length > 0 && `(${images.length})`}</p>
@@ -737,7 +771,7 @@ function ImageUploadPlaceholder({ label, images, field, onClick, onRemove, onMov
             </div>
             {images?.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 mt-2">
-                    {images.map((img: any, i: number) => (
+                    {images.map((img: SanityImage, i: number) => (
                         <div key={img._key || i} className="relative aspect-video group leading-none overflow-hidden rounded-2xl border border-zinc-100">
                             <img src={urlFor(img).width(200).url()} className="w-full h-full object-cover" alt="Preview" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">

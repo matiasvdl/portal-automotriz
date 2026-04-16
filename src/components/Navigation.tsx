@@ -11,11 +11,20 @@ import {
     resolvePrimaryColor,
 } from '@/lib/content-defaults'
 
-export default function Navigation({ config: propConfig }: { config?: any }) {
+interface NavigationLink {
+    title: string
+    path: string
+}
+
+interface NavigationConfig {
+    navMenu?: NavigationLink[]
+}
+
+export default function Navigation({ config: propConfig }: { config?: NavigationConfig }) {
     // Obtenemos los datos de apariencia y configuración desde el contexto
     const { appearance, config: contextConfig } = useSettings();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const config = propConfig || contextConfig;
+    const config = (propConfig || contextConfig) as NavigationConfig;
 
     // --- PASO A: Extraemos el color primario dinámico ---
     const primaryColor = resolvePrimaryColor(appearance?.primaryColor);
@@ -98,7 +107,7 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
 
                 {/* ENLACES DESKTOP (LG) */}
                 <div className="hidden lg:flex gap-12">
-                    {menuItems.map((link: any, i: number) => (
+                    {menuItems.map((link, i: number) => (
                         <Link
                             key={i}
                             href={link.path || '#'}
@@ -137,7 +146,7 @@ export default function Navigation({ config: propConfig }: { config?: any }) {
             {/* MENÚ MÓVIL DESPLEGABLE */}
             {isMenuOpen && (
                 <div className="lg:hidden absolute top-20 left-0 w-full bg-white border-b border-gray-100 p-6 flex flex-col gap-6 animate-in slide-in-from-top duration-300 z-40 shadow-xl">
-                    {menuItems.map((link: any, i: number) => (
+                    {menuItems.map((link, i: number) => (
                         <Link
                             key={i}
                             href={link.path || '#'}

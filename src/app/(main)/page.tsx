@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element */
+import type { CSSProperties } from 'react'
 import { client } from '@/sanity/lib/client'
 import Link from 'next/link'
 import CarCard from "@/components/CarCard"
@@ -6,7 +8,53 @@ import { CONTENT_DEFAULTS, resolvePrimaryColor } from '@/lib/content-defaults'
 
 export const revalidate = 0
 
-// PASO B: METADATOS DINÁMICOS DESDE SANITY
+interface HomeCar {
+  _id: string
+  slug: string
+  make: string
+  model: string
+  year: number
+  listPrice: number
+  financedPrice: number
+  fuel: string
+  transmission: string
+  mileage: number
+  category?: string
+  engine?: string
+  imageUrl: string
+}
+
+interface HomeReview {
+  _id: string
+  name: string
+  date: string
+  rating: number
+  comment: string
+  badge?: string
+}
+
+interface HomeAppearance {
+  hero?: {
+    title?: string
+    subtitle?: string
+    image?: { asset?: unknown }
+    position?: string
+  }
+  primaryColor?: string
+}
+
+interface HomePageData {
+  cars: HomeCar[]
+  reviews: HomeReview[]
+  config?: {
+    homeContent?: {
+      featuredTitle?: string
+      reviewsTitle?: string
+    }
+  }
+  appearance?: HomeAppearance
+}
+
 export async function generateMetadata() {
   const config = await client.fetch(`*[_type == "siteConfig"][0]{ seoDescriptions }`)
   return {
@@ -15,27 +63,26 @@ export async function generateMetadata() {
 }
 
 async function getData() {
-  // Hemos añadido && status != false en la consulta de cars
   const query = `{
     "cars": *[_type == "car" && status != false] | order(_createdAt desc)[0...4] {
-      _id, 
-      make, 
-      model, 
-      year, 
+      _id,
+      make,
+      model,
+      year,
       listPrice,
       financedPrice,
-      fuel, 
-      transmission, 
+      fuel,
+      transmission,
       mileage,
-      category, 
+      category,
       engine,
       "slug": slug.current,
       "imageUrl": images[0].asset->url
     },
     "reviews": *[_type == "review"] | order(date desc)[0...3] {
-      _id, name, date, rating, comment, badge 
+      _id, name, date, rating, comment, badge
     },
-    "config": *[_type == "siteConfig"][0] { 
+    "config": *[_type == "siteConfig"][0] {
       navMenu,
       footerDescription,
       footerLinks,
@@ -46,14 +93,14 @@ async function getData() {
       primaryColor
     }
   }`
-  return await client.fetch(query)
+  return await client.fetch<HomePageData>(query)
 }
 
 export default async function HomePage() {
-  const { cars, reviews, appearance } = await getData()
+  const { cars, reviews, appearance, config } = await getData()
 
-  const hero = appearance?.hero;
-  const primaryColor = resolvePrimaryColor(appearance?.primaryColor);
+  const hero = appearance?.hero
+  const primaryColor = resolvePrimaryColor(appearance?.primaryColor)
 
   const heroImageUrl = hero?.image?.asset ? urlFor(hero.image).url() : null
   const heroTitle = hero?.title?.trim() || CONTENT_DEFAULTS.heroTitle
@@ -62,9 +109,8 @@ export default async function HomePage() {
   return (
     <div
       className="flex flex-col flex-grow"
-      style={{ '--primary': primaryColor } as React.CSSProperties}
+      style={{ '--primary': primaryColor } as CSSProperties}
     >
-      {/* 1. HERO / BANNER (imagen desde Sanity; si no hay, solo fondo) */}
       <header className="relative flex min-h-[min(60vh,560px)] flex-col items-center justify-center overflow-hidden bg-zinc-900 px-4 py-12 md:min-h-[400px] md:h-[450px] md:py-0">
         {heroImageUrl ? (
           <img
@@ -98,11 +144,10 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* 2. LISTADO DE AUTOS DESTACADOS */}
       <section className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex justify-between items-baseline mb-8">
           <div className="space-y-2">
-            <h2 className="text-xl font-black tracking-tight text-black uppercase">Recién llegados</h2>
+            <h2 className="text-xl font-black tracking-tight text-black uppercase">{config?.homeContent?.featuredTitle?.trim() || 'Recién llegados'}</h2>
             <div className="h-1 w-12" style={{ backgroundColor: 'var(--primary)' }}></div>
           </div>
           <Link href="/catalogo" className="text-[11px] font-bold text-[#666666] hover:text-black uppercase tracking-[0.15em] transition-colors">
@@ -111,22 +156,21 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {cars && cars.map((car: any) => (
+          {cars?.map((car) => (
             <CarCard key={car._id} car={car} />
           ))}
         </div>
       </section>
 
-      {/* 3. SECCIÓN DE RESEÑAS */}
       <section className="bg-white pb-16 pt-10 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10 space-y-2 text-left">
-            <h2 className="text-xl font-black tracking-tight text-black uppercase">Reseña de nuestros clientes</h2>
+            <h2 className="text-xl font-black tracking-tight text-black uppercase">{config?.homeContent?.reviewsTitle?.trim() || 'Reseña de nuestros clientes'}</h2>
             <div className="h-1 w-12" style={{ backgroundColor: 'var(--primary)' }}></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reviews?.map((review: any) => (
+            {reviews?.map((review) => (
               <ReviewCard
                 key={review._id}
                 name={review.name}
@@ -134,7 +178,6 @@ export default async function HomePage() {
                 text={review.comment}
                 rating={review.rating}
                 badge={review.badge}
-                primaryColor={primaryColor}
               />
             ))}
           </div>
@@ -144,7 +187,7 @@ export default async function HomePage() {
   )
 }
 
-function ReviewCard({ name, date, text, rating, badge, primaryColor }: { name: string; date: string; text: string; rating: number; badge?: string; primaryColor: string }) {
+function ReviewCard({ name, date, text, rating, badge }: { name: string; date: string; text: string; rating: number; badge?: string }) {
   return (
     <div className="bg-[#F7F8F9] border border-gray-200 p-6 rounded-2xl text-left h-full transition-colors hover:border-gray-300">
       <div className="space-y-4">
@@ -185,7 +228,7 @@ function ReviewCard({ name, date, text, rating, badge, primaryColor }: { name: s
             </svg>
           ))}
         </div>
-        <p className="text-[13px] text-zinc-700 leading-relaxed font-medium italic">"{text}"</p>
+        <p className="text-[13px] text-zinc-700 leading-relaxed font-medium italic">&quot;{text}&quot;</p>
       </div>
     </div>
   )

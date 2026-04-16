@@ -2,6 +2,13 @@
 
 import { createContext, useContext, ReactNode } from 'react'
 
+interface SanityImageLike {
+    asset?: {
+        _ref?: string
+        _type?: string
+    }
+}
+
 /**
  * 1. Definimos la estructura de la Configuración del Sitio (siteConfig)
  * Aquí incluimos los campos legales, de navegación y de soporte.
@@ -19,8 +26,48 @@ interface SiteConfig {
     whatsapp?: string
     email?: string
     address?: string
+    defaultLocation?: string
     navMenu?: Array<{ title: string; path: string }>
     footerLinks?: Array<{ title: string; path: string }>
+    homeContent?: {
+        featuredTitle?: string
+        reviewsTitle?: string
+    }
+    catalogContent?: {
+        recommendedTitle?: string
+        whatsappLabel?: string
+    }
+    faqContent?: {
+        ctaTitle?: string
+        ctaDescription?: string
+        ctaButtonLabel?: string
+        trustTitle?: string
+        trustSubtitle?: string
+    }
+    sellContent?: {
+        eyebrow?: string
+        title?: string
+        steps?: Array<{ title?: string; description?: string }>
+        trustTitle?: string
+        trustSubtitle?: string
+    }
+    financeContent?: {
+        eyebrow?: string
+        title?: string
+        requirementsTitle?: string
+        whatsappLabel?: string
+        digitalTitle?: string
+        trustTitle?: string
+        trustSubtitle?: string
+    }
+    maintenanceContent?: {
+        eyebrow?: string
+        title?: string
+        message?: string
+        contactLabel?: string
+        contactEmail?: string
+        footerText?: string
+    }
 }
 
 /**
@@ -31,7 +78,7 @@ interface AppearanceSettings {
     Sitename?: string
     primaryColor?: string
     brandName?: string
-    logo?: any // Se mantiene como 'any' por la complejidad del objeto de imagen de Sanity
+    logo?: SanityImageLike
     /** Altura máxima del logo (px). El campo Sanity conserva el nombre `logoWidth`. */
     logoWidth?: number
     splitText?: boolean
@@ -42,7 +89,7 @@ interface AppearanceSettings {
     hero?: {
         title?: string;
         subtitle?: string;
-        image?: any;
+        image?: SanityImageLike;
         position?: string;
     };
 }

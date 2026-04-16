@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     if (!data || data.status === false) return { title: 'Auto no encontrado' }
 
     const title = `${data.make} ${data.model} ${data.year}`
-    const site = data.siteName || 'Portal Automotriz'
+    const site = data.siteName || ''
 
     return {
         title: title,

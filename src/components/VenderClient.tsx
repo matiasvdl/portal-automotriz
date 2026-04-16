@@ -1,18 +1,58 @@
 'use client'
 
 import { useState } from 'react'
+import type { CSSProperties, HTMLInputTypeAttribute } from 'react'
 import { useSettings } from '@/context/SettingsContext'
 
-export default function VenderClient() {
-    const { contact, appearance } = useSettings()
+type SellFormData = {
+    firstName: string
+    lastName: string
+    phone: string
+    email: string
+    make: string
+    model: string
+    year: string
+    mileage: string
+    transmission: string
+    fuel: string
+    condition: string
+    additionalDetails: string
+}
 
-    // PASO A: Color primario dinámico
+type SellFieldProps = {
+    label: string
+    name: keyof SellFormData
+    placeholder?: string
+    value: string
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+    primaryColor: string
+    type?: HTMLInputTypeAttribute
+}
+
+type SellSelectProps = {
+    label: string
+    name: keyof SellFormData
+    value: string
+    options: string[]
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+    primaryColor: string
+}
+
+export default function VenderClient() {
+    const { contact, appearance, config } = useSettings()
+
     const primaryColor = appearance?.primaryColor || '#000000'
-    const brandName = appearance?.brandName || appearance?.Sitename || 'nuestra automotora'
+    const brandName = appearance?.brandName || appearance?.Sitename || config?.siteName || ''
+    const sellSteps = config?.sellContent?.steps?.filter((step) => step?.title || step?.description) || [
+        { title: '1. Envía tus datos', description: 'Completa el formulario con la información básica de tu vehículo.' },
+        { title: '2. Tasación en línea', description: 'Nuestros ejecutivos analizarán los datos para darte una oferta preliminar.' },
+        { title: '3. Inspección física', description: 'Coordinamos una revisión rápida en nuestras sucursales o domicilio.' },
+        { title: '4. Pago inmediato', description: 'Si estás de acuerdo, cerramos el contrato y recibes tu pago al instante.' },
+    ]
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<SellFormData>({
         firstName: '',
         lastName: '',
         phone: '',
@@ -35,7 +75,7 @@ export default function VenderClient() {
         e.preventDefault()
         setIsSubmitting(true)
 
-        const destinationNumber = contact.whatsapp.replace(/\D/g, '') || "56937084907"
+        const destinationNumber = contact.whatsapp.replace(/\D/g, '')
 
         const message = `Hola ${brandName}! Me interesa vender mi auto.%0A` +
             `- Cliente: ${formData.firstName} ${formData.lastName}%0A` +
@@ -46,7 +86,6 @@ export default function VenderClient() {
             `- Detalles: ${formData.additionalDetails || 'Sin detalles adicionales'}`
 
         window.open(`https://wa.me/${destinationNumber}?text=${message}`, '_blank')
-
         setTimeout(() => setIsSubmitting(false), 2000)
     }
 
@@ -55,17 +94,16 @@ export default function VenderClient() {
             <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
                 <header className="mb-8 text-left">
                     <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">
-                        Tasación inmediata
+                        {config?.sellContent?.eyebrow?.trim() || 'Tasación inmediata'}
                     </p>
                     <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
-                        Vende tu vehículo
+                        {config?.sellContent?.title?.trim() || 'Vende tu vehículo'}
                     </h1>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     <form onSubmit={handleSubmit} className="lg:col-span-7 order-2 lg:order-1">
                         <div className="bg-white rounded-[25px] border border-gray-100 p-7 space-y-9 shadow-none">
-
                             <section className="space-y-6">
                                 <h3 className="text-[9px] font-black uppercase tracking-widest text-black border-b border-gray-50 pb-4 leading-none">
                                     01. Datos de Contacto
@@ -117,7 +155,7 @@ export default function VenderClient() {
                                             placeholder="Cuéntanos sobre mantenciones, dueños o si tiene algún detalle estético."
                                             rows={4}
                                             className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-medium outline-none resize-none leading-relaxed transition-all placeholder:text-zinc-300 shadow-none"
-                                            style={{ '--tw-ring-color': primaryColor } as any}
+                                            style={{ '--tw-ring-color': primaryColor } as CSSProperties}
                                         />
                                     </div>
                                 </div>
@@ -145,10 +183,13 @@ export default function VenderClient() {
                                 ¿Cómo funciona?
                             </h4>
                             <div className="space-y-6">
-                                <FeatureItem title="1. Envía tus datos" desc="Completa el formulario con la información básica de tu vehículo." />
-                                <FeatureItem title="2. Tasación en línea" desc="Nuestros ejecutivos analizarán los datos para darte una oferta preliminar." />
-                                <FeatureItem title="3. Inspección física" desc="Coordinamos una revisión rápida en nuestras sucursales o domicilio." />
-                                <FeatureItem title="4. Pago inmediato" desc="Si estás de acuerdo, cerramos el contrato y recibes tu pago al instante." />
+                                {sellSteps.map((step, index) => (
+                                    <FeatureItem
+                                        key={`${step.title || 'step'}-${index}`}
+                                        title={step.title || `Paso ${index + 1}`}
+                                        desc={step.description || ''}
+                                    />
+                                ))}
                             </div>
                         </div>
 
@@ -159,8 +200,8 @@ export default function VenderClient() {
                                 </svg>
                             </div>
                             <div className="leading-tight">
-                                <p className="text-[10px] font-black uppercase tracking-widest">Compra Segura</p>
-                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter mt-0.5">Pagamos al contado y de forma segura</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest">{config?.sellContent?.trustTitle?.trim() || 'Compra Segura'}</p>
+                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter mt-0.5">{config?.sellContent?.trustSubtitle?.trim() || 'Pagamos al contado y de forma segura'}</p>
                             </div>
                         </div>
                     </aside>
@@ -170,7 +211,7 @@ export default function VenderClient() {
     )
 }
 
-function InputField({ label, name, placeholder, value, onChange, primaryColor, type = "text" }: any) {
+function InputField({ label, name, placeholder, value, onChange, primaryColor, type = "text" }: SellFieldProps) {
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
@@ -182,13 +223,13 @@ function InputField({ label, name, placeholder, value, onChange, primaryColor, t
                 placeholder={placeholder}
                 required
                 className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none transition-all placeholder:text-zinc-300 placeholder:font-normal shadow-none"
-                style={{ '--tw-ring-color': primaryColor } as any}
+                style={{ '--tw-ring-color': primaryColor } as CSSProperties}
             />
         </div>
     )
 }
 
-function FormSelect({ label, name, value, options, onChange, primaryColor }: any) {
+function FormSelect({ label, name, value, options, onChange, primaryColor }: SellSelectProps) {
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
@@ -198,7 +239,7 @@ function FormSelect({ label, name, value, options, onChange, primaryColor }: any
                     value={value}
                     onChange={onChange}
                     className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-black uppercase outline-none appearance-none cursor-pointer leading-none shadow-none"
-                    style={{ '--tw-ring-color': primaryColor } as any}
+                    style={{ '--tw-ring-color': primaryColor } as CSSProperties}
                 >
                     {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>

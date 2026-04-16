@@ -8,7 +8,7 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 export const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({
-            name: "VDL Admin",
+            name: "Panel Admin",
             credentials: {
                 username: { label: "Usuario o Email", type: "text" },
                 password: { label: "Contraseña", type: "password" }
@@ -17,10 +17,8 @@ export const authOptions: NextAuthOptions = {
                 if (!credentials?.username || !credentials?.password) return null
 
                 try {
-                    // Normalizamos el identificador (puede ser username o email)
                     const identifier = credentials.username.toLowerCase().trim()
 
-                    // Buscamos al usuario en Sanity por email O por username
                     const user = await client.fetch(
                         `*[_type == "adminProfile" && (lower(email) == $identifier || lower(username) == $identifier)][0]`,
                         { identifier },
@@ -46,9 +44,8 @@ export const authOptions: NextAuthOptions = {
 
                     await delay(3000)
                     return null
-
                 } catch (error) {
-                    console.error("Error en el proceso de autenticacion:", error)
+                    console.error("Error en el proceso de autenticación:", error)
                     await delay(3000)
                     return null
                 }
@@ -65,17 +62,19 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
-                token.id = user.id;
-                token.role = (user as any).role; // <--- ESTO FALTA: Agrega el cargo al token
+                token.id = user.id
+                token.role = user.role
+                token.username = user.username
             }
-            return token;
+            return token
         },
         async session({ session, token }) {
             if (session.user) {
-                (session.user as any).id = token.id;
-                (session.user as any).role = token.role; // <--- ESTO FALTA: Pasa el cargo a la sesión del sitio
+                session.user.id = token.id ?? ""
+                session.user.role = token.role
+                session.user.username = token.username
             }
-            return session;
+            return session
         }
     },
     secret: process.env.NEXTAUTH_SECRET,

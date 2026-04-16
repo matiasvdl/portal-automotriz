@@ -1,24 +1,57 @@
 'use server'
 
-import { getServerSession } from 'next-auth/next'
 import { revalidatePath } from 'next/cache'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { client, writeClient } from '@/sanity/lib/client'
+import {
+    PRINCIPAL_ROLE,
+    getSessionUser,
+    requireAuthenticatedSession,
+    requirePrincipalSession
+} from '@/lib/auth'
 
-const PRINCIPAL_ROLE = 'Administrador Principal'
+type ActionError = {
+    message?: string
+}
+
+type AdminProfileUpdatePayload = {
+    firstName?: string
+    lastName?: string
+    username?: string
+    email?: string
+    phone?: string
+    role?: string
+    password?: string
+    image?: {
+        _type: 'image'
+        asset: {
+            _type: 'reference'
+            _ref: string
+        }
+    }
+}
+
+type AdminProfileDocument = {
+    _id: string
+    role?: string
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+    if (error && typeof error === 'object' && 'message' in error) {
+        return (error as ActionError).message || fallback
+    }
+
+    return fallback
+}
 
 export async function deleteAdminProfile(documentId: string) {
     try {
-        const session = await getServerSession(authOptions)
-        const role = (session?.user as any)?.role
-        if (role !== PRINCIPAL_ROLE) {
-            return { success: false, error: 'No autorizado' }
-        }
+        await requirePrincipalSession()
+
         if (!documentId || documentId === 'new') {
             return { success: false, error: 'ID inválido' }
         }
 
-        const profile = await client.fetch<{ _id: string; role?: string } | null>(
+        const profile = await client.fetch<AdminProfileDocument | null>(
             `*[_type == "adminProfile" && _id == $id][0]{ _id, role }`,
             { id: documentId }
         )
@@ -32,48 +65,76 @@ export async function deleteAdminProfile(documentId: string) {
         await writeClient.delete(documentId)
         revalidatePath('/admin/administracion')
         return { success: true }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('deleteAdminProfile:', error)
-        return { success: false, error: error.message || 'Error al eliminar' }
+        return { success: false, error: getErrorMessage(error, 'Error al eliminar') }
     }
 }
 
-export async function updateAdminProfile(id: string, updateData: any, imageBase64?: string | null) {
+export async function updateAdminProfile(
+    id: string,
+    updateData: AdminProfileUpdatePayload,
+    imageBase64?: string | null
+) {
     try {
-        let finalData = { ...updateData };
+        const session = await requireAuthenticatedSession()
+        const user = getSessionUser(session)
+        const isPrincipal = user.role === PRINCIPAL_ROLE
+        const isOwnProfile = Boolean(id) && id === user.id
 
-        // 1. Subida de imagen si existe
+        if (!isPrincipal && !isOwnProfile) {
+            return { success: false, error: 'No autorizado' }
+        }
+
+        if (!isPrincipal && (id === 'new' || !id)) {
+            return { success: false, error: 'No autorizado' }
+        }
+
+        const finalData: AdminProfileUpdatePayload = { ...updateData }
+
+        if (!isPrincipal) {
+            delete finalData.role
+        }
+
         if (imageBase64) {
-            const buffer = Buffer.from(imageBase64.split(',')[1], 'base64');
+            const buffer = Buffer.from(imageBase64.split(',')[1], 'base64')
             const asset = await writeClient.assets.upload('image', buffer, {
                 filename: `profile-${Date.now()}.jpg`
-            });
+            })
 
             finalData.image = {
                 _type: 'image',
                 asset: { _type: 'reference', _ref: asset._id }
-            };
+            }
         }
 
-        // 2. Aquí está el arreglo para Vercel:
-        // Si el ID es 'new', creamos un documento nuevo.
         if (id === 'new' || !id) {
             const result = await writeClient.create({
                 _type: 'adminProfile',
                 ...finalData
-            });
-            return { success: true, data: result };
-        } else {
-            // Si el ID ya existe, lo editamos.
-            const result = await writeClient
-                .patch(id)
-                .set(finalData)
-                .commit();
-            return { success: true, data: result };
+            })
+            return { success: true, data: result }
         }
 
-    } catch (error: any) {
-        console.error("Error en Server Action:", error);
-        return { success: false, error: error.message || "Error desconocido" };
+        if (!isPrincipal) {
+            const currentProfile = await client.fetch<AdminProfileDocument | null>(
+                `*[_type == "adminProfile" && _id == $id][0]{ _id, role }`,
+                { id }
+            )
+
+            if (currentProfile?.role === PRINCIPAL_ROLE) {
+                finalData.role = PRINCIPAL_ROLE
+            }
+        }
+
+        const result = await writeClient
+            .patch(id)
+            .set(finalData)
+            .commit()
+
+        return { success: true, data: result }
+    } catch (error: unknown) {
+        console.error("Error en Server Action:", error)
+        return { success: false, error: getErrorMessage(error, "Error desconocido") }
     }
 }

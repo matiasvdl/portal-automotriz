@@ -14,7 +14,7 @@ export async function generateMetadata() {
     "logo": *[_type == "appearance"][0].logo 
   }`, {}, { next: { revalidate: 0 } })
 
-  const name = data?.siteName || 'Portal Automotriz'
+  const name = data?.siteName || ''
   const description = data?.seoDescriptions?.home || 'Compra y venta de vehículos seleccionados.'
 
   // Lógica de URL: Si no hay dominio en Sanity, usa localhost

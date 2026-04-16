@@ -1,6 +1,7 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
-import { useState, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { client } from '@/sanity/lib/client'
 import { urlFor } from '@/sanity/lib/image'
 import AdminNavigation from '@/components/AdminNavigation'
@@ -8,58 +9,104 @@ import { useSession } from "next-auth/react"
 import bcrypt from "bcryptjs"
 import { updateAdminProfile } from '@/app/actions/updateProfile'
 
+type AccountProfile = {
+    _id: string
+    firstName?: string
+    lastName?: string
+    username?: string
+    email?: string
+    phone?: string
+    role?: string
+    image?: unknown
+}
+
+type ProfileState = {
+    _id: string
+    firstName: string
+    lastName: string
+    username: string
+    email: string
+    phone: string
+    role: string
+    image: File | unknown | null
+}
+
+type PasswordState = {
+    new: string
+    confirm: string
+}
+
+type ProfileUpdatePayload = {
+    firstName: string
+    lastName: string
+    username: string
+    email: string
+    phone: string
+    role: string
+    password?: string
+}
+
+const INITIAL_PROFILE: ProfileState = {
+    _id: '',
+    firstName: '',
+    lastName: '',
+    username: '',
+    email: '',
+    phone: '',
+    role: 'Administrador',
+    image: null
+}
+
 export default function MiCuentaPage() {
     const { data: session } = useSession()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [mounted, setMounted] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
-
-    const [team, setTeam] = useState<any[]>([])
-
-    const [profileData, setProfileData] = useState({
-        _id: '',
-        firstName: '',
-        lastName: '',
-        username: '',
-        email: '',
-        phone: '',
-        role: 'Administrador',
-        image: null as any
-    })
-
+    const [profileData, setProfileData] = useState<ProfileState>(INITIAL_PROFILE)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
-    const [passwords, setPasswords] = useState({ new: '', confirm: '' })
+    const [passwords, setPasswords] = useState<PasswordState>({ new: '', confirm: '' })
 
-    const loadAllData = async () => {
-        if (session?.user?.email) {
-            const allUsers = await client.fetch(
-                `*[_type == "adminProfile"] | order(_createdAt asc)`,
-                {},
-                { cache: 'no-store' }
-            )
-            setTeam(allUsers)
-
-            const myData = allUsers.find((u: any) => u.email === session.user?.email)
-            if (myData && profileData._id === '') {
-                setProfileData({
-                    _id: myData._id,
-                    firstName: myData.firstName || '',
-                    lastName: myData.lastName || '',
-                    username: myData.username || '',
-                    email: myData.email || '',
-                    phone: myData.phone || '',
-                    role: myData.role || 'Administrador',
-                    image: myData.image || null
-                })
-                if (myData.image) setImagePreview(urlFor(myData.image).url())
-            }
+    const loadAllData = useCallback(async () => {
+        if (!session?.user?.email) {
+            return
         }
-    }
+
+        const allUsers = await client.fetch<AccountProfile[]>(
+            `*[_type == "adminProfile"] | order(_createdAt asc){
+                _id,
+                firstName,
+                lastName,
+                username,
+                email,
+                phone,
+                role,
+                image
+            }`,
+            {},
+            { cache: 'no-store' }
+        )
+
+        const myData = allUsers.find((user) => user.email === session.user?.email)
+        if (myData) {
+            setProfileData({
+                _id: myData._id,
+                firstName: myData.firstName || '',
+                lastName: myData.lastName || '',
+                username: myData.username || '',
+                email: myData.email || '',
+                phone: myData.phone || '',
+                role: myData.role || 'Administrador',
+                image: myData.image || null
+            })
+
+            setImagePreview(myData.image ? urlFor(myData.image).url() : null)
+        }
+    }, [session?.user?.email])
 
     useEffect(() => {
         setMounted(true)
-        loadAllData()
-    }, [session])
+        void loadAllData()
+    }, [loadAllData])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -69,28 +116,12 @@ export default function MiCuentaPage() {
         }
     }
 
-    const selectUserToEdit = (user: any) => {
-        setProfileData({
-            _id: user._id,
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            username: user.username || '',
-            email: user.email || '',
-            phone: user.phone || '',
-            role: user.role || 'Administrador',
-            image: user.image || null
-        })
-        setImagePreview(user.image ? urlFor(user.image).url() : null)
-        setPasswords({ new: '', confirm: '' })
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-
     const handleSave = async () => {
         if (!profileData._id) return alert("No se pudo identificar el perfil.")
         setIsSubmitting(true)
 
         try {
-            let updateData: any = {
+            const updateData: ProfileUpdatePayload = {
                 firstName: profileData.firstName,
                 lastName: profileData.lastName,
                 username: profileData.username,
@@ -109,29 +140,29 @@ export default function MiCuentaPage() {
                 updateData.password = await bcrypt.hash(passwords.new, salt)
             }
 
-            let imageBase64 = null;
+            let imageBase64: string | null = null
             if (profileData.image instanceof File) {
                 imageBase64 = await new Promise<string>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.readAsDataURL(profileData.image);
-                });
+                    const reader = new FileReader()
+                    reader.onloadend = () => resolve(reader.result as string)
+                    reader.readAsDataURL(profileData.image)
+                })
             }
 
-            const result = await updateAdminProfile(profileData._id, updateData, imageBase64);
+            const result = await updateAdminProfile(profileData._id, updateData, imageBase64)
 
             if (result.success) {
-                alert('Cambios guardados con éxito');
-                setPasswords({ new: '', confirm: '' });
-                loadAllData();
+                alert('Cambios guardados con éxito')
+                setPasswords({ new: '', confirm: '' })
+                await loadAllData()
             } else {
-                alert('Error: ' + result.error);
+                alert('Error: ' + result.error)
             }
         } catch (error) {
-            console.error(error);
-            alert('Error al guardar los cambios');
+            console.error(error)
+            alert('Error al guardar los cambios')
         } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false)
         }
     }
 

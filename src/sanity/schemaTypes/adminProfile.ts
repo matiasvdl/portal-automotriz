@@ -1,5 +1,5 @@
 // src/sanity/schemaTypes/adminProfile.ts
-export default {
+const adminProfile = {
     name: 'adminProfile',
     title: 'Usuario Administrador',
     type: 'document',
@@ -28,3 +28,5 @@ export default {
         { name: 'lastLogin', title: 'Última Sesión', type: 'datetime' },
     ]
 }
+
+export default adminProfile

@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -7,8 +8,25 @@ import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
 import { toggleCarStatusAction, deleteCarAction } from '@/app/actions/carActions' // Importado deleteCarAction
 
+interface DashboardCar {
+    _id: string
+    make: string
+    model: string
+    year: number
+    listPrice: number
+    financedPrice: number
+    fuel?: string
+    transmission?: string
+    mileage?: number
+    category?: string
+    engine?: string
+    status?: boolean
+    slug?: string
+    imageUrl?: string
+}
+
 export default function DashboardPage() {
-    const [cars, setCars] = useState<any[]>([])
+    const [cars, setCars] = useState<DashboardCar[]>([])
     const [loading, setLoading] = useState(true)
     const [isEditMode, setIsEditMode] = useState(false)
     const router = useRouter()
@@ -20,7 +38,7 @@ export default function DashboardPage() {
                 "slug": slug.current,
                 "imageUrl": images[0].asset->url
             }`
-            const data = await client.fetch(query)
+            const data = await client.fetch<DashboardCar[]>(query)
             setCars(data || [])
         } catch (error) {
             console.error("Error fetching stock:", error)
@@ -161,7 +179,7 @@ export default function DashboardPage() {
     )
 }
 
-function AdminCarCard({ car }: { car: any }) {
+function AdminCarCard({ car }: { car: DashboardCar }) {
     const displayPrice = car.financedPrice || car.listPrice || 0;
     const oldPrice = car.listPrice || 0;
 

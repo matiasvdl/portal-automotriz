@@ -15,7 +15,7 @@ export const siteConfig = {
             name: 'siteUrl',
             title: 'URL del Sitio (Dominio)',
             type: 'string',
-            description: 'Ejemplo: dominio.cl (Sin el https:// al final si prefieres)'
+            description: 'Ejemplo: dominio.cl (sin https:// si prefieres)'
         },
         {
             name: 'maintenanceMode',
@@ -50,7 +50,7 @@ export const siteConfig = {
                                     { title: 'Vende tu Auto', value: '/vender' },
                                     { title: 'Financiamiento', value: '/financiamiento' },
                                     { title: 'Preguntas Frecuentes', value: '/faq' },
-                                    { title: 'Terminos y Condiciones', value: '/terminos' },
+                                    { title: 'Términos y Condiciones', value: '/terminos' },
                                     { title: 'Contacto', value: '/contacto' }
                                 ]
                             }
@@ -79,7 +79,7 @@ export const siteConfig = {
                                     { title: 'Vende tu Auto', value: '/vender' },
                                     { title: 'Financiamiento', value: '/financiamiento' },
                                     { title: 'Preguntas Frecuentes', value: '/faq' },
-                                    { title: 'Terminos y Condiciones', value: '/terminos' },
+                                    { title: 'Términos y Condiciones', value: '/terminos' },
                                     { title: 'Contacto', value: '/contacto' }
                                 ]
                             }
@@ -122,11 +122,99 @@ export const siteConfig = {
             fields: [
                 { name: 'home', title: 'Descripción Inicio', type: 'text', rows: 2 },
                 { name: 'catalogo', title: 'Descripción Catálogo', type: 'text', rows: 2 },
-                { name: 'vender', title: 'Descripción Vender', type: 'text', rows: 2 },
+                { name: 'vender', title: 'Descripción Vende tu Auto', type: 'text', rows: 2 },
                 { name: 'financiamiento', title: 'Descripción Financiamiento', type: 'text', rows: 2 },
                 { name: 'contacto', title: 'Descripción Contacto', type: 'text', rows: 2 },
                 { name: 'faq', title: 'Descripción FAQ', type: 'text', rows: 2 },
                 { name: 'terminos', title: 'Descripción Términos y Condiciones', type: 'text', rows: 2 },
+            ]
+        },
+        {
+            name: 'defaultLocation',
+            title: 'Ubicación por Defecto',
+            type: 'string',
+            initialValue: 'Metropolitana de Santiago'
+        },
+        {
+            name: 'homeContent',
+            title: 'Contenido Inicio',
+            type: 'object',
+            fields: [
+                { name: 'featuredTitle', title: 'Título Autos Destacados', type: 'string' },
+                { name: 'reviewsTitle', title: 'Título Reseñas', type: 'string' },
+            ]
+        },
+        {
+            name: 'catalogContent',
+            title: 'Contenido Catálogo y Detalle',
+            type: 'object',
+            fields: [
+                { name: 'recommendedTitle', title: 'Título Vehículos Recomendados', type: 'string' },
+                { name: 'whatsappLabel', title: 'Texto CTA WhatsApp', type: 'string' },
+            ]
+        },
+        {
+            name: 'faqContent',
+            title: 'Contenido FAQ',
+            type: 'object',
+            fields: [
+                { name: 'ctaTitle', title: 'Título tarjeta lateral', type: 'string' },
+                { name: 'ctaDescription', title: 'Descripción tarjeta lateral', type: 'text', rows: 3 },
+                { name: 'ctaButtonLabel', title: 'Texto botón lateral', type: 'string' },
+                { name: 'trustTitle', title: 'Título sello de confianza', type: 'string' },
+                { name: 'trustSubtitle', title: 'Subtítulo sello de confianza', type: 'string' },
+            ]
+        },
+        {
+            name: 'sellContent',
+            title: 'Contenido Vende tu Auto',
+            type: 'object',
+            fields: [
+                { name: 'eyebrow', title: 'Bajada superior', type: 'string' },
+                { name: 'title', title: 'Título principal', type: 'string' },
+                {
+                    name: 'steps',
+                    title: 'Pasos / Cómo funciona',
+                    type: 'array',
+                    of: [
+                        {
+                            type: 'object',
+                            fields: [
+                                { name: 'title', title: 'Título', type: 'string' },
+                                { name: 'description', title: 'Descripción', type: 'text', rows: 2 },
+                            ]
+                        }
+                    ]
+                },
+                { name: 'trustTitle', title: 'Título bloque inferior', type: 'string' },
+                { name: 'trustSubtitle', title: 'Subtítulo bloque inferior', type: 'string' },
+            ]
+        },
+        {
+            name: 'financeContent',
+            title: 'Contenido Financiamiento',
+            type: 'object',
+            fields: [
+                { name: 'eyebrow', title: 'Bajada superior', type: 'string' },
+                { name: 'title', title: 'Título principal', type: 'string' },
+                { name: 'requirementsTitle', title: 'Título requisitos', type: 'string' },
+                { name: 'whatsappLabel', title: 'Texto CTA WhatsApp', type: 'string' },
+                { name: 'digitalTitle', title: 'Texto evaluación digital', type: 'string' },
+                { name: 'trustTitle', title: 'Título bloque inferior', type: 'string' },
+                { name: 'trustSubtitle', title: 'Subtítulo bloque inferior', type: 'string' },
+            ]
+        },
+        {
+            name: 'maintenanceContent',
+            title: 'Contenido Mantenimiento',
+            type: 'object',
+            fields: [
+                { name: 'eyebrow', title: 'Bajada superior', type: 'string' },
+                { name: 'title', title: 'Título principal', type: 'string' },
+                { name: 'message', title: 'Mensaje principal', type: 'text', rows: 3 },
+                { name: 'contactLabel', title: 'Etiqueta contacto', type: 'string' },
+                { name: 'contactEmail', title: 'Correo mostrado', type: 'string' },
+                { name: 'footerText', title: 'Texto pie de página', type: 'string' },
             ]
         }
     ]

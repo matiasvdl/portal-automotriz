@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -6,20 +7,26 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { client } from '@/sanity/lib/client'
 import { urlFor } from '@/sanity/lib/image'
+import { useSettings } from '@/context/SettingsContext'
+import { resolveBrandLabel } from '@/lib/content-defaults'
+
+interface NavigationUserData {
+    image?: { asset?: unknown }
+    firstName?: string
+}
 
 export default function AdminNavigation() {
     const { data: session } = useSession()
+    const { appearance, config } = useSettings()
     const pathname = usePathname()
     const router = useRouter()
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-    const [mounted, setMounted] = useState(false)
-    const [userData, setUserData] = useState<{ image?: any; firstName?: string } | null>(null)
+    const [userData, setUserData] = useState<NavigationUserData | null>(null)
 
     useEffect(() => {
-        setMounted(true)
         const fetchUserData = async () => {
             if (session?.user?.email) {
-                const data = await client.fetch(
+                const data = await client.fetch<NavigationUserData | null>(
                     `*[_type == "adminProfile" && email == $email][0]{firstName, image}`,
                     { email: session.user.email }
                 )
@@ -29,13 +36,14 @@ export default function AdminNavigation() {
         fetchUserData()
     }, [session])
 
-    if (!mounted) return <nav className="h-20 bg-white border-b border-gray-100" />
-
     const displayName = userData?.firstName || session?.user?.name?.split(' ')[0] || 'Admin'
     const initial = displayName.charAt(0).toUpperCase()
+    const brandName = resolveBrandLabel(appearance, config)
+    const firstWord = brandName.split(' ')[0] || brandName
+    const restWords = brandName.split(' ').slice(1).join(' ')
 
     // IMPORTANTE: Extraemos el rol de la sesión
-    const userRole = (session?.user as any)?.role
+    const userRole = session?.user?.role
 
     return (
         <nav className="bg-white border-b border-gray-100 sticky top-0 z-[100] h-20 flex items-center no-scrollbar">
@@ -44,7 +52,7 @@ export default function AdminNavigation() {
                 {/* Logo */}
                 <div className="flex items-center">
                     <Link href="/admin/dashboard" className="text-2xl font-black italic uppercase tracking-tighter text-black">
-                        VDL<span className="font-light text-zinc-700">MOTORS</span>
+                        {firstWord}<span className="font-light text-zinc-700">{restWords ? ` ${restWords}` : ''}</span>
                     </Link>
                 </div>
 

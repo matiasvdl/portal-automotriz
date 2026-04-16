@@ -85,7 +85,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                 position
             }
         }`, {}, { cache: 'no-store' }),
-        client.fetch(`*[_type == "contactSettings"][0]`, {}, { cache: 'no-store' })
+        client.fetch(
+            `coalesce(*[_id == "contact-settings" && _type == "contact"][0], *[_type == "contact"][0], *[_type == "contactSettings"][0])`,
+            {},
+            { cache: 'no-store' }
+        )
     ]);
 
     if (config?.maintenanceMode === true) {

@@ -3,6 +3,71 @@
 import { useState, useMemo } from 'react'
 import CarCard from './CarCard'
 
+interface CatalogCar {
+    _id: string
+    slug: string
+    make: string
+    model: string
+    version?: string
+    year: number
+    listPrice: number
+    financedPrice: number
+    fuel: string
+    transmission: string
+    mileage: number
+    imageUrl: string
+    category?: string
+    engine?: string
+    body?: string
+    drivetrain?: string
+    color?: string
+    location?: string
+}
+
+type CatalogFilterState = {
+    category: string
+    make: string
+    model: string
+    version: string
+    body: string
+    transmission: string
+    fuel: string
+    drivetrain: string
+    color: string
+    location: string
+    minYear: string
+    maxYear: string
+    minPrice: string
+    maxPrice: string
+    minKm: string
+    maxKm: string
+}
+
+const EMPTY_FILTERS: CatalogFilterState = {
+    category: '',
+    make: '',
+    model: '',
+    version: '',
+    body: '',
+    transmission: '',
+    fuel: '',
+    drivetrain: '',
+    color: '',
+    location: '',
+    minYear: '',
+    maxYear: '',
+    minPrice: '',
+    maxPrice: '',
+    minKm: '',
+    maxKm: ''
+}
+
+function getUniqueValues(cars: CatalogCar[], field: keyof CatalogCar) {
+    return [...new Set(cars.map((car) => car[field]))]
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        .sort()
+}
+
 /**
  * Componente interno: Item de Filtro (Acordeón)
  * Mantiene el estilo original: text-[13px], text-zinc-700, zinc-400
@@ -36,30 +101,13 @@ const SORT_OPTIONS = [
     { key: 'km-menor', label: 'MENOS KM' },
 ]
 
-export default function CatalogFilters({ initialCars }: { initialCars: any[] }) {
+export default function CatalogFilters({ initialCars }: { initialCars: CatalogCar[] }) {
     const [search, setSearch] = useState('')
     const [sortBy, setSortBy] = useState('relevancia')
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false)
 
     // Estado con TODAS las opciones que extraemos de Sanity
-    const [filters, setFilters] = useState({
-        category: '',
-        make: '',
-        model: '',
-        version: '',
-        body: '',
-        transmission: '',
-        fuel: '',
-        drivetrain: '',
-        color: '',
-        location: '',
-        minYear: '',
-        maxYear: '',
-        minPrice: '',
-        maxPrice: '',
-        minKm: '',
-        maxKm: ''
-    })
+    const [filters, setFilters] = useState<CatalogFilterState>(EMPTY_FILTERS)
 
     const hasActiveFilters = useMemo(() => {
         return Object.values(filters).some(value => value !== '') || search !== '';
@@ -67,7 +115,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
 
     // Lógica de filtrado
     const filteredCars = useMemo(() => {
-        let result = initialCars.filter(car => {
+        const result = initialCars.filter(car => {
             const matchSearch = (car.make + ' ' + car.model + ' ' + (car.version || '')).toLowerCase().includes(search.toLowerCase())
 
             const matchCat = filters.category === '' || car.category === filters.category
@@ -107,10 +155,8 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
         return result
     }, [search, filters, sortBy, initialCars])
 
-    const getUnique = (field: string) => [...new Set(initialCars.map(c => c[field]))].filter(Boolean).sort()
-
-    const uniqueCategories = useMemo(() => getUnique('category'), [initialCars])
-    const uniqueMakes = useMemo(() => getUnique('make'), [initialCars])
+    const uniqueCategories = getUniqueValues(initialCars, 'category')
+    const uniqueMakes = getUniqueValues(initialCars, 'make')
 
     // Si no hay marca seleccionada, retornamos lista vacía para Modelos
     const uniqueModels = useMemo(() => {
@@ -127,12 +173,12 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
         ).map(c => c.version))].filter(Boolean).sort()
     }, [initialCars, filters.make, filters.model])
 
-    const uniqueBodies = useMemo(() => getUnique('body'), [initialCars])
-    const uniqueFuels = useMemo(() => getUnique('fuel'), [initialCars])
-    const uniqueTrans = useMemo(() => getUnique('transmission'), [initialCars])
-    const uniqueDrives = useMemo(() => getUnique('drivetrain'), [initialCars])
-    const uniqueColors = useMemo(() => getUnique('color'), [initialCars])
-    const uniqueLocs = useMemo(() => getUnique('location'), [initialCars])
+    const uniqueBodies = getUniqueValues(initialCars, 'body')
+    const uniqueFuels = getUniqueValues(initialCars, 'fuel')
+    const uniqueTrans = getUniqueValues(initialCars, 'transmission')
+    const uniqueDrives = getUniqueValues(initialCars, 'drivetrain')
+    const uniqueColors = getUniqueValues(initialCars, 'color')
+    const uniqueLocs = getUniqueValues(initialCars, 'location')
 
     return (
         <div className="bg-white min-h-screen text-left">
@@ -166,7 +212,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                             {hasActiveFilters && (
                                 <button
                                     onClick={() => {
-                                        setFilters({ category: '', make: '', model: '', version: '', body: '', transmission: '', fuel: '', drivetrain: '', color: '', location: '', minYear: '', maxYear: '', minPrice: '', maxPrice: '', minKm: '', maxKm: '' });
+                                        setFilters(EMPTY_FILTERS);
                                         setSearch('');
                                     }}
                                     className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-800 transition-colors"

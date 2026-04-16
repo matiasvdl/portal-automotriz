@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useRef, ChangeEvent, KeyboardEvent, useEffect } from 'react'
 import Link from 'next/link'
@@ -14,7 +15,7 @@ import { syncBrandDatabaseAction } from '@/app/actions/brandActions' // NUEVA AC
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 // Usamos el cliente de lectura porque el builder no necesita token de escritura
 const builder = imageUrlBuilder(readClient)
-function urlFor(source: any) {
+function urlFor(source: SanityImage) {
     return builder.image(source)
 }
 
@@ -67,6 +68,25 @@ interface CarFormData {
     interiorImages: SanityImage[];
 }
 
+interface BrandModel {
+    modelName: string;
+    versions?: string[];
+}
+
+interface BrandOption {
+    name: string;
+    models?: BrandModel[];
+}
+
+type NestedCarGroupKey =
+    | 'specsGeneral'
+    | 'specsHistory'
+    | 'specsExterior'
+    | 'specsComfort'
+    | 'specsSecurity'
+    | 'specsInterior'
+    | 'specsEntertainment';
+
 export default function NuevoVehiculoPage() {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -74,7 +94,7 @@ export default function NuevoVehiculoPage() {
     const [currentTag, setCurrentTag] = useState('')
 
     // --- ESTADOS PARA LA BASE DE DATOS DE MARCAS/MODELOS ---
-    const [dbBrands, setDbBrands] = useState<any[]>([])
+    const [dbBrands, setDbBrands] = useState<BrandOption[]>([])
     const [isManualMake, setIsManualMake] = useState(false)
     const [isManualModel, setIsManualModel] = useState(false)
     const [isManualVersion, setIsManualVersion] = useState(false)
@@ -133,10 +153,10 @@ export default function NuevoVehiculoPage() {
         setFormData(prev => ({ ...prev, [field]: value }))
     }
 
-    const handleNestedChange = (group: keyof CarFormData, field: string, value: string) => {
+    const handleNestedChange = (group: NestedCarGroupKey, field: string, value: string) => {
         setFormData(prev => ({
             ...prev,
-            [group]: { ...(prev[group] as Record<string, any>), [field]: value }
+            [group]: { ...prev[group], [field]: value }
         }))
     }
 
@@ -173,8 +193,7 @@ export default function NuevoVehiculoPage() {
             })
             const uploadedImages = await Promise.all(uploadPromises)
             setFormData(prev => ({ ...prev, [field]: [...prev[field], ...uploadedImages] }))
-        } catch (error) {
-            console.error(error)
+        } catch {
             alert("Error al subir imagen en el servidor.")
         } finally { setIsSubmitting(false) }
     }
@@ -234,7 +253,7 @@ export default function NuevoVehiculoPage() {
             await saveCarAction(null, doc)
 
             router.push('/admin/dashboard')
-        } catch (error) {
+        } catch {
             alert('Error al guardar.')
         } finally {
             setIsSubmitting(false)
@@ -243,7 +262,7 @@ export default function NuevoVehiculoPage() {
 
     // --- LÓGICA DE OPCIONES DINÁMICAS BASADA EN LA DB ---
     const currentBrandData = dbBrands.find(b => b.name === formData.make)
-    const currentModelData = currentBrandData?.models?.find((m: any) => m.modelName === formData.model)
+    const currentModelData = currentBrandData?.models?.find((m: BrandModel) => m.modelName === formData.model)
 
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-32 sm:pb-40 text-left">
@@ -327,7 +346,7 @@ export default function NuevoVehiculoPage() {
                                         }}
                                     >
                                         <option value="">Seleccionar...</option>
-                                        {currentBrandData?.models?.map((m: any) => (
+                                        {currentBrandData?.models?.map((m: BrandModel) => (
                                             <option key={m.modelName} value={m.modelName}>{m.modelName}</option>
                                         ))}
                                         {formData.make && <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVO MODELO...</option>}
@@ -619,7 +638,21 @@ function FormSelect({ label, value, options, onChange }: FSProps) {
 }
 
 // COMPONENTE DE IMÁGENES ACTUALIZADO CON ORDENAMIENTO
-function ImageUploadPlaceholder({ label, images, field, onClick, onRemove, onMove }: any) {
+function ImageUploadPlaceholder({
+    label,
+    images,
+    field,
+    onClick,
+    onRemove,
+    onMove
+}: {
+    label: string;
+    images: SanityImage[];
+    field: 'images' | 'exteriorImages' | 'interiorImages';
+    onClick: () => void;
+    onRemove: (field: 'images' | 'exteriorImages' | 'interiorImages', index: number) => void;
+    onMove: (field: 'images' | 'exteriorImages' | 'interiorImages', index: number, direction: 'left' | 'right') => void;
+}) {
     return (
         <div className="flex flex-col space-y-3 text-left leading-none">
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label} {images.length > 0 && `(${images.length})`}</p>
@@ -631,7 +664,7 @@ function ImageUploadPlaceholder({ label, images, field, onClick, onRemove, onMov
             </div>
             {images.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 mt-2">
-                    {images.map((img: any, i: number) => (
+                    {images.map((img: SanityImage, i: number) => (
                         <div key={img._key || i} className="relative aspect-video group leading-none overflow-hidden rounded-2xl border border-zinc-100">
                             <img src={urlFor(img).width(200).url()} className="w-full h-full object-cover" alt="Preview" />
 

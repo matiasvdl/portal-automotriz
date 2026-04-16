@@ -1,18 +1,46 @@
 'use client'
 
 import { useState } from 'react'
+import type { CSSProperties, HTMLInputTypeAttribute } from 'react'
 import { useSettings } from '@/context/SettingsContext'
 import { sendContactEmail } from '@/app/actions/contact'
 
+type ContactFormData = {
+    name: string
+    email: string
+    phone: string
+    subject: string
+    message: string
+}
+
+type FormFieldProps = {
+    label: string
+    name: keyof ContactFormData
+    placeholder?: string
+    value: string
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+    primaryColor: string
+    type?: HTMLInputTypeAttribute
+}
+
+type FormSelectProps = {
+    label: string
+    name: keyof ContactFormData
+    value: string
+    options: string[]
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+    primaryColor: string
+}
+
 export default function ContactoClient() {
     // Extraemos appearance para el color dinámico (Paso A)
-    const { contact, appearance } = useSettings()
+    const { contact, appearance, config } = useSettings()
     const primaryColor = appearance?.primaryColor || '#000000'
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<ContactFormData>({
         name: '',
         email: '',
         phone: '',
@@ -134,7 +162,7 @@ export default function ContactoClient() {
                                                 rows={5}
                                                 required
                                                 className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-medium outline-none focus:ring-1 resize-none leading-relaxed transition-all placeholder:text-zinc-300"
-                                                style={{ '--tw-ring-color': primaryColor } as any}
+                                                style={{ '--tw-ring-color': primaryColor } as CSSProperties}
                                             />
                                         </div>
 
@@ -172,7 +200,7 @@ export default function ContactoClient() {
                                 />
                                 <ContactDetail
                                     label="Correo"
-                                    value={contact.email || "contacto@vdlmotors.cl"}
+                                    value={contact.email || config?.maintenanceContent?.contactEmail || ""}
                                     primaryColor={primaryColor}
                                     icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />}
                                 />
@@ -194,20 +222,20 @@ export default function ContactoClient() {
 
 /** COMPONENTES AUXILIARES **/
 
-function InputField({ label, name, placeholder, value, onChange, primaryColor, type = "text" }: any) {
+function InputField({ label, name, placeholder, value, onChange, primaryColor, type = "text" }: FormFieldProps) {
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1">{label}</label>
             <input
                 type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} required
                 className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 transition-all placeholder:text-zinc-300"
-                style={{ '--tw-ring-color': primaryColor } as any}
+                style={{ '--tw-ring-color': primaryColor } as CSSProperties}
             />
         </div>
     )
 }
 
-function FormSelect({ label, name, value, options, onChange, primaryColor }: any) {
+function FormSelect({ label, name, value, options, onChange, primaryColor }: FormSelectProps) {
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1">{label}</label>
@@ -215,7 +243,7 @@ function FormSelect({ label, name, value, options, onChange, primaryColor }: any
                 <select
                     name={name} value={value} onChange={onChange}
                     className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 appearance-none cursor-pointer"
-                    style={{ '--tw-ring-color': primaryColor } as any}
+                    style={{ '--tw-ring-color': primaryColor } as CSSProperties}
                 >
                     {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>

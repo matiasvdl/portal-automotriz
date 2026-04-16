@@ -1,13 +1,26 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import Link from 'next/link'
 import { useSettings } from '@/context/SettingsContext'
 import { urlFor } from '@/sanity/lib/image'
 import { resolveBrandLabel, resolveLogoMaxHeightPx } from '@/lib/content-defaults'
 
-export default function Footer({ config: propConfig }: { config?: any }) {
+interface FooterLink {
+    title: string
+    path: string
+}
+
+interface FooterConfig {
+    siteName?: string
+    footerDescription?: string
+    footerTagline?: string
+    footerLinks?: FooterLink[]
+}
+
+export default function Footer({ config: propConfig }: { config?: FooterConfig }) {
     const { appearance, config: contextConfig } = useSettings();
-    const config = propConfig || contextConfig;
+    const config = (propConfig || contextConfig) as FooterConfig;
 
     // --- PASO A: Extraemos datos dinámicos ---
     const brandName = resolveBrandLabel(appearance, config);
@@ -69,10 +82,7 @@ export default function Footer({ config: propConfig }: { config?: any }) {
                                 </div>
                             ) : (
                                 <div className="text-2xl font-black italic tracking-tighter uppercase text-white">
-                                    {brandName.split(" ")[0]}
-                                    <span className="font-light ml-1 text-zinc-500">
-                                        {brandName.split(" ").slice(1).join(" ")}
-                                    </span>
+                                    {renderTextLogo()}
                                 </div>
                             )}
                         </Link>
@@ -85,7 +95,7 @@ export default function Footer({ config: propConfig }: { config?: any }) {
 
                 {/* 2. Enlaces Columna 1 */}
                 <div className="md:col-span-3 space-y-4 text-sm font-medium text-gray-400">
-                    {config?.footerLinks?.slice(0, 3).map((link: any, i: number) => (
+                    {config?.footerLinks?.slice(0, 3).map((link, i: number) => (
                         <Link key={i} href={link.path || '#'} className="block hover:text-white transition-colors">
                             {link.title}
                         </Link>
@@ -94,7 +104,7 @@ export default function Footer({ config: propConfig }: { config?: any }) {
 
                 {/* 3. Enlaces Columna 2 */}
                 <div className="md:col-span-3 space-y-4 text-sm font-medium text-gray-400">
-                    {config?.footerLinks?.slice(3).map((link: any, i: number) => (
+                    {config?.footerLinks?.slice(3).map((link, i: number) => (
                         <Link key={i} href={link.path || '#'} className="block hover:text-white transition-colors">
                             {link.title}
                         </Link>

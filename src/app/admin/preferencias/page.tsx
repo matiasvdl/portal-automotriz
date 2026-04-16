@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect } from 'react'
 import { client } from '@/sanity/lib/client'
@@ -22,6 +23,54 @@ import {
     resolveLogoMaxHeightPx,
 } from '@/lib/content-defaults'
 
+type SessionUser = {
+    role?: string
+}
+
+type SanityAssetReference = {
+    _type: 'reference'
+    _ref: string
+}
+
+type SanityImageValue = {
+    _type: 'image'
+    asset: SanityAssetReference
+}
+
+type ReviewItem = {
+    _id: string
+    name: string
+    date: string
+    rating: number
+    comment: string
+    badge: string
+}
+
+type FaqItem = {
+    _id: string
+    question: string
+    answer: string
+    order?: number
+}
+
+type AppearanceState = {
+    _id: string
+    brandName: string
+    primaryColor: string
+    logo: SanityImageValue | File | null
+    logoWidth: number
+    favicon: SanityImageValue | File | null
+    splitText: boolean
+    isJoined: boolean
+    minDepositPercent: number
+    minIncome: number
+    minWorkExperience: string
+    heroTitle: string
+    heroSubtitle: string
+    heroPosition: string
+    heroImage: SanityImageValue | File | null
+}
+
 const LOGO_SIZE_PRESETS: { label: string; value: number }[] = [
     { label: 'Compacto', value: 52 },
     { label: 'Medio', value: 60 },
@@ -43,6 +92,7 @@ interface RutaOption {
 
 // Añadimos 'seo' a los tipos de pestañas
 type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas' | 'legales' | 'seo';
+const TABS: TabType[] = ['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'seo', 'legales']
 
 export default function PreferenciasPage() {
     const { data: session, status } = useSession()
@@ -52,7 +102,7 @@ export default function PreferenciasPage() {
 
     const [settings, setSettings] = useState({
         _id: '',
-        siteName: 'VDL MOTORS',
+        siteName: '',
         siteUrl: '',
         footerDescription: '',
         footerTagline: '',
@@ -73,13 +123,13 @@ export default function PreferenciasPage() {
         }
     })
 
-    const [appearanceData, setAppearanceData] = useState({
+    const [appearanceData, setAppearanceData] = useState<AppearanceState>({
         _id: 'appearance-settings',
-        brandName: 'VDL GROUP',
+        brandName: '',
         primaryColor: '#000000',
-        logo: null as any,
+        logo: null,
         logoWidth: clampLogoMaxHeightPx(CONTENT_DEFAULTS.logoMaxHeightPx),
-        favicon: null as any,
+        favicon: null,
         splitText: true,
         isJoined: false,
         minDepositPercent: 30,
@@ -88,7 +138,7 @@ export default function PreferenciasPage() {
         heroTitle: 'TRANSFORMA TU CAMINO',
         heroSubtitle: 'Comprar y vender un auto nunca fue tan simple.',
         heroPosition: 'center',
-        heroImage: null as any
+        heroImage: null
     })
 
     const [contact, setContact] = useState({
@@ -98,8 +148,8 @@ export default function PreferenciasPage() {
         address: ''
     })
 
-    const [allReviews, setAllReviews] = useState<any[]>([])
-    const [faqs, setFaqs] = useState<any[]>([])
+    const [allReviews, setAllReviews] = useState<ReviewItem[]>([])
+    const [faqs, setFaqs] = useState<FaqItem[]>([])
     const [newFaq, setNewFaq] = useState({ question: '', answer: '', order: 0 })
 
     const [newReview, setNewReview] = useState({
@@ -116,7 +166,7 @@ export default function PreferenciasPage() {
     // --- EFECTO DE SEGURIDAD ---
     useEffect(() => {
         if (status === 'authenticated') {
-            const userRole = (session?.user as any)?.role
+            const userRole = (session?.user as SessionUser | undefined)?.role
             if (userRole !== 'Administrador Principal' && userRole !== 'Administrador') {
                 router.push('/admin/dashboard')
             }
@@ -130,7 +180,11 @@ export default function PreferenciasPage() {
                 const [config, reviews, contactData, faqData, appearance] = await Promise.all([
                     client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' }),
                     client.fetch(`*[_type == "review"] | order(date desc)`, {}, { cache: 'no-store' }),
-                    client.fetch(`*[_type == "contactSettings"][0]`, {}, { cache: 'no-store' }),
+                    client.fetch(
+                        `coalesce(*[_id == "contact-settings" && _type == "contact"][0], *[_type == "contact"][0], *[_type == "contactSettings"][0])`,
+                        {},
+                        { cache: 'no-store' }
+                    ),
                     client.fetch(`*[_type == "faq"] | order(order asc)`, {}, { cache: 'no-store' }),
                     client.fetch(`*[_id == "appearance-settings"][0]`, {}, { cache: 'no-store' })
                 ]);
@@ -362,7 +416,7 @@ export default function PreferenciasPage() {
         try {
             const result = await createSanityDocument('review', newReview)
             if (result.success && result.data) {
-                setAllReviews(prev => [result.data, ...allReviews])
+                setAllReviews(prev => [result.data as ReviewItem, ...prev])
                 setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
                 alert("Reseña publicada")
             } else {
@@ -421,10 +475,10 @@ export default function PreferenciasPage() {
                     </header>
 
                     <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
-                        {['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'seo', 'legales'].map((tab) => (
+                        {TABS.map((tab) => (
                             <button
                                 key={tab}
-                                onClick={() => setActiveTab(tab as any)}
+                                onClick={() => setActiveTab(tab)}
                                 className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
                                 {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : tab === 'seo' ? 'SEO' : tab === 'legales' ? 'Legales' : 'Reseñas'}
@@ -441,7 +495,7 @@ export default function PreferenciasPage() {
 
                                     <PrefInput
                                         label="Nombre del Sitio (SEO)"
-                                        placeholder="Ej: VDL MOTORS"
+                                        placeholder="Nombre que aparecerá en Google y pestañas del navegador"
                                         value={settings.siteName}
                                         onChange={(v) => setSettings(prev => ({ ...prev, siteName: v }))}
                                     />
@@ -454,7 +508,7 @@ export default function PreferenciasPage() {
                                         onChange={(v) => setSettings(prev => ({ ...prev, siteUrl: v }))}
                                     />
                                     <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none -mt-4">
-                                        Escribe tu dominio sin "https://". Ejemplo: miweb.cl
+                                        Escribe tu dominio sin &quot;https://&quot;. Ejemplo: miweb.cl
                                     </p>
 
                                     <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
@@ -499,119 +553,119 @@ export default function PreferenciasPage() {
 
                                 {/* Columna izquierda: identidad + favicon (evita hueco gigante si el logo es alto) */}
                                 <div className="flex flex-col gap-7">
-                                {/* BLOQUE 1: IDENTIDAD VISUAL */}
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad Visual</h3>
+                                    {/* BLOQUE 1: IDENTIDAD VISUAL */}
+                                    <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad Visual</h3>
 
-                                    <div className="space-y-6">
-                                        {/* Color de Marca con Selector Visual */}
-                                        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Color de Marca</label>
-                                            <div className="flex items-center gap-3">
-                                                {/* Cuadro de color visual */}
-                                                <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shrink-0 shadow-sm">
+                                        <div className="space-y-6">
+                                            {/* Color de Marca con Selector Visual */}
+                                            <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Color de Marca</label>
+                                                <div className="flex items-center gap-3">
+                                                    {/* Cuadro de color visual */}
+                                                    <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shrink-0 shadow-sm">
+                                                        <input
+                                                            type="color"
+                                                            value={appearanceData.primaryColor || '#000000'}
+                                                            onChange={(e) => setAppearanceData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                                                            className="absolute -inset-2 w-[200%] h-[200%] cursor-pointer border-none"
+                                                        />
+                                                    </div>
+                                                    {/* Input de texto para el código Hex */}
                                                     <input
-                                                        type="color"
+                                                        type="text"
                                                         value={appearanceData.primaryColor || '#000000'}
                                                         onChange={(e) => setAppearanceData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                                                        className="absolute -inset-2 w-[200%] h-[200%] cursor-pointer border-none"
+                                                        className="flex-1 h-[48px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none uppercase shadow-none transition-all focus:ring-1 focus:ring-black"
+                                                        placeholder="#000000"
                                                     />
                                                 </div>
-                                                {/* Input de texto para el código Hex */}
-                                                <input
-                                                    type="text"
-                                                    value={appearanceData.primaryColor || '#000000'}
-                                                    onChange={(e) => setAppearanceData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                                                    className="flex-1 h-[48px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none uppercase shadow-none transition-all focus:ring-1 focus:ring-black"
-                                                    placeholder="#000000"
-                                                />
+                                                <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Presiona el cuadro para abrir la paleta de colores</p>
                                             </div>
-                                            <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Presiona el cuadro para abrir la paleta de colores</p>
+
+                                            <PrefInput
+                                                label="Nombre de la Marca"
+                                                placeholder="Nombre que aparecerá en el logo (puede ser igual al nombre del sitio)"
+                                                value={appearanceData.brandName}
+                                                onChange={(v) => setAppearanceData(prev => ({ ...prev, brandName: v }))}
+                                            />
                                         </div>
 
-                                        <PrefInput
-                                            label="Nombre de la Marca"
-                                            placeholder="Ej: VDL GROUP"
-                                            value={appearanceData.brandName}
-                                            onChange={(v) => setAppearanceData(prev => ({ ...prev, brandName: v }))}
-                                        />
-                                    </div>
-
-                                    {/* Opciones de Estilo de Logo (Texto) */}
-                                    <div className="bg-[#F7F8FA] rounded-2xl p-1 border border-gray-100/50">
-                                        <div className="flex items-center justify-between p-4 px-4">
-                                            <div className="leading-tight">
-                                                <p className="text-[9px] font-black uppercase text-zinc-800">Estilo Dividido</p>
-                                                <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">Resalta la primera palabra</p>
-                                            </div>
-                                            <button
-                                                onClick={() => setAppearanceData(prev => ({ ...prev, splitText: !prev.splitText }))}
-                                                className={`w-10 h-5 rounded-full transition-all relative ${appearanceData.splitText ? 'bg-black' : 'bg-zinc-200'}`}
-                                            >
-                                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${appearanceData.splitText ? 'left-6' : 'left-1'}`}></div>
-                                            </button>
-                                        </div>
-                                        <div className="h-[1px] bg-gray-200/50 mx-4"></div>
-                                        <div className="flex items-center justify-between p-3 px-4">
-                                            <div className="leading-tight">
-                                                <p className="text-[9px] font-black uppercase text-zinc-800">Eliminar Espacios</p>
-                                                <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">Muestra el nombre todo junto</p>
-                                            </div>
-                                            <button
-                                                onClick={() => setAppearanceData(prev => ({ ...prev, isJoined: !prev.isJoined }))}
-                                                className={`w-10 h-5 rounded-full transition-all relative ${appearanceData.isJoined ? 'bg-black' : 'bg-zinc-200'}`}
-                                            >
-                                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${appearanceData.isJoined ? 'left-6' : 'left-1'}`}></div>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* BLOQUE 3: FAVICON (misma columna que Identidad, pegado debajo) */}
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Icono de Navegador (Favicon)</h3>
-                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Imagen del Icono (Cuadrada)</label>
-                                        <div className="relative bg-[#F7F8FA] rounded-2xl p-6 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[130px] overflow-hidden group">
-                                            {appearanceData.favicon ? (
-                                                <div className="flex flex-col items-center space-y-3 w-full">
-                                                    <img
-                                                        src={appearanceData.favicon.asset?._ref ? urlFor(appearanceData.favicon).width(64).url() : ""}
-                                                        alt="Favicon Preview"
-                                                        className="w-8 h-8 object-contain rounded shadow-sm"
-                                                    />
-                                                    <button
-                                                        onClick={() => setAppearanceData(prev => ({ ...prev, favicon: null }))}
-                                                        className="text-[8px] font-black uppercase text-red-500 hover:underline transition-all"
-                                                    >
-                                                        Quitar icono
-                                                    </button>
+                                        {/* Opciones de Estilo de Logo (Texto) */}
+                                        <div className="bg-[#F7F8FA] rounded-2xl p-1 border border-gray-100/50">
+                                            <div className="flex items-center justify-between p-4 px-4">
+                                                <div className="leading-tight">
+                                                    <p className="text-[9px] font-black uppercase text-zinc-800">Estilo Dividido</p>
+                                                    <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">Resalta la primera palabra</p>
                                                 </div>
-                                            ) : (
-                                                <>
-                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Subir Favicon</p>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={async (e) => {
-                                                            const file = e.target.files?.[0]
-                                                            if (!file) return
-                                                            setIsSubmitting(true)
-                                                            const formData = new FormData()
-                                                            formData.append('file', file)
-                                                            const result = await uploadSanityImage(formData)
-                                                            if (result.success) {
-                                                                setAppearanceData(prev => ({ ...prev, favicon: { _type: 'image', asset: { _ref: result.assetId } } }))
-                                                            }
-                                                            setIsSubmitting(false)
-                                                        }}
-                                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                                    />
-                                                </>
-                                            )}
+                                                <button
+                                                    onClick={() => setAppearanceData(prev => ({ ...prev, splitText: !prev.splitText }))}
+                                                    className={`w-10 h-5 rounded-full transition-all relative ${appearanceData.splitText ? 'bg-black' : 'bg-zinc-200'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${appearanceData.splitText ? 'left-6' : 'left-1'}`}></div>
+                                                </button>
+                                            </div>
+                                            <div className="h-[1px] bg-gray-200/50 mx-4"></div>
+                                            <div className="flex items-center justify-between p-3 px-4">
+                                                <div className="leading-tight">
+                                                    <p className="text-[9px] font-black uppercase text-zinc-800">Eliminar Espacios</p>
+                                                    <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">Muestra el nombre todo junto</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setAppearanceData(prev => ({ ...prev, isJoined: !prev.isJoined }))}
+                                                    className={`w-10 h-5 rounded-full transition-all relative ${appearanceData.isJoined ? 'bg-black' : 'bg-zinc-200'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${appearanceData.isJoined ? 'left-6' : 'left-1'}`}></div>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+
+                                    {/* BLOQUE 3: FAVICON (misma columna que Identidad, pegado debajo) */}
+                                    <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Icono de Navegador (Favicon)</h3>
+                                        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Imagen del Icono (Cuadrada)</label>
+                                            <div className="relative bg-[#F7F8FA] rounded-2xl p-6 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[130px] overflow-hidden group">
+                                                {appearanceData.favicon ? (
+                                                    <div className="flex flex-col items-center space-y-3 w-full">
+                                                        <img
+                                                            src={appearanceData.favicon.asset?._ref ? urlFor(appearanceData.favicon).width(64).url() : ""}
+                                                            alt="Favicon Preview"
+                                                            className="w-8 h-8 object-contain rounded shadow-sm"
+                                                        />
+                                                        <button
+                                                            onClick={() => setAppearanceData(prev => ({ ...prev, favicon: null }))}
+                                                            className="text-[8px] font-black uppercase text-red-500 hover:underline transition-all"
+                                                        >
+                                                            Quitar icono
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Subir Favicon</p>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0]
+                                                                if (!file) return
+                                                                setIsSubmitting(true)
+                                                                const formData = new FormData()
+                                                                formData.append('file', file)
+                                                                const result = await uploadSanityImage(formData)
+                                                                if (result.success) {
+                                                                    setAppearanceData(prev => ({ ...prev, favicon: { _type: 'image', asset: { _ref: result.assetId } } }))
+                                                                }
+                                                                setIsSubmitting(false)
+                                                            }}
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                        />
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* BLOQUE 2: LOGO PRINCIPAL (columna derecha) */}
@@ -640,11 +694,10 @@ export default function PreferenciasPage() {
                                                     onClick={() =>
                                                         setAppearanceData((prev) => ({ ...prev, logoWidth: p.value }))
                                                     }
-                                                    className={`rounded-full px-3 py-1.5 text-[8px] font-black uppercase tracking-tight transition-colors ${
-                                                        clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx) === p.value
-                                                            ? 'bg-black text-white'
-                                                            : 'bg-[#F7F8FA] text-zinc-600 hover:bg-zinc-200'
-                                                    }`}
+                                                    className={`rounded-full px-3 py-1.5 text-[8px] font-black uppercase tracking-tight transition-colors ${clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx) === p.value
+                                                        ? 'bg-black text-white'
+                                                        : 'bg-[#F7F8FA] text-zinc-600 hover:bg-zinc-200'
+                                                        }`}
                                                 >
                                                     {p.label}
                                                 </button>
@@ -802,24 +855,24 @@ export default function PreferenciasPage() {
                                     <div key={menu.target} className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                         <div className="flex justify-between items-center border-b border-gray-50 pb-2 mb-5">
                                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">{menu.title}</h3>
-                                            <button onClick={() => handleAddNavItem(menu.target as any)} className="bg-black text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase transition-none">añadir ruta</button>
+                                            <button onClick={() => handleAddNavItem(menu.target as 'navMenu' | 'footerLinks')} className="bg-black text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase transition-none">añadir ruta</button>
                                         </div>
                                         <div className="space-y-5">
                                             {settings[menu.target as 'navMenu' | 'footerLinks'].map((item: NavItem, i: number) => (
                                                 <div key={item._key} className="grid grid-cols-[1fr,1fr,auto] gap-4 items-center bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 group">
                                                     <div className="flex flex-col gap-2 text-left leading-none">
                                                         <label className="text-[8px] font-black uppercase text-zinc-400">Título</label>
-                                                        <input value={item.title} onChange={(e) => handleUpdateNavItem(menu.target as any, i, 'title', e.target.value)} className="bg-white rounded-xl h-9 px-4 text-[11px] font-bold outline-none border-none shadow-none" />
+                                                        <input value={item.title} onChange={(e) => handleUpdateNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'title', e.target.value)} className="bg-white rounded-xl h-9 px-4 text-[11px] font-bold outline-none border-none shadow-none" />
                                                     </div>
                                                     <div className="flex flex-col gap-2 text-left leading-none">
                                                         <label className="text-[8px] font-black uppercase text-zinc-400">Ruta</label>
-                                                        <select value={item.path} onChange={(e) => handleUpdateNavItem(menu.target as any, i, 'path', e.target.value)} className="bg-white rounded-xl h-9 px-4 text-[10px] font-black uppercase outline-none border-none cursor-pointer appearance-none">
+                                                        <select value={item.path} onChange={(e) => handleUpdateNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'path', e.target.value)} className="bg-white rounded-xl h-9 px-4 text-[10px] font-black uppercase outline-none border-none cursor-pointer appearance-none">
                                                             {menu.opts.map((r: RutaOption) => <option key={r.value} value={r.value}>{r.title}</option>)}
                                                         </select>
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                        <button onClick={() => handleMoveNavItem(menu.target as any, i, 'up')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M5 15l7-7 7 7" /></svg></button>
-                                                        <button onClick={() => handleMoveNavItem(menu.target as any, i, 'down')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M19 9l-7 7-7-7" /></svg></button>
+                                                        <button onClick={() => handleMoveNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'up')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M5 15l7-7 7 7" /></svg></button>
+                                                        <button onClick={() => handleMoveNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'down')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M19 9l-7 7-7-7" /></svg></button>
                                                         <button onClick={() => setSettings(prev => ({ ...prev, [menu.target as 'navMenu' | 'footerLinks']: prev[menu.target as 'navMenu' | 'footerLinks'].filter((_, idx) => idx !== i) }))} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
                                                     </div>
                                                 </div>
@@ -891,7 +944,7 @@ export default function PreferenciasPage() {
                                 </div>
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Información Corporativa</h3>
-                                    <PrefInput label="Correo Electrónico" placeholder="ventas@vdlmotors.cl" value={contact.email} onChange={(v) => setContact(prev => ({ ...prev, email: v }))} />
+                                    <PrefInput label="Correo Electrónico" placeholder="ventas@tuautomotora.cl" value={contact.email} onChange={(v) => setContact(prev => ({ ...prev, email: v }))} />
                                     <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección Física</label>
                                         <textarea value={contact.address} onChange={(e) => setContact(prev => ({ ...prev, address: e.target.value }))} placeholder="Ej: Av. Las Condes 123, Santiago" className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[100px] resize-none shadow-none" />
@@ -948,7 +1001,7 @@ export default function PreferenciasPage() {
                                             <div className="text-left">
                                                 <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nivel {f.order || 0}</p>
                                                 <h4 className="text-[11px] font-black uppercase tracking-tight text-black">{f.question}</h4>
-                                                <p className="text-[10px] text-zinc-500 font-medium mt-1 line-clamp-2 italic leading-relaxed">"{f.answer}"</p>
+                                                <p className="text-[10px] text-zinc-500 font-medium mt-1 line-clamp-2 italic leading-relaxed">&quot;{f.answer}&quot;</p>
                                             </div>
                                             <button onClick={() => handleDeleteFaq(f._id)} className="p-2 text-zinc-300 hover:text-red-500 transition-colors">
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
@@ -1038,7 +1091,7 @@ export default function PreferenciasPage() {
                                                             <svg key={i} className={`w-3 h-3 ${i < rev.rating ? 'text-zinc-800' : 'text-zinc-200'} fill-current transition-none`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                                                         ))}
                                                     </div>
-                                                    <p className="text-[12px] text-zinc-700 leading-relaxed font-medium italic transition-none">"{rev.comment}"</p>
+                                                    <p className="text-[12px] text-zinc-700 leading-relaxed font-medium italic transition-none">&quot;{rev.comment}&quot;</p>
                                                 </div>
                                             )}
                                         </div>

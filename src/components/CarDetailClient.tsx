@@ -1,22 +1,68 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { client } from '@/sanity/lib/client'
 import { notFound } from 'next/navigation'
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useCallback } from 'react'
 import FeaturesAccordion from '@/components/FeaturesAccordion'
 import CarCard from '@/components/CarCard'
 import { useSettings } from '@/context/SettingsContext'
 
+interface CarFeatureSection {
+    title: string
+    items: { label: string; value: string | number }[]
+}
+
+interface DetailCar {
+    _id: string
+    make: string
+    model: string
+    location?: string
+    year: number
+    listPrice: number
+    financedPrice: number
+    fuel: string
+    transmission: string
+    mileage: number
+    description?: string
+    specsGeneral?: Record<string, string>
+    specsHistory?: Record<string, string>
+    specsExterior?: Record<string, string>
+    specsComfort?: Record<string, string>
+    specsSecurity?: Record<string, string>
+    specsInterior?: Record<string, string>
+    specsEntertainment?: Record<string, string>
+    images?: string[]
+    exteriorImages?: string[]
+    interiorImages?: string[]
+}
+
+interface RecommendedCar {
+    _id: string
+    slug: string
+    make: string
+    model: string
+    year: number
+    listPrice: number
+    financedPrice: number
+    fuel: string
+    transmission: string
+    mileage: number
+    category?: string
+    engine?: string
+    imageUrl: string
+}
+
 async function getCar(slug: string) {
     const query = `*[_type == "car" && slug.current == $slug][0] {
-    _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage,
+    _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage, location,
     description,
     specsGeneral, specsHistory, specsExterior, specsComfort, specsSecurity, specsInterior, specsEntertainment,
     "images": images[].asset->url,
     "exteriorImages": exteriorImages[].asset->url,
     "interiorImages": interiorImages[].asset->url
   }`
-    return await client.fetch(query, { slug })
+    return await client.fetch<DetailCar | null>(query, { slug })
 }
 
 async function getRecommendedCars(currentId: string) {
@@ -35,18 +81,18 @@ async function getRecommendedCars(currentId: string) {
         engine,
         "imageUrl": images[0].asset->url
     }`
-    return await client.fetch(query, { currentId })
+    return await client.fetch<RecommendedCar[]>(query, { currentId })
 }
 
 export default function CarDetailClient({ params }: { params: Promise<{ slug: string }> }) {
     const resolvedParams = use(params)
-    const { contact, appearance } = useSettings()
+    const { contact, appearance, config } = useSettings()
 
     // PASO A: Color primario dinámico
     const primaryColor = appearance?.primaryColor || '#000000'
 
-    const [car, setCar] = useState<any>(null)
-    const [recommendedCars, setRecommendedCars] = useState<any[]>([])
+    const [car, setCar] = useState<DetailCar | null>(null)
+    const [recommendedCars, setRecommendedCars] = useState<RecommendedCar[]>([])
     const [selectedImage, setSelectedImage] = useState<string>('')
     const [modalImages, setModalImages] = useState<string[]>([])
     const [loading, setLoading] = useState(true)
@@ -55,16 +101,16 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
     const [showDetails, setShowDetails] = useState(true)
 
     const currentImageIndex = modalImages.findIndex((img) => img === selectedImage);
-    const showPreviousImage = () => {
+    const showPreviousImage = useCallback(() => {
         if (modalImages.length === 0) return;
         const prevIndex = currentImageIndex > 0 ? currentImageIndex - 1 : modalImages.length - 1;
         setSelectedImage(modalImages[prevIndex]);
-    };
-    const showNextImage = () => {
+    }, [currentImageIndex, modalImages]);
+    const showNextImage = useCallback(() => {
         if (modalImages.length === 0) return;
         const nextIndex = currentImageIndex === -1 || currentImageIndex === modalImages.length - 1 ? 0 : currentImageIndex + 1;
         setSelectedImage(modalImages[nextIndex]);
-    };
+    }, [currentImageIndex, modalImages]);
 
     const openModalWithImage = (img: string, images: string[]) => {
         setModalImages(images)
@@ -81,7 +127,7 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isModalOpen, selectedImage, modalImages]);
+    }, [isModalOpen, showNextImage, showPreviousImage]);
 
     useEffect(() => {
         if (!resolvedParams?.slug) return
@@ -115,7 +161,7 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
         ...(detailFilter === 'all' || detailFilter === 'interior' ? (car.interiorImages || []) : []),
     ];
 
-    const carFeatures = [
+    const carFeatures: CarFeatureSection[] = [
         { title: "General", items: [{ label: "Cilindrada", value: car.specsGeneral?.cilindrada || "-" }, { label: "Cilindros", value: car.specsGeneral?.cilindros || "-" }, { label: "Potencia", value: car.specsGeneral?.potencia || "-" }, { label: "Transmisión", value: car.transmission || "-" }, { label: "Combustible", value: car.fuel || "-" }] },
         { title: "Historial", items: [{ label: "Dueños", value: car.specsHistory?.duenos || "-" }, { label: "Mantenciones", value: car.specsHistory?.mantenciones || "-" }, { label: "Historial Autofact", value: car.specsHistory?.historial || "-" }] },
         { title: "Exterior", items: [{ label: "Número de Puertas", value: car.specsExterior?.puertas || "-" }, { label: "Diámetro de Rin", value: car.specsExterior?.rin || "-" }, { label: "Tipo de Rin", value: car.specsExterior?.tipoRin || "-" }, { label: "Tipo de luces", value: car.specsExterior?.luces || "-" }] },
@@ -223,10 +269,10 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
                             <div className="bg-[#FBFBFB] rounded-2xl p-6 border border-gray-100 shadow-sm">
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.1em] text-black mb-4">Especificaciones</h4>
                                 <div className="flex flex-col mb-4">
-                                    <DataRow label="Marca" value={car.make} /><DataRow label="Modelo" value={car.model} /><DataRow label="Año" value={car.year} /><DataRow label="Kilometraje" value={`${car.mileage?.toLocaleString('es-CL')} KM`} /><DataRow label="Combustible" value={car.fuel} /><DataRow label="Transmisión" value={car.transmission} /><DataRow label="Ubicación" value="Santiago" />
+                                    <DataRow label="Marca" value={car.make} /><DataRow label="Modelo" value={car.model} /><DataRow label="Año" value={car.year} /><DataRow label="Kilometraje" value={`${car.mileage?.toLocaleString('es-CL')} KM`} /><DataRow label="Combustible" value={car.fuel} /><DataRow label="Transmisión" value={car.transmission} /><DataRow label="Ubicación" value={car.location || config?.defaultLocation || 'Santiago'} />
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">Cotiza en línea vía WhatsApp</p>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">{config?.catalogContent?.whatsappLabel?.trim() || 'Cotiza en línea vía WhatsApp'}</p>
                                     <a
                                         href={`https://wa.me/${contact.whatsapp || "56937084907"}?text=${encodeURIComponent(`Hola, me interesa el ${car.make} ${car.model} (${car.year}) que vi en el catálogo.`)}`}
                                         target="_blank"
@@ -245,10 +291,10 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
                 <section className="mt-5 pt-6 border-t border-gray-100">
                     <div className="mb-6">
                         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">Más opciones</p>
-                        <h2 className="text-xl font-black uppercase tracking-tighter">Vehículos Recomendados</h2>
+                        <h2 className="text-xl font-black uppercase tracking-tighter">{config?.catalogContent?.recommendedTitle?.trim() || 'Vehículos Recomendados'}</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {recommendedCars.map((recommendedCar: any) => (
+                        {recommendedCars.map((recommendedCar) => (
                             <CarCard key={recommendedCar._id} car={recommendedCar} />
                         ))}
                     </div>
@@ -269,7 +315,7 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
     )
 }
 
-function DataRow({ label, value }: { label: string; value: any }) {
+function DataRow({ label, value }: { label: string; value: string | number }) {
     return (
         <div className="flex justify-between items-center text-[10px] py-2.5 border-b border-black/5 last:border-0">
             <span className="text-gray-400 font-bold uppercase tracking-tight">{label}</span>

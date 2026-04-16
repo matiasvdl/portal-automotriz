@@ -4,22 +4,26 @@ import { useState, useEffect } from 'react'
 import { useSettings } from '@/context/SettingsContext'
 import { client } from '@/sanity/lib/client'
 
+interface FaqItem {
+    _id: string
+    question: string
+    answer: string
+}
+
 export default function FAQClient() {
-    const { contact, appearance } = useSettings()
-    // PASO A: Extraemos el color primario dinámico
+    const { contact, appearance, config } = useSettings()
     const primaryColor = appearance?.primaryColor || '#000000'
 
     const [openIndex, setOpenIndex] = useState<number | null>(0)
-    const [faqs, setFaqs] = useState<any[]>([])
+    const [faqs, setFaqs] = useState<FaqItem[]>([])
 
-    // FETCH DE PREGUNTAS DESDE SANITY
     useEffect(() => {
         const fetchFaqs = async () => {
             try {
-                const data = await client.fetch(`*[_type == "faq"] | order(order asc)`)
+                const data = await client.fetch<FaqItem[]>(`*[_type == "faq"] | order(order asc)`)
                 if (data) setFaqs(data)
             } catch (error) {
-                console.error("Error cargando FAQs:", error)
+                console.error('Error cargando FAQs:', error)
             }
         }
         fetchFaqs()
@@ -28,7 +32,6 @@ export default function FAQClient() {
     return (
         <div className="min-h-screen bg-[#F7F8FA] antialiased text-black font-sans">
             <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
-
                 <header className="mb-8 text-left">
                     <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">
                         Centro de ayuda
@@ -39,8 +42,6 @@ export default function FAQClient() {
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-                    {/* SECCIÓN DE ACORDEONES DINÁMICOS */}
                     <div className="lg:col-span-7 space-y-4 order-2 lg:order-1">
                         {faqs.length > 0 ? (
                             faqs.map((faq, index) => (
@@ -71,7 +72,7 @@ export default function FAQClient() {
                                         className={`transition-all duration-300 ease-in-out ${openIndex === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
                                     >
                                         <div className="px-6 pb-6 text-[12px] font-medium text-zinc-500 leading-relaxed italic">
-                                            "{faq.answer}"
+                                            &quot;{faq.answer}&quot;
                                         </div>
                                     </div>
                                 </div>
@@ -83,14 +84,13 @@ export default function FAQClient() {
                         )}
                     </div>
 
-                    {/* BARRA LATERAL INFORMATIVA */}
                     <aside className="lg:col-span-5 order-1 lg:order-2 space-y-6">
                         <div className="bg-white rounded-[25px] p-8 border border-gray-100 shadow-none">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-6 leading-none">
-                                ¿Aún tienes dudas?
+                                {config?.faqContent?.ctaTitle?.trim() || '¿Aún tienes dudas?'}
                             </h4>
                             <p className="text-[11px] font-medium text-zinc-500 leading-relaxed mb-8">
-                                Si no encuentras la respuesta que buscas, nuestro equipo de expertos está listo para asesorarte de forma personalizada.
+                                {config?.faqContent?.ctaDescription?.trim() || 'Si no encuentras la respuesta que buscas, nuestro equipo de expertos está listo para asesorarte de forma personalizada.'}
                             </p>
 
                             <div className="space-y-4">
@@ -101,15 +101,14 @@ export default function FAQClient() {
                                     className="block w-full text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl transition-all active:scale-95"
                                     style={{
                                         backgroundColor: primaryColor,
-                                        boxShadow: `0 20px 25px -5px ${primaryColor}33` // Sombra con 20% de opacidad del color primario
+                                        boxShadow: `0 20px 25px -5px ${primaryColor}33`
                                     }}
                                 >
-                                    Hablar con un asesor
+                                    {config?.faqContent?.ctaButtonLabel?.trim() || 'Hablar con un asesor'}
                                 </a>
                             </div>
                         </div>
 
-                        {/* Banner Compras Protegidas con color dinámico en el icono */}
                         <div className="bg-zinc-900 rounded-[25px] p-6 text-white shadow-none flex items-center gap-4">
                             <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center shrink-0">
                                 <svg className="w-4 h-4" style={{ color: primaryColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,8 +116,8 @@ export default function FAQClient() {
                                 </svg>
                             </div>
                             <div className="leading-tight">
-                                <p className="text-[10px] font-black uppercase tracking-widest">Compra Protegida</p>
-                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter mt-0.5">Seguridad en cada paso del proceso</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest">{config?.faqContent?.trustTitle?.trim() || 'Compra Protegida'}</p>
+                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter mt-0.5">{config?.faqContent?.trustSubtitle?.trim() || 'Seguridad en cada paso del proceso'}</p>
                             </div>
                         </div>
                     </aside>

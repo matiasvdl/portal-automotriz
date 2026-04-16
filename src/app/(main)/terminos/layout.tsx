@@ -6,8 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // Buscamos el nombre del sitio y las descripciones en Sanity
     const config = await client.fetch(`*[_type == "siteConfig"][0]{ siteName, seoDescriptions }`)
 
-    // Si no hay nombre en Sanity, usamos "Portal Automotriz" como respaldo
-    const name = config?.siteName || 'Portal Automotriz'
+    const name = config?.siteName || ''
     const description = config?.seoDescriptions?.terminos || `Consulta los términos legales y condiciones de uso de ${name}.`
 
     return {

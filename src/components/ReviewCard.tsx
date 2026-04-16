@@ -28,7 +28,7 @@ export default function ReviewCard({ name, date, text, rating, badge }: { name: 
                         </svg>
                     ))}
                 </div>
-                <p className="text-sm text-zinc-700 leading-relaxed font-medium italic">"{text}"</p>
+                <p className="text-sm text-zinc-700 leading-relaxed font-medium italic">&quot;{text}&quot;</p>
             </div>
         </div>
     )

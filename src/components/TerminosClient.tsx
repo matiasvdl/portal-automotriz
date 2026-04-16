@@ -7,7 +7,7 @@ export default function TerminosClient() {
     const { config, appearance } = useSettings()
 
     // 2. Usamos el nombre de marca configurado
-    const nombreSitio = appearance?.brandName || config?.siteName || 'VDL MOTORS'
+    const nombreSitio = appearance?.brandName || config?.siteName || ''
 
     return (
         <div className="antialiased text-black font-sans no-scrollbar">

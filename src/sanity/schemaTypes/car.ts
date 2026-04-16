@@ -1,5 +1,12 @@
 import { defineField, defineType } from 'sanity'
 
+type CarSlugSourceDocument = {
+    make?: string
+    model?: string
+    version?: string
+    year?: number
+}
+
 export const car = defineType({
     name: 'car',
     title: 'Autos',
@@ -19,7 +26,7 @@ export const car = defineType({
             type: 'slug',
             // Actualizado para incluir la versión en el enlace automáticamente
             options: {
-                source: (doc: any) => `${doc.make}-${doc.model}${doc.version ? '-' + doc.version : ''}-${doc.year}`
+                source: (doc: CarSlugSourceDocument) => `${doc.make}-${doc.model}${doc.version ? '-' + doc.version : ''}-${doc.year}`
             },
             validation: Rule => Rule.required()
         }),

@@ -1,4 +1,4 @@
-export default {
+const hero = {
     name: 'hero',
     title: 'Banner Principal',
     type: 'document',
@@ -37,3 +37,5 @@ export default {
         }
     ]
 }
+
+export default hero

@@ -4,7 +4,7 @@ import { useState } from 'react'
 interface FeatureGroup {
     title: string
     icon?: string
-    items: { label: string; value: any }[]
+    items: { label: string; value: string | number }[]
 }
 
 export default function FeaturesAccordion({ features }: { features: FeatureGroup[] }) {

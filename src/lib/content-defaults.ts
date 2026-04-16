@@ -16,7 +16,7 @@ export const CONTENT_DEFAULTS: {
 } = {
     logoMaxHeightPx: 64,
     primaryColor: '#000000',
-    siteDisplayName: 'Portal Automotriz',
+    siteDisplayName: '',
     heroTitle: 'TRANSFORMA TU CAMINO',
     heroSubtitle: 'Comprar y vender un auto nunca fue tan simple.',
 }
@@ -59,9 +59,9 @@ export function resolveLogoMaxHeightPx(logoWidthField?: number | null): number {
     if (n > LOGO_MAX_HEIGHT_MAX_PX) {
         n = Math.round(
             LOGO_MAX_HEIGHT_MIN_PX +
-                ((Math.min(n, LEGACY_LOGO_WIDTH_MAX) - LEGACY_LOGO_WIDTH_MIN) /
-                    (LEGACY_LOGO_WIDTH_MAX - LEGACY_LOGO_WIDTH_MIN)) *
-                    (LOGO_MAX_HEIGHT_MAX_PX - LOGO_MAX_HEIGHT_MIN_PX)
+            ((Math.min(n, LEGACY_LOGO_WIDTH_MAX) - LEGACY_LOGO_WIDTH_MIN) /
+                (LEGACY_LOGO_WIDTH_MAX - LEGACY_LOGO_WIDTH_MIN)) *
+            (LOGO_MAX_HEIGHT_MAX_PX - LOGO_MAX_HEIGHT_MIN_PX)
         )
     }
     return clampLogoMaxHeightPx(n)

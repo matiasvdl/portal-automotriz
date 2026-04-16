@@ -9,7 +9,7 @@ export async function generateMetadata() {
         title: 'Términos y Condiciones',
         description: config?.seoDescriptions?.terminos || 'Conoce los términos y condiciones de uso de nuestra plataforma y servicios.',
         openGraph: {
-            title: `Términos y Condiciones | ${config?.siteName || 'Portal Automotriz'}`,
+            title: `Términos y Condiciones | ${config?.siteName || ''}`,
         }
     }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
 import { useSession } from "next-auth/react"
@@ -8,49 +8,89 @@ import { useRouter } from 'next/navigation'
 import bcrypt from "bcryptjs"
 import { deleteAdminProfile, updateAdminProfile } from '@/app/actions/updateProfile'
 
+type SessionUser = {
+    role?: string
+}
+
+type AdminMember = {
+    _id: string
+    firstName?: string
+    lastName?: string
+    username?: string
+    email?: string
+    phone?: string
+    role?: string
+    image?: unknown
+}
+
+type AdminFormState = {
+    _id: string
+    firstName: string
+    lastName: string
+    username: string
+    email: string
+    phone: string
+    role: string
+    password: string
+    confirmPassword: string
+}
+
+const EMPTY_USER_DATA: AdminFormState = {
+    _id: 'new',
+    firstName: '',
+    lastName: '',
+    username: '',
+    email: '',
+    phone: '',
+    role: 'Ventas',
+    password: '',
+    confirmPassword: ''
+}
+
 export default function AdministracionPage() {
     const { data: session, status } = useSession()
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [mounted, setMounted] = useState(false)
-    const [team, setTeam] = useState<any[]>([])
-
-    const [userData, setUserData] = useState({
-        _id: 'new',
-        firstName: '',
-        lastName: '',
-        username: '',
-        email: '',
-        phone: '',
-        role: 'Ventas',
-        password: '',
-        confirmPassword: ''
-    })
+    const [team, setTeam] = useState<AdminMember[]>([])
+    const [userData, setUserData] = useState<AdminFormState>(EMPTY_USER_DATA)
 
     const loadTeam = async () => {
-        const users = await client.fetch(`*[_type == "adminProfile"] | order(_createdAt asc)`, {}, { cache: 'no-store' })
+        const users = await client.fetch<AdminMember[]>(
+            `*[_type == "adminProfile"] | order(_createdAt asc){
+                _id,
+                firstName,
+                lastName,
+                username,
+                email,
+                phone,
+                role,
+                image
+            }`,
+            {},
+            { cache: 'no-store' }
+        )
         setTeam(users)
     }
 
     useEffect(() => {
         setMounted(true)
 
-        // SEGURIDAD: Redirección si no es Administrador Principal
         if (status === 'authenticated') {
-            const userRole = (session?.user as any)?.role
+            const userRole = (session?.user as SessionUser | undefined)?.role
             if (userRole !== 'Administrador Principal') {
                 router.push('/admin/dashboard')
             } else {
-                loadTeam()
+                void loadTeam()
             }
         }
     }, [session, status, router])
 
     const prepareNew = () => {
-        setUserData({ _id: 'new', firstName: '', lastName: '', username: '', email: '', phone: '', role: 'Ventas', password: '', confirmPassword: '' })
+        setUserData(EMPTY_USER_DATA)
     }
 
-    const handleDeleteMember = async (user: { _id: string; firstName?: string; lastName?: string; role?: string }) => {
+    const handleDeleteMember = async (user: AdminMember) => {
         if (user.role === 'Administrador Principal') return
         const label = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user._id
         if (!confirm(`¿Eliminar a ${label}? Esta acción no se puede deshacer.`)) return
@@ -68,7 +108,7 @@ export default function AdministracionPage() {
         }
     }
 
-    const selectToEdit = (user: any) => {
+    const selectToEdit = (user: AdminMember) => {
         setUserData({
             _id: user._id,
             firstName: user.firstName || '',
@@ -88,7 +128,15 @@ export default function AdministracionPage() {
         setIsSubmitting(true)
 
         try {
-            let payload: any = {
+            const payload: {
+                firstName: string
+                lastName: string
+                username: string
+                email: string
+                phone: string
+                role: string
+                password?: string
+            } = {
                 firstName: userData.firstName,
                 lastName: userData.lastName,
                 username: userData.username.toLowerCase().trim(),
@@ -111,8 +159,8 @@ export default function AdministracionPage() {
 
             if (result.success) {
                 alert(userData._id === 'new' ? 'Usuario creado' : 'Usuario actualizado')
-                setUserData({ ...userData, password: '', confirmPassword: '' })
-                loadTeam()
+                setUserData((prev) => ({ ...prev, password: '', confirmPassword: '' }))
+                await loadTeam()
             }
         } catch (error) {
             console.error(error)
@@ -140,9 +188,7 @@ export default function AdministracionPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 items-start">
 
-                    {/* COLUMNA DERECHA: LISTA E INFORMACIÓN */}
                     <div className="space-y-7 order-1 lg:order-2">
-                        {/* LISTA DE MIEMBROS */}
                         <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-5">
                             <div className="flex justify-between items-center border-b border-gray-50 pb-5 leading-none">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Miembros</h3>
@@ -154,48 +200,47 @@ export default function AdministracionPage() {
                                 {team.map((user) => {
                                     const isPrincipal = user.role === 'Administrador Principal'
                                     return (
-                                    <div
-                                        key={user._id}
-                                        onClick={() => selectToEdit(user)}
-                                        className={`flex items-center justify-between gap-3 p-5 rounded-[20px] cursor-pointer transition-all border ${userData._id === user._id ? 'bg-black border-black text-white shadow-lg' : 'bg-[#F7F8FA] border-transparent hover:border-zinc-200 text-black'}`}
-                                    >
-                                        <div className="flex flex-col min-w-0 flex-1">
-                                            <span className={`text-[9px] font-black uppercase ${userData._id === user._id ? 'text-white' : 'text-black'}`}>
-                                                {user.firstName} {user.lastName}
-                                            </span>
-                                            <span className={`text-[8px] font-bold uppercase tracking-tighter mt-1 ${userData._id === user._id ? 'text-zinc-400' : 'text-zinc-400'}`}>
-                                                @{user.username || 'sin-usuario'} • {user.role}
-                                            </span>
+                                        <div
+                                            key={user._id}
+                                            onClick={() => selectToEdit(user)}
+                                            className={`flex items-center justify-between gap-3 p-5 rounded-[20px] cursor-pointer transition-all border ${userData._id === user._id ? 'bg-black border-black text-white shadow-lg' : 'bg-[#F7F8FA] border-transparent hover:border-zinc-200 text-black'}`}
+                                        >
+                                            <div className="flex flex-col min-w-0 flex-1">
+                                                <span className={`text-[9px] font-black uppercase ${userData._id === user._id ? 'text-white' : 'text-black'}`}>
+                                                    {user.firstName} {user.lastName}
+                                                </span>
+                                                <span className={`text-[8px] font-bold uppercase tracking-tighter mt-1 ${userData._id === user._id ? 'text-zinc-400' : 'text-zinc-400'}`}>
+                                                    @{user.username || 'sin-usuario'} • {user.role}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                {!isPrincipal && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            void handleDeleteMember(user)
+                                                        }}
+                                                        disabled={isSubmitting}
+                                                        className={`rounded-lg p-2 transition-colors ${userData._id === user._id ? 'text-red-300 hover:bg-white/10' : 'text-zinc-400 hover:bg-red-50 hover:text-red-600'}`}
+                                                        title="Eliminar usuario"
+                                                        aria-label="Eliminar usuario"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                                {userData._id === user._id && (
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            {!isPrincipal && (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        handleDeleteMember(user)
-                                                    }}
-                                                    disabled={isSubmitting}
-                                                    className={`rounded-lg p-2 transition-colors ${userData._id === user._id ? 'text-red-300 hover:bg-white/10' : 'text-zinc-400 hover:bg-red-50 hover:text-red-600'}`}
-                                                    title="Eliminar usuario"
-                                                    aria-label="Eliminar usuario"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
-                                            )}
-                                            {userData._id === user._id && (
-                                                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
-                                            )}
-                                        </div>
-                                    </div>
                                     )
                                 })}
                             </div>
                         </div>
 
-                        {/* BLOQUE DE INFORMACIÓN: JERARQUÍA */}
                         <div className="bg-zinc-900 rounded-[30px] p-7 text-white space-y-7">
                             <div>
                                 <h4 className="text-[9px] font-black uppercase tracking-widest mb-6 opacity-90 leading-none ">Jerarquía de Permisos</h4>
@@ -217,7 +262,6 @@ export default function AdministracionPage() {
                         </div>
                     </div>
 
-                    {/* COLUMNA IZQUIERDA: FORMULARIO */}
                     <div className="lg:col-span-2 space-y-7 order-2 lg:order-1">
                         <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-5">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">
@@ -259,8 +303,8 @@ export default function AdministracionPage() {
                     </div>
 
                 </div>
-            </main >
-        </div >
+            </main>
+        </div>
     )
 }
 
