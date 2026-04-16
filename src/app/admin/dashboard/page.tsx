@@ -135,7 +135,7 @@ export default function DashboardPage() {
                                 <div className="absolute top-3 right-3 z-30 flex gap-2">
                                     {/* Botón Visibilidad */}
                                     <button
-                                        onClick={(e) => handleToggleStatus(e, car._id, car.status)}
+                                        onClick={(e) => handleToggleStatus(e, car._id, car.status ?? false)}
                                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-md active:scale-95 ${car.status === false
                                             ? 'bg-zinc-400 text-white'
                                             : 'bg-white text-black border border-zinc-100'

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
 import AdminSoftSelect from '@/components/AdminSoftSelect'
+import SoftDateInput from '@/components/SoftDateInput'
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import {
@@ -1125,7 +1126,12 @@ export default function PreferenciasPage() {
                                                     <div className="grid grid-cols-1 gap-2">
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <input value={editForm.name} onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" placeholder="Nombre" />
-                                                            <input type="date" value={editForm.date} onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
+                                                            <SoftDateInput
+                                                                value={editForm.date}
+                                                                onChange={(value) => setEditForm(prev => ({ ...prev, date: value }))}
+                                                                placeholder="Seleccionar fecha"
+                                                                variant="adminCompact"
+                                                            />
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <AdminSoftSelect
@@ -1201,6 +1207,20 @@ export default function PreferenciasPage() {
 }
 
 function PrefInput({ label, value, onChange, type = "text", placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; }) {
+    if (type === 'date') {
+        return (
+            <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
+                <SoftDateInput
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder || 'Seleccionar fecha'}
+                    variant="admin"
+                />
+            </div>
+        )
+    }
+
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>

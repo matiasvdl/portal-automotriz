@@ -1,10 +1,21 @@
 import { defineField, defineType } from 'sanity'
+import type { SanityDocument } from 'sanity'
 
 type CarSlugSourceDocument = {
     make?: string
     model?: string
     version?: string
     year?: number
+}
+
+function buildCarSlug(document: SanityDocument) {
+    const carDocument = document as SanityDocument & CarSlugSourceDocument
+    const make = carDocument.make?.trim() ?? ''
+    const model = carDocument.model?.trim() ?? ''
+    const version = carDocument.version?.trim()
+    const year = carDocument.year ? `${carDocument.year}` : ''
+
+    return [make, model, version, year].filter(Boolean).join('-')
 }
 
 export const car = defineType({
@@ -24,15 +35,13 @@ export const car = defineType({
             name: 'slug',
             title: 'Enlace (Slug)',
             type: 'slug',
-            // Actualizado para incluir la versión en el enlace automáticamente
             options: {
-                source: (doc: CarSlugSourceDocument) => `${doc.make}-${doc.model}${doc.version ? '-' + doc.version : ''}-${doc.year}`
+                source: buildCarSlug
             },
             validation: Rule => Rule.required()
         }),
         defineField({ name: 'year', title: 'Año', type: 'number' }),
 
-        // ---> CATEGORÍA (BADGE: RECIÉN LLEGADO, ETC) <---
         defineField({
             name: 'category',
             title: 'Etiqueta (Badge)',
@@ -66,7 +75,6 @@ export const car = defineType({
 
         defineField({ name: 'mileage', title: 'Kilometraje', type: 'number' }),
 
-        // ---> MOTOR (EJ: 2.0) <---
         defineField({
             name: 'engine',
             title: 'Motor (Cilindrada/Potencia)',
@@ -153,9 +161,6 @@ export const car = defineType({
             initialValue: ''
         }),
 
-        // ====================================================================
-        // CAMPOS DE ESPECIFICACIONES (TEXTO LIBRE)
-        // ====================================================================
         defineField({
             name: 'specsGeneral',
             title: 'Especificaciones: General',
@@ -231,7 +236,6 @@ export const car = defineType({
                 { name: 'radio', title: 'Radio', type: 'string' },
             ]
         }),
-        // ====================================================================
 
         defineField({
             name: 'features',
@@ -241,9 +245,6 @@ export const car = defineType({
             options: { layout: 'tags' }
         }),
 
-        // ====================================================================
-        // GALERÍAS DE IMÁGENES
-        // ====================================================================
         defineField({
             name: 'images',
             title: 'Imágenes Principales',

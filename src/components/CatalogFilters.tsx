@@ -170,7 +170,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: CatalogCa
         return [...new Set(initialCars.filter(c =>
             c.make === filters.make &&
             c.model === filters.model
-        ).map(c => c.version))].filter(Boolean).sort()
+        ).map(c => c.version))].filter((version): version is string => typeof version === 'string' && version.length > 0).sort()
     }, [initialCars, filters.make, filters.model])
 
     const uniqueBodies = getUniqueValues(initialCars, 'body')

@@ -18,6 +18,7 @@ interface NavigationLink {
 
 interface NavigationConfig {
     navMenu?: NavigationLink[]
+    siteName?: string | null
 }
 
 export default function Navigation({ config: propConfig }: { config?: NavigationConfig }) {
@@ -30,7 +31,7 @@ export default function Navigation({ config: propConfig }: { config?: Navigation
     const primaryColor = resolvePrimaryColor(appearance?.primaryColor);
 
     // Definición de los elementos del menú de navegación
-    const menuItems = config?.navMenu?.length > 0 ? config.navMenu : [
+    const menuItems: NavigationLink[] = (config?.navMenu?.length ?? 0) > 0 ? config.navMenu ?? [] : [
         { title: 'Comprar un auto', path: '/catalogo' },
         { title: 'Vende tu auto', path: '/vender' },
         { title: 'Financiamiento', path: '/financiamiento' }

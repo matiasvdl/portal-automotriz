@@ -17,7 +17,7 @@ type AccountProfile = {
     email?: string
     phone?: string
     role?: string
-    image?: unknown
+    image?: Record<string, unknown> | null
 }
 
 type ProfileState = {
@@ -28,7 +28,7 @@ type ProfileState = {
     email: string
     phone: string
     role: string
-    image: File | unknown | null
+    image: File | Record<string, unknown> | null
 }
 
 type PasswordState = {
@@ -172,11 +172,13 @@ export default function MiCuentaPage() {
             }
 
             let imageBase64: string | null = null
-            if (profileData.image instanceof File) {
+            const imageFile = profileData.image instanceof File ? profileData.image : null
+
+            if (imageFile) {
                 imageBase64 = await new Promise<string>((resolve) => {
                     const reader = new FileReader()
                     reader.onloadend = () => resolve(String(reader.result || ''))
-                    reader.readAsDataURL(profileData.image)
+                    reader.readAsDataURL(imageFile)
                 })
             }
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import type { CSSProperties, HTMLInputTypeAttribute } from 'react'
 import { client } from '@/sanity/lib/client'
 import { useSettings } from '@/context/SettingsContext'
+import SoftDateInput from '@/components/SoftDateInput'
 
 interface FinanceCarOption {
     make: string
@@ -327,6 +328,21 @@ export default function FinanciamientoClient() {
 }
 
 function InputField({ label, name, placeholder, value, onChange, primaryColor, type = "text" }: FinanceFieldProps) {
+    if (type === 'date') {
+        return (
+            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
+                <SoftDateInput
+                    value={value}
+                    onChange={(nextValue) => onChange({ target: { name, value: nextValue } } as React.ChangeEvent<HTMLInputElement>)}
+                    placeholder={placeholder || 'Seleccionar fecha'}
+                    variant="public"
+                    primaryColor={primaryColor}
+                />
+            </div>
+        )
+    }
+
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
