@@ -254,5 +254,11 @@ export const car = defineType({
             title: 'Descripción',
             type: 'text',
         }),
+        defineField({
+            name: 'status',
+            title: 'Estado de publicación',
+            type: 'boolean',
+            initialValue: true
+        })
     ],
 })

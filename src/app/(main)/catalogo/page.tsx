@@ -14,7 +14,8 @@ export async function generateMetadata() {
 }
 
 async function getCars() {
-    const query = `*[_type == "car"] | order(_createdAt desc) {
+    // Hemos añadido && status != false para que los vehículos ocultos no aparezcan en la web pública
+    const query = `*[_type == "car" && status != false] | order(_createdAt desc) {
     _id, 
     make, 
     model, 

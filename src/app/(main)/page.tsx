@@ -15,8 +15,9 @@ export async function generateMetadata() {
 }
 
 async function getData() {
+  // Hemos añadido && status != false en la consulta de cars
   const query = `{
-    "cars": *[_type == "car"] | order(_createdAt desc)[0...4] {
+    "cars": *[_type == "car" && status != false] | order(_createdAt desc)[0...4] {
       _id, 
       make, 
       model, 
