@@ -46,6 +46,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
         category: '',
         make: '',
         model: '',
+        version: '',
         body: '',
         transmission: '',
         fuel: '',
@@ -64,13 +65,15 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
         return Object.values(filters).some(value => value !== '') || search !== '';
     }, [filters, search]);
 
-    // Lógica de filtrado con todos los campos nuevos
+    // Lógica de filtrado
     const filteredCars = useMemo(() => {
         let result = initialCars.filter(car => {
-            const matchSearch = (car.make + ' ' + car.model).toLowerCase().includes(search.toLowerCase())
+            const matchSearch = (car.make + ' ' + car.model + ' ' + (car.version || '')).toLowerCase().includes(search.toLowerCase())
+
             const matchCat = filters.category === '' || car.category === filters.category
             const matchMake = filters.make === '' || car.make === filters.make
             const matchModel = filters.model === '' || car.model === filters.model
+            const matchVersion = filters.version === '' || car.version === filters.version
             const matchBody = filters.body === '' || car.body === filters.body
             const matchTrans = filters.transmission === '' || car.transmission === filters.transmission
             const matchFuel = filters.fuel === '' || car.fuel === filters.fuel
@@ -90,7 +93,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
             const matchMinKm = filters.minKm === '' || km >= parseInt(filters.minKm)
             const matchMaxKm = filters.maxKm === '' || km <= parseInt(filters.maxKm)
 
-            return matchSearch && matchCat && matchMake && matchModel && matchBody && matchTrans &&
+            return matchSearch && matchCat && matchMake && matchModel && matchVersion && matchBody && matchTrans &&
                 matchFuel && matchDrive && matchColor && matchLoc &&
                 matchMinYear && matchMaxYear && matchMinPrice &&
                 matchMaxPrice && matchMinKm && matchMaxKm
@@ -104,14 +107,26 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
         return result
     }, [search, filters, sortBy, initialCars])
 
-    // Generación dinámica de opciones desde los datos de Sanity
     const getUnique = (field: string) => [...new Set(initialCars.map(c => c[field]))].filter(Boolean).sort()
 
     const uniqueCategories = useMemo(() => getUnique('category'), [initialCars])
     const uniqueMakes = useMemo(() => getUnique('make'), [initialCars])
-    const uniqueModels = useMemo(() =>
-        [...new Set(initialCars.filter(c => filters.make === '' || c.make === filters.make).map(c => c.model))].filter(Boolean).sort()
-        , [initialCars, filters.make])
+
+    // Si no hay marca seleccionada, retornamos lista vacía para Modelos
+    const uniqueModels = useMemo(() => {
+        if (filters.make === '') return []
+        return [...new Set(initialCars.filter(c => c.make === filters.make).map(c => c.model))].filter(Boolean).sort()
+    }, [initialCars, filters.make])
+
+    // Si no hay modelo seleccionado, retornamos lista vacía para Versiones
+    const uniqueVersions = useMemo(() => {
+        if (filters.model === '') return []
+        return [...new Set(initialCars.filter(c =>
+            c.make === filters.make &&
+            c.model === filters.model
+        ).map(c => c.version))].filter(Boolean).sort()
+    }, [initialCars, filters.make, filters.model])
+
     const uniqueBodies = useMemo(() => getUnique('body'), [initialCars])
     const uniqueFuels = useMemo(() => getUnique('fuel'), [initialCars])
     const uniqueTrans = useMemo(() => getUnique('transmission'), [initialCars])
@@ -132,7 +147,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                         </span>
                         <input
                             type="text"
-                            placeholder="Busca por marca o modelo"
+                            placeholder="Busca por marca, modelo o versión"
                             className="w-full bg-[#F7F8F9] border-none rounded-lg pl-11 pr-4 py-3 text-sm font-medium placeholder:text-zinc-400 outline-none focus:ring-1 focus:ring-black transition-all leading-none"
                             onChange={(e) => setSearch(e.target.value)}
                         />
@@ -151,7 +166,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                             {hasActiveFilters && (
                                 <button
                                     onClick={() => {
-                                        setFilters({ category: '', make: '', model: '', body: '', transmission: '', fuel: '', drivetrain: '', color: '', location: '', minYear: '', maxYear: '', minPrice: '', maxPrice: '', minKm: '', maxKm: '' });
+                                        setFilters({ category: '', make: '', model: '', version: '', body: '', transmission: '', fuel: '', drivetrain: '', color: '', location: '', minYear: '', maxYear: '', minPrice: '', maxPrice: '', minKm: '', maxKm: '' });
                                         setSearch('');
                                     }}
                                     className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-800 transition-colors"
@@ -186,7 +201,7 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                             <FilterSection title="Marca">
                                 <div className="space-y-1 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                                     {uniqueMakes.map(make => (
-                                        <button key={make} onClick={() => setFilters({ ...filters, make: filters.make === make ? '' : make, model: '' })} className={`w-full text-left py-1.5 px-1 text-[13px] transition-colors ${filters.make === make ? 'font-bold text-black' : 'text-zinc-500 hover:text-black'}`}>
+                                        <button key={make} onClick={() => setFilters({ ...filters, make: filters.make === make ? '' : make, model: '', version: '' })} className={`w-full text-left py-1.5 px-1 text-[13px] transition-colors ${filters.make === make ? 'font-bold text-black' : 'text-zinc-500 hover:text-black'}`}>
                                             {make}
                                         </button>
                                     ))}
@@ -197,10 +212,27 @@ export default function CatalogFilters({ initialCars }: { initialCars: any[] }) 
                             <FilterSection title="Modelo">
                                 <div className="space-y-1 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                                     {uniqueModels.map(model => (
-                                        <button key={model} onClick={() => setFilters({ ...filters, model: filters.model === model ? '' : model })} className={`text-left py-1.5 px-1 text-[13px] transition-colors ${filters.model === model ? 'font-bold text-black' : 'text-zinc-500 hover:text-black'}`}>
+                                        <button key={model} onClick={() => setFilters({ ...filters, model: filters.model === model ? '' : model, version: '' })} className={`w-full text-left py-1.5 px-1 text-[13px] transition-colors ${filters.model === model ? 'font-bold text-black' : 'text-zinc-500 hover:text-black'}`}>
                                             {model}
                                         </button>
                                     ))}
+                                    {uniqueModels.length === 0 && <p className="text-[10px] text-zinc-400 italic px-1 py-2">Selecciona una marca</p>}
+                                </div>
+                            </FilterSection>
+
+                            {/* VERSIÓN */}
+                            <FilterSection title="Versión">
+                                <div className="space-y-1 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                    {uniqueVersions.map(v => (
+                                        <button key={v} onClick={() => setFilters({ ...filters, version: filters.version === v ? '' : v })} className={`w-full text-left py-1.5 px-1 text-[13px] transition-colors ${filters.version === v ? 'font-bold text-black' : 'text-zinc-500 hover:text-black'}`}>
+                                            {v}
+                                        </button>
+                                    ))}
+                                    {uniqueVersions.length === 0 && (
+                                        <p className="text-[10px] text-zinc-400 italic px-1 py-2">
+                                            {filters.make === '' ? 'Selecciona una marca' : 'Selecciona un modelo'}
+                                        </p>
+                                    )}
                                 </div>
                             </FilterSection>
 

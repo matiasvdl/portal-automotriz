@@ -19,6 +19,7 @@ async function getCars() {
     _id, 
     make, 
     model, 
+    version,
     year, 
     listPrice,
     financedPrice,
