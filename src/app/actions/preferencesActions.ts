@@ -3,6 +3,7 @@
 import { client, writeClient } from '@/sanity/lib/client'
 import { revalidatePath } from 'next/cache'
 import { requireAdminSession } from '@/lib/auth'
+import { recordAuditLogFromSession } from '@/lib/audit'
 
 type ActionError = {
     message?: string
@@ -115,6 +116,14 @@ export async function saveGlobalPreferences(
             ...contact
         })
 
+        await recordAuditLogFromSession({
+            action: 'save_preferences',
+            entityType: 'preferencias',
+            entityId: 'appearance-settings',
+            entityTitle: settings.siteName || 'Preferencias globales',
+            message: 'Guardó las preferencias globales del sitio.',
+        })
+
         revalidatePath('/')
         return { success: true }
     } catch (error: unknown) {
@@ -128,6 +137,13 @@ export async function createSanityDocument(type: string, data: Record<string, un
         await requireAdminSession()
 
         const result = await writeClient.create({ _type: type, ...data })
+        await recordAuditLogFromSession({
+            action: `create_${type}`,
+            entityType: type === 'review' || type === 'faq' ? 'contenido' : 'preferencias',
+            entityId: result._id,
+            entityTitle: String(data.title || data.name || data.question || result._id),
+            message: `Creó un registro de tipo ${type}.`,
+        })
         revalidatePath('/')
         return { success: true, data: result }
     } catch {
@@ -140,6 +156,13 @@ export async function deleteSanityDocument(id: string) {
         await requireAdminSession()
 
         await writeClient.delete(id)
+        await recordAuditLogFromSession({
+            action: 'delete_document',
+            entityType: 'contenido',
+            entityId: id,
+            entityTitle: id,
+            message: 'Eliminó un registro de contenido.',
+        })
         revalidatePath('/')
         return { success: true }
     } catch {
@@ -152,6 +175,13 @@ export async function updateSanityDocument(id: string, data: Record<string, unkn
         await requireAdminSession()
 
         await writeClient.patch(id).set(data).commit()
+        await recordAuditLogFromSession({
+            action: 'update_document',
+            entityType: 'contenido',
+            entityId: id,
+            entityTitle: String(data.title || data.name || data.question || id),
+            message: 'Actualizó un registro de contenido.',
+        })
         revalidatePath('/')
         return { success: true }
     } catch {

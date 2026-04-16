@@ -5,6 +5,7 @@
 import { writeClient } from '@/sanity/lib/client'
 import { revalidatePath } from 'next/cache'
 import { requireAuthenticatedSession } from '@/lib/auth'
+import { recordAuditLogFromSession } from '@/lib/audit'
 
 type ActionError = {
     message?: string
@@ -39,10 +40,24 @@ export async function saveCarAction(id: string | null, carData: CarPayload) {
 
         if (id) {
             await writeClient.patch(id).set(cleanData).commit()
+            await recordAuditLogFromSession({
+                action: 'update_car',
+                entityType: 'vehiculo',
+                entityId: id,
+                entityTitle: `${cleanData.make || ''} ${cleanData.model || ''} ${cleanData.year || ''}`.trim() || id,
+                message: 'Actualizó un vehículo del inventario.',
+            })
         } else {
-            await writeClient.create({
+            const createdCar = await writeClient.create({
                 _type: 'car',
                 ...cleanData
+            })
+            await recordAuditLogFromSession({
+                action: 'create_car',
+                entityType: 'vehiculo',
+                entityId: createdCar._id,
+                entityTitle: `${cleanData.make || ''} ${cleanData.model || ''} ${cleanData.year || ''}`.trim() || createdCar._id,
+                message: 'Creó un nuevo vehículo en el inventario.',
             })
         }
 
@@ -69,6 +84,13 @@ export async function deleteCarAction(id: string) {
         }
 
         await writeClient.delete(id)
+        await recordAuditLogFromSession({
+            action: 'delete_car',
+            entityType: 'vehiculo',
+            entityId: id,
+            entityTitle: id,
+            message: 'Eliminó un vehículo del inventario.',
+        })
 
         revalidatePath('/catalogo')
         revalidatePath('/admin/dashboard')
@@ -92,6 +114,16 @@ export async function toggleCarStatusAction(id: string, currentStatus: boolean) 
             .patch(id)
             .set({ status: !currentStatus })
             .commit()
+
+        await recordAuditLogFromSession({
+            action: !currentStatus ? 'publish_car' : 'hide_car',
+            entityType: 'vehiculo',
+            entityId: id,
+            entityTitle: id,
+            message: !currentStatus
+                ? 'Publicó un vehículo en el catálogo.'
+                : 'Ocultó un vehículo del catálogo.',
+        })
 
         revalidatePath('/admin/dashboard')
         revalidatePath('/catalogo')

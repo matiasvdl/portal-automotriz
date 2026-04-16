@@ -22,6 +22,18 @@ type AdminMember = {
     phone?: string
     role?: string
     image?: unknown
+    lastLogin?: string
+}
+
+type ActivityLog = {
+    _id: string
+    action?: string
+    entityType?: string
+    entityId?: string
+    entityTitle?: string
+    message?: string
+    eventAt?: string
+    adminId?: string
 }
 
 type AdminFormState = {
@@ -48,17 +60,32 @@ const EMPTY_USER_DATA: AdminFormState = {
     confirmPassword: ''
 }
 
+function formatDateTime(value?: string) {
+    if (!value) return 'Sin registros'
+
+    try {
+        return new Intl.DateTimeFormat('es-CL', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+        }).format(new Date(value))
+    } catch {
+        return value
+    }
+}
+
 export default function AdministracionPage() {
     const { data: session, status } = useSession()
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [mounted, setMounted] = useState(false)
     const [team, setTeam] = useState<AdminMember[]>([])
+    const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
     const [userData, setUserData] = useState<AdminFormState>(EMPTY_USER_DATA)
 
     const loadTeam = async () => {
-        const users = await client.fetch<AdminMember[]>(
-            `*[_type == "adminProfile"] | order(_createdAt asc){
+        const [users, logs] = await Promise.all([
+            client.fetch<AdminMember[]>(
+                `*[_type == "adminProfile"] | order(_createdAt asc){
                 _id,
                 firstName,
                 lastName,
@@ -66,12 +93,29 @@ export default function AdministracionPage() {
                 email,
                 phone,
                 role,
-                image
+                image,
+                lastLogin
             }`,
-            {},
-            { cache: 'no-store' }
-        )
+                {},
+                { cache: 'no-store' }
+            ),
+            client.fetch<ActivityLog[]>(
+                `*[_type == "auditLog"] | order(eventAt desc)[0...200]{
+                    _id,
+                    action,
+                    entityType,
+                    entityId,
+                    entityTitle,
+                    message,
+                    eventAt,
+                    "adminId": admin->_id
+                }`,
+                {},
+                { cache: 'no-store' }
+            )
+        ])
         setTeam(users)
+        setActivityLogs(logs)
     }
 
     useEffect(() => {
@@ -172,6 +216,11 @@ export default function AdministracionPage() {
 
     if (!mounted || status === 'loading') return null
 
+    const selectedUserLogs =
+        userData._id === 'new'
+            ? []
+            : activityLogs.filter((log) => log.adminId === userData._id)
+
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-40 text-left no-scrollbar">
             <AdminNavigation />
@@ -212,6 +261,9 @@ export default function AdministracionPage() {
                                                 </span>
                                                 <span className={`text-[8px] font-bold uppercase tracking-tighter mt-1 ${userData._id === user._id ? 'text-zinc-400' : 'text-zinc-400'}`}>
                                                     @{user.username || 'sin-usuario'} • {user.role}
+                                                </span>
+                                                <span className={`text-[7px] font-bold uppercase tracking-tighter mt-2 ${userData._id === user._id ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                                    Última conexión: {formatDateTime(user.lastLogin)}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
@@ -301,6 +353,54 @@ export default function AdministracionPage() {
                             <p className="text-[8px] font-bold text-zinc-400 uppercase italic tracking-[0.1em]">
                                 El cambio de contraseña es instantáneo tras guardar.
                             </p>
+                        </div>
+
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-5">
+                            <div className="border-b border-gray-50 pb-5 leading-none">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">
+                                    Registro de Actividad
+                                </h3>
+                                <p className="mt-2 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-tight">
+                                    Últimas conexiones y acciones del usuario seleccionado.
+                                </p>
+                            </div>
+
+                            {userData._id === 'new' ? (
+                                <p className="text-[9px] font-bold uppercase tracking-tighter text-zinc-400">
+                                    Selecciona un usuario para ver su historial.
+                                </p>
+                            ) : selectedUserLogs.length === 0 ? (
+                                <div className="rounded-[20px] bg-[#F7F8FA] border border-gray-100 px-5 py-4">
+                                    <p className="text-[9px] font-bold uppercase tracking-tighter text-zinc-400">
+                                        Aún no hay actividad registrada para este usuario.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {selectedUserLogs.slice(0, 20).map((log) => (
+                                        <div key={log._id} className="rounded-[20px] bg-[#F7F8FA] border border-gray-100 px-5 py-4 space-y-2">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="min-w-0">
+                                                    <p className="text-[9px] font-black uppercase text-black leading-none">
+                                                        {log.message || 'Actividad registrada'}
+                                                    </p>
+                                                    <p className="mt-2 text-[8px] font-bold uppercase tracking-tighter text-zinc-400">
+                                                        {formatDateTime(log.eventAt)}
+                                                    </p>
+                                                </div>
+                                                <span className="rounded-full bg-white border border-gray-200 px-3 py-1 text-[7px] font-black uppercase tracking-widest text-zinc-500">
+                                                    {log.entityType || 'general'}
+                                                </span>
+                                            </div>
+                                            {(log.entityTitle || log.action) && (
+                                                <p className="text-[8px] font-bold uppercase tracking-tight text-zinc-500">
+                                                    {log.entityTitle || log.action}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 

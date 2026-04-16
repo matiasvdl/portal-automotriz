@@ -8,6 +8,7 @@ import {
     requireAuthenticatedSession,
     requirePrincipalSession
 } from '@/lib/auth'
+import { recordAuditLogFromSession } from '@/lib/audit'
 
 type ActionError = {
     message?: string
@@ -63,6 +64,16 @@ export async function deleteAdminProfile(documentId: string) {
         }
 
         await writeClient.delete(documentId)
+        await recordAuditLogFromSession({
+            action: 'delete_user',
+            entityType: 'usuario',
+            entityId: documentId,
+            entityTitle: profile._id,
+            message: 'Eliminó un usuario del panel administrativo.',
+            metadata: {
+                deletedRole: profile.role || '',
+            },
+        })
         revalidatePath('/admin/administracion')
         return { success: true }
     } catch (error: unknown) {
@@ -113,6 +124,16 @@ export async function updateAdminProfile(
                 _type: 'adminProfile',
                 ...finalData
             })
+            await recordAuditLogFromSession({
+                action: 'create_user',
+                entityType: 'usuario',
+                entityId: result._id,
+                entityTitle: finalData.username || finalData.email || result._id,
+                message: 'Creó un nuevo usuario administrativo.',
+                metadata: {
+                    role: finalData.role || '',
+                },
+            })
             return { success: true, data: result }
         }
 
@@ -131,6 +152,18 @@ export async function updateAdminProfile(
             .patch(id)
             .set(finalData)
             .commit()
+
+        await recordAuditLogFromSession({
+            action: 'update_user',
+            entityType: 'usuario',
+            entityId: id,
+            entityTitle: finalData.username || finalData.email || id,
+            message: 'Actualizó un perfil de usuario administrativo.',
+            metadata: {
+                role: finalData.role || '',
+                updatedOwnProfile: isOwnProfile,
+            },
+        })
 
         return { success: true, data: result }
     } catch (error: unknown) {

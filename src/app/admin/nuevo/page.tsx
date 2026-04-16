@@ -11,6 +11,7 @@ import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
 import AdminSoftSelect from '@/components/AdminSoftSelect'
 import AdminCombobox from '@/components/AdminCombobox'
+import AdminCollapsibleCard from '@/components/AdminCollapsibleCard'
 import { saveCarAction } from '@/app/actions/carActions'
 import { syncBrandDatabaseAction } from '@/app/actions/brandActions' // NUEVA ACCIÓN PARA SINCRONIZAR
 
@@ -94,6 +95,14 @@ export default function NuevoVehiculoPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [tags, setTags] = useState<string[]>([])
     const [currentTag, setCurrentTag] = useState('')
+    const [expandedSections, setExpandedSections] = useState({
+        identidad: true,
+        ficha: true,
+        specsGeneralHistorial: true,
+        specsExteriorInterior: true,
+        detalles: true,
+        multimedia: true,
+    })
 
     // --- ESTADOS PARA LA BASE DE DATOS DE MARCAS/MODELOS ---
     const [dbBrands, setDbBrands] = useState<BrandOption[]>([])
@@ -263,6 +272,13 @@ export default function NuevoVehiculoPage() {
     const currentBrandData = dbBrands.find(b => b.name === formData.make)
     const currentModelData = currentBrandData?.models?.find((m: BrandModel) => m.modelName === formData.model)
 
+    const toggleSection = (section: keyof typeof expandedSections) => {
+        setExpandedSections((prev) => ({
+            ...prev,
+            [section]: !prev[section],
+        }))
+    }
+
     return (
         <div className="min-h-screen bg-[#F7F8FA] text-black font-sans antialiased pb-32 sm:pb-40 text-left">
             <AdminNavigation />
@@ -282,8 +298,12 @@ export default function NuevoVehiculoPage() {
                 </header>
 
                 <form id="car-form" className="space-y-8">
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Identidad y Comercial</h3>
+                    <AdminCollapsibleCard
+                        title="Identidad y Comercial"
+                        summary="Marca, modelo, versión, año, precios, kilometraje y etiqueta."
+                        isOpen={expandedSections.identidad}
+                        onToggle={() => toggleSection('identidad')}
+                    >
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
                             {/* MARCA: BUSCADOR / ESCRITURA */}
@@ -336,7 +356,7 @@ export default function NuevoVehiculoPage() {
                                 </div>
                             </div>
                             <FormGroup label="Año" type="number" value={formData.year} onChange={(v) => handleChange('year', parseInt(v) || 0)} />
-                            <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reserva Online', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(v) => handleChange('category', v)} />
+                            <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reservado', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(v) => handleChange('category', v)} />
 
                             {/* PRECIO LISTA CON PUNTOS */}
                             <FormGroup
@@ -362,10 +382,14 @@ export default function NuevoVehiculoPage() {
                                 onChange={(v) => handleChange('mileage', parseChileanNumber(v))}
                             />
                         </div>
-                    </div>
+                    </AdminCollapsibleCard>
 
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Ficha Técnica</h3>
+                    <AdminCollapsibleCard
+                        title="Ficha Técnica"
+                        summary="Motor, carrocería, transmisión, tracción, combustible, color y ubicación."
+                        isOpen={expandedSections.ficha}
+                        onToggle={() => toggleSection('ficha')}
+                    >
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                             <FormGroup label="Motor" value={formData.engine} onChange={(v) => handleChange('engine', v)} />
                             <FormSelect label="Carrocería" value={formData.body} options={['SUV', 'Sedán', 'Hatchback', 'Camioneta', 'Coupé', 'Van']} onChange={(v) => handleChange('body', v)} />
@@ -375,48 +399,73 @@ export default function NuevoVehiculoPage() {
                             <FormSelect label="Color" value={formData.color} options={['Blanco', 'Negro', 'Gris', 'Azul', 'Rojo', 'Plateado']} onChange={(v) => handleChange('color', v)} />
                             <div className="md:col-span-1"><FormGroup label="Ubicación" value={formData.location} onChange={(v) => handleChange('location', v)} /></div>
                         </div>
-                    </div>
+                    </AdminCollapsibleCard>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: General</h3>
+                        <AdminCollapsibleCard
+                            title="Especificaciones: General"
+                            className="text-left"
+                            summary="Cilindrada, cilindros y potencia."
+                            isOpen={expandedSections.specsGeneralHistorial}
+                            onToggle={() => toggleSection('specsGeneralHistorial')}
+                        >
                             <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Cilindrada" value={formData.specsGeneral.cilindrada} onChange={(v) => handleNestedChange('specsGeneral', 'cilindrada', v)} />
                                 <FormGroup label="Cilindros" value={formData.specsGeneral.cilindros} onChange={(v) => handleNestedChange('specsGeneral', 'cilindros', v)} />
                                 <FormGroup label="Potencia" value={formData.specsGeneral.potencia} onChange={(v) => handleNestedChange('specsGeneral', 'potencia', v)} />
                             </div>
-                        </div>
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: Historial</h3>
+                        </AdminCollapsibleCard>
+                        <AdminCollapsibleCard
+                            title="Especificaciones: Historial"
+                            className="text-left"
+                            summary="Dueños, mantenciones e historial Autofact."
+                            isOpen={expandedSections.specsGeneralHistorial}
+                            onToggle={() => toggleSection('specsGeneralHistorial')}
+                        >
                             <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Dueños" value={formData.specsHistory.duenos} onChange={(v) => handleNestedChange('specsHistory', 'duenos', v)} />
                                 <FormGroup label="Mantenciones" value={formData.specsHistory.mantenciones} onChange={(v) => handleNestedChange('specsHistory', 'mantenciones', v)} />
                                 <FormGroup label="Historial Autofact" value={formData.specsHistory.historial} onChange={(v) => handleNestedChange('specsHistory', 'historial', v)} />
                             </div>
-                        </div>
+                        </AdminCollapsibleCard>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Exterior</h3>
+                        <AdminCollapsibleCard
+                            title="Especificaciones: Exterior"
+                            className="text-left"
+                            summary="Puertas, rin, tipo de rin y luces."
+                            isOpen={expandedSections.specsExteriorInterior}
+                            onToggle={() => toggleSection('specsExteriorInterior')}
+                        >
                             <div className="grid grid-cols-2 gap-5">
                                 <FormGroup label="Número de Puertas" value={formData.specsExterior.puertas} onChange={(v) => handleNestedChange('specsExterior', 'puertas', v)} />
                                 <FormGroup label="Diámetro de Rin" value={formData.specsExterior.rin} onChange={(v) => handleNestedChange('specsExterior', 'rin', v)} />
                                 <FormGroup label="Tipo de Rin" value={formData.specsExterior.tipoRin} onChange={(v) => handleNestedChange('specsExterior', 'tipoRin', v)} />
                                 <FormGroup label="Tipo de Luces" value={formData.specsExterior.luces} onChange={(v) => handleNestedChange('specsExterior', 'luces', v)} />
                             </div>
-                        </div>
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Interior</h3>
+                        </AdminCollapsibleCard>
+                        <AdminCollapsibleCard
+                            title="Especificaciones: Interior"
+                            className="text-left"
+                            summary="Pasajeros y material de asientos."
+                            isOpen={expandedSections.specsExteriorInterior}
+                            onToggle={() => toggleSection('specsExteriorInterior')}
+                        >
                             <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Número de Pasajeros" value={formData.specsInterior.pasajeros} onChange={(v) => handleNestedChange('specsInterior', 'pasajeros', v)} />
                                 <FormGroup label="Material Asientos" value={formData.specsInterior.materialAsientos} onChange={(v) => handleNestedChange('specsInterior', 'materialAsientos', v)} />
                             </div>
-                        </div>
+                        </AdminCollapsibleCard>
                     </div>
 
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Detalles Técnicos Adicionales</h3>
+                    <AdminCollapsibleCard
+                        title="Detalles Técnicos Adicionales"
+                        className="text-left"
+                        summary="Confort, seguridad y entretenimiento."
+                        isOpen={expandedSections.detalles}
+                        onToggle={() => toggleSection('detalles')}
+                    >
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div className="space-y-6">
                                 <p className="text-[9px] font-black text-zinc-600 uppercase leading-none ml-1">Confort</p>
@@ -442,10 +491,15 @@ export default function NuevoVehiculoPage() {
                                 <FormGroup label="Radio" value={formData.specsEntertainment.radio} onChange={(v) => handleNestedChange('specsEntertainment', 'radio', v)} />
                             </div>
                         </div>
-                    </div>
+                    </AdminCollapsibleCard>
 
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-3 shadow-none text-left">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Multimedia y Extras</h3>
+                    <AdminCollapsibleCard
+                        title="Multimedia y Extras"
+                        className="space-y-3 text-left"
+                        summary="Características, imágenes y descripción del vehículo."
+                        isOpen={expandedSections.multimedia}
+                        onToggle={() => toggleSection('multimedia')}
+                    >
                         <div className="space-y-2.5 text-left">
                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Equipamiento / Características (Comas o ENTER)</label>
                             <div className="flex gap-2 h-[45px]">
@@ -509,7 +563,7 @@ export default function NuevoVehiculoPage() {
                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Descripción</label>
                             <textarea value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={6} className="w-full bg-[#F7F8FA] border-none rounded-2xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed" />
                         </div>
-                    </div>
+                    </AdminCollapsibleCard>
                 </form>
             </main>
 

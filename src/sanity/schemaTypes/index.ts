@@ -7,6 +7,7 @@ import { faq } from './faq' // Agregamos el nuevo esquema de FAQ
 import { appearance } from './appearance' // Importamos el nuevo esquema de apariencia
 import adminProfile from './adminProfile' // Importamos el nuevo esquema de adminProfile
 import { brand } from './brand' // Importamos el nuevo esquema de base de datos de marcas y modelos
+import { auditLog } from './auditLog'
 
 export const schema: { types: SchemaTypeDefinition[] } = { // Exportamos un objeto con la propiedad types, que es un arreglo de SchemaTypeDefinition
   types: [
@@ -17,6 +18,7 @@ export const schema: { types: SchemaTypeDefinition[] } = { // Exportamos un obje
     contact, // Agregamos contact al arreglo de tipos
     faq, // Agregamos faq al arreglo de tipos
     appearance, // Agregamos appearance al arreglo de tipos
-    adminProfile // Agregamos adminProfile al arreglo de tipos
+    adminProfile, // Agregamos adminProfile al arreglo de tipos
+    auditLog
   ],
 }

@@ -3,12 +3,16 @@
 import { Resend } from 'resend'
 import { headers } from 'next/headers'
 import { client } from '@/sanity/lib/client'
+import { recordAuditLog } from '@/lib/audit'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const EMAIL_FALLBACK = ['matiasvidalp49@gmail.com']
 const REQUEST_WINDOW_MS = 60_000
 const MAX_REQUESTS_PER_WINDOW = 3
 const requestTracker = new Map<string, number[]>()
+const RECOVERY_REQUEST_WINDOW_MS = 10 * 60_000
+const MAX_RECOVERY_REQUESTS_PER_WINDOW = 3
+const recoveryRequestTracker = new Map<string, number[]>()
 
 function escapeHtml(value: string) {
     return value
@@ -44,6 +48,22 @@ function isRateLimited(identifier: string) {
 
     recentRequests.push(now)
     requestTracker.set(identifier, recentRequests)
+    return false
+}
+
+function isRecoveryRateLimited(identifier: string) {
+    const now = Date.now()
+    const recentRequests = (recoveryRequestTracker.get(identifier) || []).filter(
+        (timestamp) => now - timestamp < RECOVERY_REQUEST_WINDOW_MS
+    )
+
+    if (recentRequests.length >= MAX_RECOVERY_REQUESTS_PER_WINDOW) {
+        recoveryRequestTracker.set(identifier, recentRequests)
+        return true
+    }
+
+    recentRequests.push(now)
+    recoveryRequestTracker.set(identifier, recentRequests)
     return false
 }
 
@@ -118,6 +138,136 @@ export async function sendContactEmail(formData: {
         return { success: true, data }
     } catch (error) {
         console.error('Error enviando email:', error)
+        return { success: false, error: 'Error en el servidor' }
+    }
+}
+
+export async function requestAdminPasswordRecovery(formData: {
+    identifier: string
+    fullName: string
+    contactEmail: string
+    phone?: string
+    message?: string
+}) {
+    try {
+        const requestIdentifier = await getRequestIdentifier()
+
+        if (isRecoveryRateLimited(requestIdentifier)) {
+            return {
+                success: true,
+                message: 'Si los datos son válidos, enviaremos tu solicitud de recuperación al soporte.'
+            }
+        }
+
+        if (!process.env.RESEND_API_KEY) {
+            return { success: false, error: 'Servicio de correo no configurado' }
+        }
+
+        const cleanedIdentifier = formData.identifier.trim().toLowerCase()
+        const cleanedFullName = formData.fullName.trim()
+        const cleanedContactEmail = formData.contactEmail.trim().toLowerCase()
+        const cleanedPhone = (formData.phone || '').trim()
+        const cleanedMessage = (formData.message || '').trim()
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+        if (!cleanedIdentifier) {
+            return { success: false, error: 'Ingresa tu usuario o correo.' }
+        }
+
+        if (!cleanedFullName) {
+            return { success: false, error: 'Ingresa tu nombre.' }
+        }
+
+        if (!cleanedContactEmail || !emailPattern.test(cleanedContactEmail)) {
+            return { success: false, error: 'Ingresa un correo de contacto válido.' }
+        }
+
+        const contactConfig = await client.fetch(
+            `coalesce(*[_id == "contact-settings" && _type == "contact"][0], *[_type == "contact"][0], *[_type == "contactSettings"][0])`
+        )
+        const recipients = contactConfig?.notificationEmails?.length > 0
+            ? contactConfig.notificationEmails
+            : EMAIL_FALLBACK
+
+        const matchedUser = await client.fetch(
+            `*[_type == "adminProfile" && (lower(email) == $identifier || lower(username) == $identifier)][0]{
+                _id,
+                firstName,
+                lastName,
+                username,
+                email,
+                role
+            }`,
+            { identifier: cleanedIdentifier },
+            { cache: 'no-store' }
+        )
+
+        const matchedName = matchedUser
+            ? `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim()
+            : ''
+
+        const statusLabel = matchedUser ? 'Coincidencia encontrada' : 'Sin coincidencia exacta'
+
+        const { error } = await resend.emails.send({
+            from: 'VDL Motors <onboarding@resend.dev>',
+            to: recipients,
+            subject: 'Solicitud de recuperación de acceso al panel',
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #000; text-transform: uppercase;">Recuperación de acceso</h2>
+                    <hr />
+                    <p><strong>Nombre de contacto:</strong> ${escapeHtml(cleanedFullName)}</p>
+                    <p><strong>Correo de contacto:</strong> ${escapeHtml(cleanedContactEmail)}</p>
+                    <p><strong>Teléfono:</strong> ${escapeHtml(cleanedPhone || 'No informado')}</p>
+                    <p><strong>Identificador ingresado:</strong> ${escapeHtml(cleanedIdentifier)}</p>
+                    <p><strong>Resultado interno:</strong> ${statusLabel}</p>
+                    ${matchedUser ? `
+                        <p><strong>Usuario:</strong> ${escapeHtml(matchedName || matchedUser.username || 'Sin nombre')}</p>
+                        <p><strong>Correo:</strong> ${escapeHtml(matchedUser.email || 'Sin correo')}</p>
+                        <p><strong>Rol:</strong> ${escapeHtml(matchedUser.role || 'Sin rol')}</p>
+                    ` : ''}
+                    <div style="background: #f9f9f9; padding: 15px; margin-top: 15px; border-radius: 5px;">
+                        <strong>Mensaje:</strong><br />${escapeHtml(cleanedMessage || 'Sin detalle adicional').replace(/\n/g, '<br />')}
+                    </div>
+                    <p><strong>IP de solicitud:</strong> ${escapeHtml(requestIdentifier)}</p>
+                    <p style="margin-top: 16px; color: #666;">
+                        El usuario no ve el correo de destino. Esta notificación es solo interna.
+                    </p>
+                </div>
+            `
+        })
+
+        if (error) {
+            return { success: false, error: 'No se pudo enviar la solicitud.' }
+        }
+
+        await recordAuditLog({
+            adminId: matchedUser?._id,
+            adminName: matchedName || matchedUser?.username || cleanedIdentifier,
+            adminEmail: matchedUser?.email || null,
+            action: 'password_recovery_request',
+            entityType: 'auth',
+            entityId: matchedUser?._id || '',
+            entityTitle: matchedUser?.username || cleanedIdentifier,
+            message: matchedUser
+                ? 'Se solicitó recuperación de acceso para este usuario.'
+                : 'Se recibió una solicitud de recuperación sin coincidencia exacta.',
+            metadata: {
+                requestIdentifier,
+                matched: Boolean(matchedUser),
+                submittedIdentifier: cleanedIdentifier,
+                fullName: cleanedFullName,
+                contactEmail: cleanedContactEmail,
+                phone: cleanedPhone,
+            },
+        })
+
+        return {
+            success: true,
+            message: 'Si los datos son válidos, enviaremos tu solicitud de recuperación al soporte.'
+        }
+    } catch (error) {
+        console.error('Error solicitando recuperación:', error)
         return { success: false, error: 'Error en el servidor' }
     }
 }

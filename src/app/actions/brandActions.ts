@@ -2,6 +2,7 @@
 
 import { client } from '@/sanity/lib/client'
 import { requireAuthenticatedSession } from '@/lib/auth'
+import { recordAuditLogFromSession } from '@/lib/audit'
 
 type BrandModel = {
     _key: string
@@ -103,6 +104,13 @@ export async function deleteBrandAction(make: string) {
         }
 
         await writeClient.delete(brand._id)
+        await recordAuditLogFromSession({
+            action: 'delete_brand',
+            entityType: 'marca',
+            entityId: brand._id,
+            entityTitle: make,
+            message: 'Eliminó una marca de la base de datos.',
+        })
         return { success: true }
     } catch (error) {
         console.error('Error eliminando marca:', error)
@@ -140,6 +148,13 @@ export async function deleteBrandModelAction(make: string, model: string) {
 
         if (updatedModels.length === 0) {
             await writeClient.delete(brand._id)
+            await recordAuditLogFromSession({
+                action: 'delete_model',
+                entityType: 'marca',
+                entityId: brand._id,
+                entityTitle: `${make} ${model}`,
+                message: 'Eliminó el último modelo de una marca y se borró la marca.',
+            })
             return { success: true }
         }
 
@@ -147,6 +162,14 @@ export async function deleteBrandModelAction(make: string, model: string) {
             .patch(brand._id)
             .set({ models: updatedModels })
             .commit()
+
+        await recordAuditLogFromSession({
+            action: 'delete_model',
+            entityType: 'marca',
+            entityId: brand._id,
+            entityTitle: `${make} ${model}`,
+            message: 'Eliminó un modelo de la base de datos de marcas.',
+        })
 
         return { success: true }
     } catch (error) {

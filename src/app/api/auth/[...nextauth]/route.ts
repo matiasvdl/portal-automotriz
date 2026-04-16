@@ -1,9 +1,38 @@
 import NextAuth, { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { client } from "@/sanity/lib/client"
+import { client, writeClient } from "@/sanity/lib/client"
 import bcrypt from "bcryptjs"
+import { headers } from "next/headers"
+import { recordAuditLog } from "@/lib/audit"
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
+const LOGIN_WINDOW_MS = 10 * 60_000
+const LOGIN_MAX_ATTEMPTS = 5
+const loginAttemptTracker = new Map<string, number[]>()
+
+async function getRequestIdentifier() {
+    const headerStore = await headers()
+    const forwardedFor = headerStore.get('x-forwarded-for')
+    const realIp = headerStore.get('x-real-ip')
+
+    return forwardedFor?.split(',')[0]?.trim() || realIp || 'unknown'
+}
+
+function isLoginRateLimited(identifier: string) {
+    const now = Date.now()
+    const recentAttempts = (loginAttemptTracker.get(identifier) || []).filter(
+        (timestamp) => now - timestamp < LOGIN_WINDOW_MS
+    )
+
+    if (recentAttempts.length >= LOGIN_MAX_ATTEMPTS) {
+        loginAttemptTracker.set(identifier, recentAttempts)
+        return true
+    }
+
+    recentAttempts.push(now)
+    loginAttemptTracker.set(identifier, recentAttempts)
+    return false
+}
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -18,6 +47,13 @@ export const authOptions: NextAuthOptions = {
 
                 try {
                     const identifier = credentials.username.toLowerCase().trim()
+                    const requestIdentifier = await getRequestIdentifier()
+                    const attemptKey = `${requestIdentifier}:${identifier}`
+
+                    if (isLoginRateLimited(attemptKey)) {
+                        await delay(3000)
+                        return null
+                    }
 
                     const user = await client.fetch(
                         `*[_type == "adminProfile" && (lower(email) == $identifier || lower(username) == $identifier)][0]`,
@@ -32,6 +68,28 @@ export const authOptions: NextAuthOptions = {
                         )
 
                         if (isPasswordCorrect) {
+                            const loginAt = new Date().toISOString()
+
+                            try {
+                                await writeClient.patch(user._id).set({ lastLogin: loginAt }).commit()
+                                await recordAuditLog({
+                                    adminId: user._id,
+                                    adminName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || user.email,
+                                    adminEmail: user.email,
+                                    action: 'login',
+                                    entityType: 'auth',
+                                    entityId: user._id,
+                                    entityTitle: user.username || user.email,
+                                    message: 'Inició sesión en el panel administrativo.',
+                                    metadata: {
+                                        role: user.role || '',
+                                        requestIdentifier,
+                                    },
+                                })
+                            } catch (auditError) {
+                                console.error('Error registrando inicio de sesión:', auditError)
+                            }
+
                             return {
                                 id: user._id,
                                 name: `${user.firstName} ${user.lastName}`,

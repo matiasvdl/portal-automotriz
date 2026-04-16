@@ -51,7 +51,7 @@ export const car = defineType({
                     { title: 'Seminuevo', value: 'Seminuevo' },
                     { title: 'Recién Llegado', value: 'Recién Llegado' },
                     { title: 'Oferta de la Semana', value: 'Oferta de la Semana' },
-                    { title: 'Reserva Online', value: 'Reserva Online' },
+                    { title: 'Reservado', value: 'Reservado' },
                     { title: 'Único Dueño', value: 'Único Dueño' },
                     { title: 'Oportunidad', value: 'Oportunidad' },
                     { title: 'Vendido', value: 'Vendido' },
