@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, HTMLInputTypeAttribute } from 'react'
 import { useSettings } from '@/context/SettingsContext'
 
@@ -34,7 +34,7 @@ type SellSelectProps = {
     name: keyof SellFormData
     value: string
     options: string[]
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+    onChange: (name: keyof SellFormData, value: string) => void
     primaryColor: string
 }
 
@@ -69,6 +69,10 @@ export default function VenderClient() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
+    }
+
+    const handleSelectChange = (name: keyof SellFormData, value: string) => {
+        setFormData({ ...formData, [name]: value })
     }
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -142,9 +146,9 @@ export default function VenderClient() {
                                 </h3>
                                 <div className="space-y-5">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                        <FormSelect label="Transmisión" name="transmission" value={formData.transmission} options={['Automática', 'Manual']} onChange={handleChange} primaryColor={primaryColor} />
-                                        <FormSelect label="Combustible" name="fuel" value={formData.fuel} options={['Bencina', 'Diésel', 'Híbrido', 'Eléctrico']} onChange={handleChange} primaryColor={primaryColor} />
-                                        <FormSelect label="Condición" name="condition" value={formData.condition} options={['Excelente', 'Bueno', 'Regular']} onChange={handleChange} primaryColor={primaryColor} />
+                                        <FormSelect label="Transmisión" name="transmission" value={formData.transmission} options={['Automática', 'Manual']} onChange={handleSelectChange} primaryColor={primaryColor} />
+                                        <FormSelect label="Combustible" name="fuel" value={formData.fuel} options={['Bencina', 'Diésel', 'Híbrido', 'Eléctrico']} onChange={handleSelectChange} primaryColor={primaryColor} />
+                                        <FormSelect label="Condición" name="condition" value={formData.condition} options={['Excelente', 'Bueno', 'Regular']} onChange={handleSelectChange} primaryColor={primaryColor} />
                                     </div>
                                     <div className="flex flex-col space-y-2.5 text-left leading-none">
                                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1">Detalles adicionales o expectativas de precio</label>
@@ -165,7 +169,7 @@ export default function VenderClient() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl transition-all active:scale-95 disabled:opacity-50"
+                                    className="w-full text-white text-center font-black text-[9px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl transition-all active:scale-95 disabled:opacity-50"
                                     style={{
                                         backgroundColor: primaryColor,
                                         boxShadow: `0 20px 25px -5px ${primaryColor}33`
@@ -230,22 +234,63 @@ function InputField({ label, name, placeholder, value, onChange, primaryColor, t
 }
 
 function FormSelect({ label, name, value, options, onChange, primaryColor }: SellSelectProps) {
+    const [isOpen, setIsOpen] = useState(false)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!containerRef.current?.contains(event.target as Node)) {
+                setIsOpen(false)
+            }
+        }
+
+        window.addEventListener('mousedown', handlePointerDown)
+        return () => window.removeEventListener('mousedown', handlePointerDown)
+    }, [])
+
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
-            <div className="relative leading-none">
-                <select
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-black uppercase outline-none appearance-none cursor-pointer leading-none shadow-none"
-                    style={{ '--tw-ring-color': primaryColor } as CSSProperties}
+            <div className="relative leading-none" ref={containerRef}>
+                <button
+                    type="button"
+                    onClick={() => setIsOpen((prev) => !prev)}
+                    className="w-full min-h-[46px] bg-[#F7F8FA] border border-gray-200 rounded-2xl px-5 pr-12 text-[10px] font-bold uppercase outline-none cursor-pointer leading-none shadow-none text-left transition-colors hover:border-gray-300"
+                    style={{
+                        '--tw-ring-color': primaryColor,
+                        borderColor: isOpen ? `${primaryColor}55` : undefined,
+                    } as CSSProperties}
                 >
-                    {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
+                    <span className="block truncate pr-2">{value}</span>
+                </button>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19 9l-7 7-7-7" /></svg>
+                    <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19 9l-7 7-7-7" /></svg>
                 </div>
+
+                {isOpen && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                        <div className="max-h-64 overflow-y-auto py-2">
+                            {options.map((opt) => {
+                                const isSelected = opt === value
+
+                                return (
+                                    <button
+                                        key={opt}
+                                        type="button"
+                                        onClick={() => {
+                                            onChange(name, opt)
+                                            setIsOpen(false)
+                                        }}
+                                        className={`flex w-full items-center justify-between px-4 py-3 text-left text-[10px] font-bold uppercase transition-colors ${isSelected ? 'bg-[#F7F8FA] text-black' : 'text-zinc-600 hover:bg-[#F7F8FA]'}`}
+                                    >
+                                        <span className="pr-4">{opt}</span>
+                                        {isSelected && <span className="sr-only">Seleccionado</span>}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

@@ -156,9 +156,12 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
     if (loading) return <div className="min-h-screen bg-white" />
     if (!car) notFound()
 
+    const exteriorImages: string[] = car.exteriorImages ?? []
+    const interiorImages: string[] = car.interiorImages ?? []
+
     const detailImages = [
-        ...(detailFilter === 'all' || detailFilter === 'exterior' ? (car.exteriorImages || []) : []),
-        ...(detailFilter === 'all' || detailFilter === 'interior' ? (car.interiorImages || []) : []),
+        ...(detailFilter === 'all' || detailFilter === 'exterior' ? exteriorImages : []),
+        ...(detailFilter === 'all' || detailFilter === 'interior' ? interiorImages : []),
     ];
 
     const carFeatures: CarFeatureSection[] = [
@@ -209,7 +212,7 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
                             <div className="pt-6 border-t border-gray-100">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-black mb-2">Características</h3>
                                 <div className="space-y-1">
-                                    {(car.exteriorImages?.length > 0 || car.interiorImages?.length > 0) && (
+                                    {(exteriorImages.length > 0 || interiorImages.length > 0) && (
                                         <div className="border-b border-gray-100">
                                             <button onClick={() => setShowDetails(!showDetails)} className="w-full py-3 flex justify-between items-center group transition-all">
                                                 <span className="font-bold uppercase text-[10px] tracking-[0.15em] text-gray-800 group-hover:text-black transition-colors">Detalles del Vehículo</span>

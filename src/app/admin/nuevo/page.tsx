@@ -9,6 +9,7 @@ import { client as readClient } from '@/sanity/lib/client'
 import { uploadSanityImage } from '@/app/actions/vehiculosActions'
 import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
+import AdminSoftSelect from '@/components/AdminSoftSelect'
 import { saveCarAction } from '@/app/actions/carActions'
 import { syncBrandDatabaseAction } from '@/app/actions/brandActions' // NUEVA ACCIÓN PARA SINCRONIZAR
 
@@ -121,7 +122,7 @@ export default function NuevoVehiculoPage() {
         drivetrain: 'Delantera',
         fuel: 'Bencina',
         color: 'Blanco',
-        location: 'Metropolitana de Santiago',
+        location: '',
         specsGeneral: { cilindrada: '', cilindros: '', potencia: '' },
         specsHistory: { duenos: '', mantenciones: '', historial: '' },
         specsExterior: { puertas: '', rin: '', tipoRin: '', luces: '' },
@@ -291,24 +292,24 @@ export default function NuevoVehiculoPage() {
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Marca</label>
                                 {!isManualMake ? (
-                                    <select
-                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer"
+                                    <AdminSoftSelect
                                         value={formData.make}
-                                        onChange={(e) => {
-                                            if (e.target.value === 'ADD_NEW') {
+                                        onChange={(value) => {
+                                            if (value === 'ADD_NEW') {
                                                 setIsManualMake(true)
                                                 handleChange('make', '')
                                             } else {
-                                                handleChange('make', e.target.value)
+                                                handleChange('make', value)
                                                 handleChange('model', '')
                                                 handleChange('version', '')
                                             }
                                         }}
-                                    >
-                                        <option value="">Seleccionar...</option>
-                                        {dbBrands.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-                                        <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVA MARCA...</option>
-                                    </select>
+                                        options={[
+                                            { value: '', label: 'Seleccionar...' },
+                                            ...dbBrands.map((b) => ({ value: b.name, label: b.name })),
+                                            { value: 'ADD_NEW', label: '+ AGREGAR NUEVA MARCA...' },
+                                        ]}
+                                    />
                                 ) : (
                                     <div className="relative">
                                         <input
@@ -331,26 +332,24 @@ export default function NuevoVehiculoPage() {
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Modelo</label>
                                 {!isManualModel ? (
-                                    <select
-                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer disabled:opacity-50"
+                                    <AdminSoftSelect
                                         value={formData.model}
                                         disabled={!formData.make}
-                                        onChange={(e) => {
-                                            if (e.target.value === 'ADD_NEW') {
+                                        onChange={(value) => {
+                                            if (value === 'ADD_NEW') {
                                                 setIsManualModel(true)
                                                 handleChange('model', '')
                                             } else {
-                                                handleChange('model', e.target.value)
+                                                handleChange('model', value)
                                                 handleChange('version', '')
                                             }
                                         }}
-                                    >
-                                        <option value="">Seleccionar...</option>
-                                        {currentBrandData?.models?.map((m: BrandModel) => (
-                                            <option key={m.modelName} value={m.modelName}>{m.modelName}</option>
-                                        ))}
-                                        {formData.make && <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVO MODELO...</option>}
-                                    </select>
+                                        options={[
+                                            { value: '', label: 'Seleccionar...' },
+                                            ...(currentBrandData?.models?.map((m: BrandModel) => ({ value: m.modelName, label: m.modelName })) || []),
+                                            ...(formData.make ? [{ value: 'ADD_NEW', label: '+ AGREGAR NUEVO MODELO...' }] : []),
+                                        ]}
+                                    />
                                 ) : (
                                     <div className="relative">
                                         <input
@@ -373,25 +372,23 @@ export default function NuevoVehiculoPage() {
                             <div className="flex flex-col space-y-2.5 text-left leading-none">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Versión</label>
                                 {!isManualVersion ? (
-                                    <select
-                                        className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer disabled:opacity-50"
+                                    <AdminSoftSelect
                                         value={formData.version}
                                         disabled={!formData.model}
-                                        onChange={(e) => {
-                                            if (e.target.value === 'ADD_NEW') {
+                                        onChange={(value) => {
+                                            if (value === 'ADD_NEW') {
                                                 setIsManualVersion(true)
                                                 handleChange('version', '')
                                             } else {
-                                                handleChange('version', e.target.value)
+                                                handleChange('version', value)
                                             }
                                         }}
-                                    >
-                                        <option value="">Seleccionar...</option>
-                                        {currentModelData?.versions?.map((v: string) => (
-                                            <option key={v} value={v}>{v}</option>
-                                        ))}
-                                        {formData.model && <option value="ADD_NEW" className="font-bold text-blue-600">+ AGREGAR NUEVA VERSIÓN...</option>}
-                                    </select>
+                                        options={[
+                                            { value: '', label: 'Seleccionar...' },
+                                            ...(currentModelData?.versions?.map((v: string) => ({ value: v, label: v })) || []),
+                                            ...(formData.model ? [{ value: 'ADD_NEW', label: '+ AGREGAR NUEVA VERSIÓN...' }] : []),
+                                        ]}
+                                    />
                                 ) : (
                                     <div className="relative">
                                         <input
@@ -627,12 +624,7 @@ function FormSelect({ label, value, options, onChange }: FSProps) {
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
-            <div className="relative leading-none">
-                <select value={value ?? ''} onChange={(e) => onChange(e.target.value)} className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-black uppercase outline-none focus:ring-1 focus:ring-black appearance-none cursor-pointer leading-none">
-                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19 9l-7 7-7-7" /></svg></div>
-            </div>
+            <AdminSoftSelect value={value ?? ''} onChange={onChange} options={options.map((opt) => ({ value: opt, label: opt }))} />
         </div>
     )
 }

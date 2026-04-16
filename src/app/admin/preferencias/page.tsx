@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
+import AdminSoftSelect from '@/components/AdminSoftSelect'
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import {
@@ -520,22 +521,22 @@ export default function PreferenciasPage() {
                 <AdminNavigation />
 
                 <main className="max-w-7xl mx-auto px-6 py-8 no-scrollbar">
-                    <header className="flex justify-between items-end mb-9">
+                    <header className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end mb-9 gap-4">
                         <div className="text-left flex-1">
                             <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">Configuración</p>
                             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Preferencias</h1>
                         </div>
-                        <button onClick={handleSaveGlobal} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3 rounded-xl shadow-xl shadow-black/10 transition-all active:scale-95">
+                        <button onClick={handleSaveGlobal} disabled={isSubmitting} className="w-full sm:w-auto bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3.5 rounded-xl shadow-xl shadow-black/10 transition-all active:scale-95">
                             {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
                         </button>
                     </header>
 
-                    <div className="flex gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
+                    <div className="flex gap-2 sm:gap-3 mb-4 overflow-x-auto no-scrollbar pb-2">
                         {TABS.map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
+                                className={`px-4 sm:px-5 py-2.5 sm:py-2 rounded-full text-[8px] sm:text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
                                 {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : tab === 'seo' ? 'SEO' : tab === 'legales' ? 'Legales' : 'Reseñas'}
                             </button>
@@ -550,7 +551,7 @@ export default function PreferenciasPage() {
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad</h3>
 
                                     <PrefInput
-                                        label="Nombre del Sitio (SEO)"
+                                        label="Nombre del Sitio"
                                         placeholder="Nombre que aparecerá en Google y pestañas del navegador"
                                         value={settings.siteName}
                                         onChange={(v) => setSettings(prev => ({ ...prev, siteName: v }))}
@@ -872,15 +873,15 @@ export default function PreferenciasPage() {
 
                                         <div className="space-y-3 text-left">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none block">Alineación de Fotografía</label>
-                                            <select
+                                            <AdminSoftSelect
                                                 value={appearanceData.heroPosition}
-                                                onChange={(e) => setAppearanceData({ ...appearanceData, heroPosition: e.target.value })}
-                                                className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[10px] font-black uppercase outline-none cursor-pointer appearance-none"
-                                            >
-                                                <option value="top">Superior (Enfocar arriba)</option>
-                                                <option value="center">Centro (Recomendado)</option>
-                                                <option value="bottom">Inferior (Enfocar abajo)</option>
-                                            </select>
+                                                onChange={(value) => setAppearanceData({ ...appearanceData, heroPosition: value })}
+                                                options={[
+                                                    { value: 'top', label: 'Superior (Enfocar arriba)' },
+                                                    { value: 'center', label: 'Centro (Recomendado)' },
+                                                    { value: 'bottom', label: 'Inferior (Enfocar abajo)' },
+                                                ]}
+                                            />
                                             <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Ajusta el enfoque si el auto queda cortado</p>
                                         </div>
 
@@ -924,9 +925,12 @@ export default function PreferenciasPage() {
                                                     </div>
                                                     <div className="flex flex-col gap-2 text-left leading-none">
                                                         <label className="text-[8px] font-black uppercase text-zinc-400">Ruta</label>
-                                                        <select value={item.path} onChange={(e) => handleUpdateNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'path', e.target.value)} className="bg-white rounded-xl h-9 px-4 text-[10px] font-black uppercase outline-none border-none cursor-pointer appearance-none">
-                                                            {menu.opts.map((r: RutaOption) => <option key={r.value} value={r.value}>{r.title}</option>)}
-                                                        </select>
+                                                        <AdminSoftSelect
+                                                            value={item.path}
+                                                            onChange={(value) => handleUpdateNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'path', value)}
+                                                            options={menu.opts.map((r: RutaOption) => ({ value: r.value, label: r.title }))}
+                                                            compact
+                                                        />
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <button onClick={() => handleMoveNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'up')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M5 15l7-7 7 7" /></svg></button>
@@ -979,7 +983,7 @@ export default function PreferenciasPage() {
                                     <div className="w-full bg-[#F7F8FA] p-4 rounded-2xl border border-gray-100 space-y-3">
                                         <div className="leading-tight text-left">
                                             <p className="text-[9px] font-black uppercase text-zinc-800">Texto de Antigüedad</p>
-                                            <p className="text-[7px] font-bold text-zinc-400 uppercase mt-0.5 tracking-tighter">Descripción de continuity laboral requerida</p>
+                                            <p className="text-[7px] font-bold text-zinc-400 uppercase mt-0.5 tracking-tighter">Descripción de continuidad laboral requerida</p>
                                         </div>
                                         <input
                                             type="text"
@@ -1077,14 +1081,18 @@ export default function PreferenciasPage() {
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Reseña</h3>
                                     <PrefInput label="Nombre" value={newReview.name} onChange={(v) => setNewReview(prev => ({ ...prev, name: v }))} />
                                     <PrefInput label="Fecha" type="date" value={newReview.date} onChange={(v) => setNewReview(prev => ({ ...prev, date: v }))} />
-                                    <div className="flex flex-col space-y- leading-none">
+                                    <div className="flex flex-col space-y-2 leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Etiqueta</label>
-                                        <select value={newReview.badge} onChange={(e) => setNewReview(prev => ({ ...prev, badge: e.target.value }))} className="w-full h-[45px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none cursor-pointer appearance-none">
-                                            <option value="Comprador Satisfecho">Comprador Satisfecho</option>
-                                            <option value="Vendedor Satisfecho">Vendedor Satisfecho</option>
-                                            <option value="Cliente Verificado">Cliente Verificado</option>
-                                            <option value="Opinión Real de Cliente">Opinión Real de Cliente</option>
-                                        </select>
+                                        <AdminSoftSelect
+                                            value={newReview.badge}
+                                            onChange={(value) => setNewReview(prev => ({ ...prev, badge: value }))}
+                                            options={[
+                                                { value: 'Comprador Satisfecho', label: 'Comprador Satisfecho' },
+                                                { value: 'Vendedor Satisfecho', label: 'Vendedor Satisfecho' },
+                                                { value: 'Cliente Verificado', label: 'Cliente Verificado' },
+                                                { value: 'Opini\u00F3n Real de Cliente', label: 'Opini\u00F3n Real de Cliente' },
+                                            ]}
+                                        />
                                     </div>
                                     <div className="flex flex-col space-y-2 leading-none">
                                         <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Estrellas (1-5)</label>
@@ -1120,12 +1128,17 @@ export default function PreferenciasPage() {
                                                             <input type="date" value={editForm.date} onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-2">
-                                                            <select value={editForm.badge} onChange={(e) => setEditForm(prev => ({ ...prev, badge: e.target.value }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[9px] font-black uppercase border-none appearance-none">
-                                                                <option value="Comprador Satisfecho">Comprador Satisfecho</option>
-                                                                <option value="Vendedor Satisfecho">Vendedor Satisfecho</option>
-                                                                <option value="Cliente Verificado">Cliente Verificado</option>
-                                                                <option value="Opinión Real de Cliente">Opinión Real de Cliente</option>
-                                                            </select>
+                                                            <AdminSoftSelect
+                                                                value={editForm.badge}
+                                                                onChange={(value) => setEditForm(prev => ({ ...prev, badge: value }))}
+                                                                options={[
+                                                                    { value: 'Comprador Satisfecho', label: 'Comprador Satisfecho' },
+                                                                    { value: 'Vendedor Satisfecho', label: 'Vendedor Satisfecho' },
+                                                                    { value: 'Cliente Verificado', label: 'Cliente Verificado' },
+                                                                    { value: 'Opini\u00F3n Real de Cliente', label: 'Opini\u00F3n Real de Cliente' },
+                                                                ]}
+                                                                compact
+                                                            />
                                                             <input type="number" min="1" max="5" value={editForm.rating} onChange={(e) => setEditForm(prev => ({ ...prev, rating: parseInt(e.target.value) }))} className="w-full h-8 bg-gray-50 rounded-lg px-2 text-[10px] font-bold border-none" />
                                                         </div>
                                                     </div>
@@ -1211,3 +1224,4 @@ function SEOTextarea({ label, value, onChange }: { label: string; value: string;
         </div>
     )
 }
+

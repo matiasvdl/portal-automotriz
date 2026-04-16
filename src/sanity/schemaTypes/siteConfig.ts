@@ -7,7 +7,7 @@ export const siteConfig = {
     fields: [
         {
             name: 'siteName',
-            title: 'Nombre del Sitio (SEO)',
+            title: 'Nombre del Sitio',
             type: 'string',
             initialValue: 'VDL MOTORS'
         },
@@ -133,7 +133,7 @@ export const siteConfig = {
             name: 'defaultLocation',
             title: 'Ubicación por Defecto',
             type: 'string',
-            initialValue: 'Metropolitana de Santiago'
+            initialValue: ''
         },
         {
             name: 'homeContent',

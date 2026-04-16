@@ -150,7 +150,7 @@ export const car = defineType({
             name: 'location',
             title: 'Ubicación',
             type: 'string',
-            initialValue: 'Metropolitana de Santiago'
+            initialValue: ''
         }),
 
         // ====================================================================

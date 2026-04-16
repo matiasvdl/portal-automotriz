@@ -57,10 +57,20 @@ const INITIAL_PROFILE: ProfileState = {
     image: null
 }
 
+function formatShortTime(date: Date): string {
+    return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+    })
+}
+
 export default function MiCuentaPage() {
     const { data: session } = useSession()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const [isOnline, setIsOnline] = useState(true)
+    const [localTime, setLocalTime] = useState('--:--')
+    const [lastSyncLabel, setLastSyncLabel] = useState('--')
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [profileData, setProfileData] = useState<ProfileState>(INITIAL_PROFILE)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -101,12 +111,33 @@ export default function MiCuentaPage() {
 
             setImagePreview(myData.image ? urlFor(myData.image).url() : null)
         }
+
+        setLastSyncLabel(formatShortTime(new Date()))
     }, [session?.user?.email])
 
     useEffect(() => {
         setMounted(true)
+        setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true)
+        setLocalTime(formatShortTime(new Date()))
         void loadAllData()
     }, [loadAllData])
+
+    useEffect(() => {
+        if (!mounted) return
+
+        const updateOnlineStatus = () => setIsOnline(navigator.onLine)
+        const updateClock = () => setLocalTime(formatShortTime(new Date()))
+
+        window.addEventListener('online', updateOnlineStatus)
+        window.addEventListener('offline', updateOnlineStatus)
+        const clockInterval = window.setInterval(updateClock, 30000)
+
+        return () => {
+            window.removeEventListener('online', updateOnlineStatus)
+            window.removeEventListener('offline', updateOnlineStatus)
+            window.clearInterval(clockInterval)
+        }
+    }, [mounted])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -144,7 +175,7 @@ export default function MiCuentaPage() {
             if (profileData.image instanceof File) {
                 imageBase64 = await new Promise<string>((resolve) => {
                     const reader = new FileReader()
-                    reader.onloadend = () => resolve(reader.result as string)
+                    reader.onloadend = () => resolve(String(reader.result || ''))
                     reader.readAsDataURL(profileData.image)
                 })
             }
@@ -171,7 +202,7 @@ export default function MiCuentaPage() {
             <AdminNavigation />
 
             <main className="max-w-7xl mx-auto px-6 py-8">
-                <header className="flex flex-row justify-between items-end mb-8 gap-7 relative">
+                <header className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end mb-8 gap-4 sm:gap-7 relative">
                     <div className="text-left flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">Panel de Control</p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
@@ -181,7 +212,7 @@ export default function MiCuentaPage() {
                     <button
                         onClick={handleSave}
                         disabled={isSubmitting}
-                        className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3 rounded-xl"
+                        className="w-full sm:w-auto bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3.5 rounded-xl text-center"
                     >
                         {isSubmitting ? '...' : 'Guardar Cambios'}
                     </button>
@@ -217,13 +248,27 @@ export default function MiCuentaPage() {
                             <h4 className="text-[9px] font-black uppercase tracking-widest mb-5 opacity-50 leading-none">Estado de Conexión</h4>
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                                    <span className="text-[9px] font-bold uppercase text-zinc-500">Sistema</span>
-                                    <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0 rounded">En Línea</span>
+                                    <span className="text-[9px] font-bold uppercase text-zinc-500">Internet</span>
+                                    <span className={`text-[9px] font-black uppercase px-2 py-0 rounded ${isOnline ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-300'}`}>
+                                        {isOnline ? 'En Línea' : 'Sin Conexión'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                                    <span className="text-[9px] font-bold uppercase text-zinc-400">Sesión</span>
+                                    <span className="text-[9px] font-black uppercase">
+                                        {session?.user?.email ? 'Activa' : 'Sin sesión'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                                    <span className="text-[9px] font-bold uppercase text-zinc-400">Última Sincronización</span>
+                                    <span className="text-[9px] font-black uppercase">
+                                        {lastSyncLabel}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-[9px] font-bold uppercase text-zinc-400">Hora Local</span>
                                     <span className="text-[9px] font-black uppercase">
-                                        {mounted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                        {mounted ? localTime : '--:--'}
                                     </span>
                                 </div>
                             </div>

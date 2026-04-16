@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { CSSProperties, HTMLInputTypeAttribute } from 'react'
 import { client } from '@/sanity/lib/client'
 import { useSettings } from '@/context/SettingsContext'
@@ -43,7 +43,7 @@ type FinanceSelectProps = {
     name: keyof FinanceFormData
     value: string
     options: string[]
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void
+    onChange: (name: keyof FinanceFormData, value: string) => void
     primaryColor: string
 }
 
@@ -137,6 +137,24 @@ export default function FinanciamientoClient() {
         setFormData({ ...formData, [name]: value })
     }
 
+    const handleSelectChange = (name: keyof FinanceFormData, value: string) => {
+        if (name === 'carInterest') {
+            const nextCar = availableCars.find((car) => `${car.make} ${car.model}` === value)
+            const nextDownPayment = nextCar
+                ? formatCLP(Math.floor((nextCar.listPrice * minPercent) / 100).toString())
+                : formData.downPayment
+
+            setFormData({
+                ...formData,
+                carInterest: value,
+                downPayment: nextDownPayment,
+            })
+            return
+        }
+
+        setFormData({ ...formData, [name]: value })
+    }
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         const userDownPayment = parseInt(formData.downPayment.replace(/\./g, '')) || 0
@@ -189,7 +207,7 @@ export default function FinanciamientoClient() {
                                         <InputField label="RUT" name="rut" placeholder="12.345.678-9" value={formData.rut} onChange={handleChange} primaryColor={primaryColor} />
                                         <InputField label="Fecha de Nacimiento" name="birthDate" type="date" value={formData.birthDate} onChange={handleChange} primaryColor={primaryColor} />
                                     </div>
-                                    <FormSelect label="Nacionalidad" name="nationality" value={formData.nationality} options={['Chilena', 'Extranjera']} onChange={handleChange} primaryColor={primaryColor} />
+                                    <FormSelect label="Nacionalidad" name="nationality" value={formData.nationality} options={['Chilena', 'Extranjera']} onChange={handleSelectChange} primaryColor={primaryColor} />
                                 </div>
                             </section>
 
@@ -199,12 +217,12 @@ export default function FinanciamientoClient() {
                                 </h3>
                                 <div className="space-y-5">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <FormSelect label="Ocupación" name="employmentStatus" value={formData.employmentStatus} options={['Dependiente', 'Independiente', 'Empresa']} onChange={handleChange} primaryColor={primaryColor} />
+                                        <FormSelect label="Ocupación" name="employmentStatus" value={formData.employmentStatus} options={['Dependiente', 'Independiente', 'Empresa']} onChange={handleSelectChange} primaryColor={primaryColor} />
                                         <InputField label="Renta Líquida Mensual" name="income" type="text" placeholder="Ej: 900.000" value={formData.income} onChange={handleChange} primaryColor={primaryColor} />
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <InputField label="Antigüedad Laboral" name="entryDate" placeholder="Ej: 1 año" value={formData.entryDate} onChange={handleChange} primaryColor={primaryColor} />
-                                        <FormSelect label="Dicom" name="dicom" value={formData.dicom} options={['No', 'Sí']} onChange={handleChange} primaryColor={primaryColor} />
+                                        <FormSelect label="Dicom" name="dicom" value={formData.dicom} options={['No', 'Sí']} onChange={handleSelectChange} primaryColor={primaryColor} />
                                     </div>
                                 </div>
                             </section>
@@ -219,7 +237,7 @@ export default function FinanciamientoClient() {
                                         name="carInterest"
                                         value={formData.carInterest}
                                         options={availableCars.map((car) => `${car.make} ${car.model}`)}
-                                        onChange={handleChange}
+                                        onChange={handleSelectChange}
                                         primaryColor={primaryColor}
                                     />
 
@@ -238,7 +256,7 @@ export default function FinanciamientoClient() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <InputField label="Monto de Pie que deseas dar" name="downPayment" type="text" placeholder="Ej: 5.000.000" value={formData.downPayment} onChange={handleChange} primaryColor={primaryColor} />
-                                        <FormSelect label="Plazo Deseado" name="termMonths" value={formData.termMonths} options={['12 meses', '24 meses', '36 meses', '48 meses']} onChange={handleChange} primaryColor={primaryColor} />
+                                        <FormSelect label="Plazo Deseado" name="termMonths" value={formData.termMonths} options={['12 meses', '24 meses', '36 meses', '48 meses']} onChange={handleSelectChange} primaryColor={primaryColor} />
                                     </div>
                                 </div>
                             </section>
@@ -265,7 +283,7 @@ export default function FinanciamientoClient() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl transition-all active:scale-95 disabled:opacity-50"
+                                    className="w-full text-white text-center font-black text-[9px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl transition-all active:scale-95 disabled:opacity-50"
                                     style={{
                                         backgroundColor: primaryColor,
                                         boxShadow: `0 20px 25px -5px ${primaryColor}33`
@@ -297,7 +315,7 @@ export default function FinanciamientoClient() {
                                 <svg className="w-4 h-4" style={{ color: primaryColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                             </div>
                             <div className="leading-tight">
-                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">{config?.financeContent?.trustTitle?.trim() || 'Proceso Seguro'}</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest leading-none">{config?.financeContent?.trustTitle?.trim() || 'Proceso Seguro'}</p>
                                 <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter mt-0.5 leading-none">{config?.financeContent?.trustSubtitle?.trim() || `Evaluación directa con ${siteName}`}</p>
                             </div>
                         </div>
@@ -327,22 +345,63 @@ function InputField({ label, name, placeholder, value, onChange, primaryColor, t
 }
 
 function FormSelect({ label, name, value, options, onChange, primaryColor }: FinanceSelectProps) {
+    const [isOpen, setIsOpen] = useState(false)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!containerRef.current?.contains(event.target as Node)) {
+                setIsOpen(false)
+            }
+        }
+
+        window.addEventListener('mousedown', handlePointerDown)
+        return () => window.removeEventListener('mousedown', handlePointerDown)
+    }, [])
+
     return (
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
-            <div className="relative leading-none">
-                <select
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-black uppercase outline-none appearance-none cursor-pointer leading-none shadow-none"
-                    style={{ '--tw-ring-color': primaryColor } as CSSProperties}
+            <div className="relative leading-none" ref={containerRef}>
+                <button
+                    type="button"
+                    onClick={() => setIsOpen((prev) => !prev)}
+                    className="w-full min-h-[46px] bg-[#F7F8FA] border border-gray-200 rounded-2xl px-5 pr-12 text-[10px] font-bold uppercase outline-none cursor-pointer leading-none shadow-none text-left transition-colors hover:border-gray-300"
+                    style={{
+                        '--tw-ring-color': primaryColor,
+                        borderColor: isOpen ? `${primaryColor}55` : undefined,
+                    } as CSSProperties}
                 >
-                    {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
+                    <span className="block truncate pr-2">{value}</span>
+                </button>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19 9l-7 7-7-7" /></svg>
+                    <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19 9l-7 7-7-7" /></svg>
                 </div>
+
+                {isOpen && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                        <div className="max-h-64 overflow-y-auto py-2">
+                            {options.map((opt) => {
+                                const isSelected = opt === value
+
+                                return (
+                                    <button
+                                        key={opt}
+                                        type="button"
+                                        onClick={() => {
+                                            onChange(name, opt)
+                                            setIsOpen(false)
+                                        }}
+                                        className={`flex w-full items-center justify-between px-4 py-3 text-left text-[10px] font-bold uppercase transition-colors ${isSelected ? 'bg-[#F7F8FA] text-black' : 'text-zinc-600 hover:bg-[#F7F8FA]'}`}
+                                    >
+                                        <span className="pr-4">{opt}</span>
+                                        {isSelected && <span className="sr-only">Seleccionado</span>}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

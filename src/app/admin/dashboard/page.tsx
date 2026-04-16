@@ -99,7 +99,7 @@ export default function DashboardPage() {
             <AdminNavigation />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-                <header className="flex justify-between items-end mb-9 gap-4 px-1 sm:px-0">
+                <header className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end mb-9 gap-4 px-1 sm:px-0">
                     <div className="text-left flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 italic leading-none">
                             Gestión de stock
@@ -109,18 +109,18 @@ export default function DashboardPage() {
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                         {/* BOTÓN EDITAR/FINALIZAR: Siempre ligero y con borde zinc */}
                         <button
                             onClick={() => setIsEditMode(!isEditMode)}
-                            className="bg-white border border-zinc-200 text-zinc-600 hover:border-black hover:text-black text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl transition-all active:scale-95 mb-0.5"
+                            className="w-full sm:w-auto bg-white border border-zinc-200 text-zinc-600 hover:border-black hover:text-black text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3.5 rounded-xl transition-all active:scale-95 mb-0.5 text-center"
                         >
                             {isEditMode ? 'Finalizar' : 'Editar'}
                         </button>
 
                         <Link
                             href="/admin/nuevo"
-                            className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap mb-0.5"
+                            className="w-full sm:w-auto bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-3.5 rounded-xl shadow-xl shadow-black/10 hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap mb-0.5 text-center"
                         >
                             Nuevo vehículo
                         </Link>

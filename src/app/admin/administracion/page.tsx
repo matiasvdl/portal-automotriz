@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
+import AdminSoftSelect from '@/components/AdminSoftSelect'
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import bcrypt from "bcryptjs"
@@ -176,12 +177,12 @@ export default function AdministracionPage() {
             <AdminNavigation />
 
             <main className="max-w-7xl mx-auto px-6 py-8">
-                <header className="flex flex-row justify-between items-end mb-8 gap-7 relative">
+                <header className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end mb-8 gap-4 sm:gap-7 relative">
                     <div className="text-left flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">Gestión de Equipo</p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Administración</h1>
                     </div>
-                    <button onClick={handleSave} disabled={isSubmitting} className="bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3 rounded-xl">
+                    <button onClick={handleSave} disabled={isSubmitting} className="w-full sm:w-auto bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] px-7 py-3.5 rounded-xl text-center">
                         {isSubmitting ? '...' : 'Guardar Cambios'}
                     </button>
                 </header>
@@ -274,15 +275,15 @@ export default function AdministracionPage() {
 
                                 <div className="flex flex-col space-y-3 text-left leading-none">
                                     <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1 leading-none">Cargo / Rol</label>
-                                    <select
+                                    <AdminSoftSelect
                                         value={userData.role}
-                                        onChange={(e) => setUserData({ ...userData, role: e.target.value })}
-                                        className="w-full h-[50px] bg-[#F7F8FA] border-none rounded-2xl px-5 text-[9px] font-black uppercase outline-none appearance-none cursor-pointer"
-                                    >
-                                        <option value="Administrador Principal">Administrador Principal</option>
-                                        <option value="Administrador">Administrador</option>
-                                        <option value="Ventas">Ventas</option>
-                                    </select>
+                                        onChange={(value) => setUserData({ ...userData, role: value })}
+                                        options={[
+                                            { value: 'Administrador Principal', label: 'Administrador Principal' },
+                                            { value: 'Administrador', label: 'Administrador' },
+                                            { value: 'Ventas', label: 'Ventas' },
+                                        ]}
+                                    />
                                 </div>
 
                                 <AccountInput label="Correo Electronico" value={userData.email} onChange={(v) => setUserData({ ...userData, email: v })} />
