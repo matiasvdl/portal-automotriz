@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { client, writeClient } from '@/sanity/lib/client'
+import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
-import { toggleCarStatusAction } from '@/app/actions/carActions'
+import { toggleCarStatusAction, deleteCarAction } from '@/app/actions/carActions' // Importado deleteCarAction
 
 export default function DashboardPage() {
     const [cars, setCars] = useState<any[]>([])
@@ -39,11 +39,17 @@ export default function DashboardPage() {
 
         if (confirm(`¿Estás seguro de que deseas eliminar el ${name} permanentemente?`)) {
             try {
-                await writeClient.delete(id)
-                setCars(cars.filter(car => car._id !== id))
+                // CORRECCIÓN: Usamos la Server Action para evitar errores de permisos en el cliente
+                const result = await deleteCarAction(id)
+
+                if (result.success) {
+                    setCars(cars.filter(car => car._id !== id))
+                } else {
+                    alert(result.error || "No se pudo eliminar el vehículo.")
+                }
             } catch (error) {
                 console.error("Error eliminando:", error)
-                alert("No se pudo eliminar el vehículo.")
+                alert("Ocurrió un error inesperado al intentar eliminar.")
             }
         }
     }

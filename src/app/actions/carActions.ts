@@ -46,17 +46,26 @@ export async function saveCarAction(id: string | null, carData: any) {
 
 export async function deleteCarAction(id: string) {
     try {
+        // Verificamos que el ID sea válido antes de proceder
+        if (!id) {
+            return { success: false, error: "ID de vehículo no válido" }
+        }
+
+        // Ejecutamos la eliminación en Sanity
         await writeClient.delete(id)
 
-        // Revalidamos las mismas rutas tras eliminar
+        // REVALIDACIÓN: Limpiamos la caché de las rutas afectadas
         revalidatePath('/catalogo')
         revalidatePath('/admin/dashboard')
         revalidatePath('/')
 
         return { success: true }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error al eliminar vehículo:", error)
-        return { success: false, error: "Error al eliminar el registro" }
+        return {
+            success: false,
+            error: error.message || "Error al eliminar el registro de la base de datos"
+        }
     }
 }
 
