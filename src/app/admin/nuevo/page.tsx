@@ -123,6 +123,19 @@ export default function NuevoVehiculoPage() {
         setFormData(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }))
     }
 
+    // --- NUEVA FUNCIÓN: MOVER IMÁGENES ---
+    const moveImage = (field: 'images' | 'exteriorImages' | 'interiorImages', index: number, direction: 'left' | 'right') => {
+        const newImages = [...formData[field]]
+        const targetIndex = direction === 'left' ? index - 1 : index + 1
+
+        if (targetIndex < 0 || targetIndex >= newImages.length) return
+
+        // Intercambio de posiciones
+        [newImages[index], newImages[targetIndex]] = [newImages[targetIndex], newImages[index]]
+
+        setFormData(prev => ({ ...prev, [field]: newImages }))
+    }
+
     const handleAddTags = () => {
         if (!currentTag.trim()) return;
 
@@ -168,8 +181,8 @@ export default function NuevoVehiculoPage() {
             <AdminNavigation />
 
             <main className="max-w-7xl mx-auto px-6 py-8">
-                <header className="flex justify-between items-end mb-9 gap-4">
-                    <div className="text-left flex-1">
+                <header className="flex justify-between items-end mb-9 gap-4 text-left">
+                    <div className="flex-1">
                         <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-0.5 leading-none italic">Gestión de vehículos</p>
                         <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Nuevo Vehículo</h1>
                     </div>
@@ -216,7 +229,7 @@ export default function NuevoVehiculoPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: General</h3>
                             <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Cilindrada" value={formData.specsGeneral.cilindrada} onChange={(v) => handleNestedChange('specsGeneral', 'cilindrada', v)} />
@@ -224,7 +237,7 @@ export default function NuevoVehiculoPage() {
                                 <FormGroup label="Potencia" value={formData.specsGeneral.potencia} onChange={(v) => handleNestedChange('specsGeneral', 'potencia', v)} />
                             </div>
                         </div>
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Especificaciones: Historial</h3>
                             <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Dueños" value={formData.specsHistory.duenos} onChange={(v) => handleNestedChange('specsHistory', 'duenos', v)} />
@@ -235,7 +248,7 @@ export default function NuevoVehiculoPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Exterior</h3>
                             <div className="grid grid-cols-2 gap-5">
                                 <FormGroup label="Número de Puertas" value={formData.specsExterior.puertas} onChange={(v) => handleNestedChange('specsExterior', 'puertas', v)} />
@@ -244,7 +257,7 @@ export default function NuevoVehiculoPage() {
                                 <FormGroup label="Tipo de Luces" value={formData.specsExterior.luces} onChange={(v) => handleNestedChange('specsExterior', 'luces', v)} />
                             </div>
                         </div>
-                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                        <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Especificaciones: Interior</h3>
                             <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Número de Pasajeros" value={formData.specsInterior.pasajeros} onChange={(v) => handleNestedChange('specsInterior', 'pasajeros', v)} />
@@ -253,7 +266,7 @@ export default function NuevoVehiculoPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none">
+                    <div className="bg-white rounded-[30px] border border-gray-100 p-7 space-y-5 shadow-none text-left">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none">Detalles Técnicos Adicionales</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div className="space-y-6">
@@ -316,9 +329,31 @@ export default function NuevoVehiculoPage() {
                         <input type="file" multiple className="hidden" ref={interiorImagesRef} onChange={(e) => handleImageUpload(e, 'interiorImages')} />
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 leading-none pt-1">
-                            <ImageUploadPlaceholder label="Imágenes Principales" images={formData.images} field="images" onRemove={removeImage} onClick={() => mainImagesRef.current?.click()} />
-                            <ImageUploadPlaceholder label="Fotos Detalles Exterior" images={formData.exteriorImages} field="exteriorImages" onRemove={removeImage} onClick={() => exteriorImagesRef.current?.click()} />
-                            <ImageUploadPlaceholder label="Fotos Detalles Interior" images={formData.interiorImages} field="interiorImages" onRemove={removeImage} onClick={() => interiorImagesRef.current?.click()} />
+                            {/* PASAMOS LA FUNCIÓN moveImage A LOS COMPONENTES */}
+                            <ImageUploadPlaceholder
+                                label="Imágenes Principales"
+                                images={formData.images}
+                                field="images"
+                                onRemove={removeImage}
+                                onMove={moveImage}
+                                onClick={() => mainImagesRef.current?.click()}
+                            />
+                            <ImageUploadPlaceholder
+                                label="Fotos Detalles Exterior"
+                                images={formData.exteriorImages}
+                                field="exteriorImages"
+                                onRemove={removeImage}
+                                onMove={moveImage}
+                                onClick={() => exteriorImagesRef.current?.click()}
+                            />
+                            <ImageUploadPlaceholder
+                                label="Fotos Detalles Interior"
+                                images={formData.interiorImages}
+                                field="interiorImages"
+                                onRemove={removeImage}
+                                onMove={moveImage}
+                                onClick={() => interiorImagesRef.current?.click()}
+                            />
                         </div>
 
                         <div className="space-y-2.5 pt-2 text-left">
@@ -371,7 +406,8 @@ function FormSelect({ label, value, options, onChange }: FSProps) {
     )
 }
 
-function ImageUploadPlaceholder({ label, images, field, onClick, onRemove }: any) {
+// COMPONENTE DE IMÁGENES ACTUALIZADO CON ORDENAMIENTO
+function ImageUploadPlaceholder({ label, images, field, onClick, onRemove, onMove }: any) {
     return (
         <div className="flex flex-col space-y-3 text-left leading-none">
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label} {images.length > 0 && `(${images.length})`}</p>
@@ -384,11 +420,50 @@ function ImageUploadPlaceholder({ label, images, field, onClick, onRemove }: any
             {images.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 mt-2">
                     {images.map((img: any, i: number) => (
-                        <div key={img._key || i} className="relative aspect-video group leading-none">
-                            <img src={urlFor(img).width(200).url()} className="w-full h-full object-cover rounded-2xl border border-zinc-100" alt="Preview" />
-                            <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(field, i); }} className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-black text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all z-10">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
+                        <div key={img._key || i} className="relative aspect-video group leading-none overflow-hidden rounded-2xl border border-zinc-100">
+                            <img src={urlFor(img).width(200).url()} className="w-full h-full object-cover" alt="Preview" />
+
+                            {/* OVERLAY DE ACCIONES (SOLO VISIBLE EN HOVER) */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+
+                                {/* MOVER IZQUIERDA */}
+                                {i > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); onMove(field, i, 'left'); }}
+                                        className="w-7 h-7 bg-white/20 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-all backdrop-blur-sm"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+                                    </button>
+                                )}
+
+                                {/* ELIMINAR */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onRemove(field, i); }}
+                                    className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all"
+                                >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+
+                                {/* MOVER DERECHA */}
+                                {i < images.length - 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); onMove(field, i, 'right'); }}
+                                        className="w-7 h-7 bg-white/20 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-all backdrop-blur-sm"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* ETIQUETA DE PORTADA (SOLO PARA LA PRIMERA IMAGEN PRINCIPAL) */}
+                            {field === 'images' && i === 0 && (
+                                <div className="absolute top-2 left-2 bg-black text-white text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-md z-10">
+                                    Portada
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
