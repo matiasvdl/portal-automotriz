@@ -98,7 +98,7 @@ export default function FAQClient() {
                                     href={`https://wa.me/${contact.whatsapp.replace(/\D/g, '')}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="block w-full text-white text-center font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl transition-all active:scale-95"
+                                    className="block w-full text-white text-center font-black text-[9px] uppercase tracking-[0.2em] py-4 rounded-xl shadow-xl transition-all active:scale-95"
                                     style={{
                                         backgroundColor: primaryColor,
                                         boxShadow: `0 20px 25px -5px ${primaryColor}33`
