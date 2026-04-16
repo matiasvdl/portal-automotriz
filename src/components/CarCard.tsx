@@ -5,6 +5,7 @@ interface Car {
     slug: string
     make: string
     model: string
+    version?: string // AÑADIDO
     year: number
     listPrice: number
     financedPrice: number
@@ -37,13 +38,13 @@ export default function CarCard({ car }: { car: Car }) {
             </div>
 
             {/* INFORMACIÓN */}
-            <div className="p-5 flex-grow flex flex-col justify-between space-y-4 text-left"> {/* Reducido p-6 a 5 y space-y-5 a 4 */}
+            <div className="p-5 flex-grow flex flex-col justify-between space-y-4 text-left">
                 <Link href={detailUrl}>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 italic">
                         {car.year} · {car.transmission}
                     </p>
-                    <h4 className="text-sm font-bold text-black uppercase tracking-tight truncate leading-none mb-3 group-hover:text-zinc-700 transition-colors"> {/* mb-4 a 3 */}
-                        {car.make} {car.model}
+                    <h4 className="text-sm font-bold text-black uppercase tracking-tight truncate leading-none mb-3 group-hover:text-zinc-700 transition-colors">
+                        {car.make} {car.model} {car.version} {/* VERSIÓN INCLUIDA */}
                     </h4>
 
                     <div className="flex gap-4">
@@ -71,7 +72,7 @@ export default function CarCard({ car }: { car: Car }) {
                 </Link>
 
                 {/* PRECIO DINÁMICO */}
-                <div className="pt-4 border-t border-gray-100 flex items-center justify-between"> {/* pt-5 a 4 */}
+                <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                     <div className="flex flex-col text-left">
                         <span className="text-[8px] font-black text-gray-400 uppercase mb-0.5 leading-none line-through opacity-50 italic">
                             ${car.listPrice?.toLocaleString('es-CL')}
@@ -83,11 +84,11 @@ export default function CarCard({ car }: { car: Car }) {
 
                     <Link
                         href={detailUrl}
-                        className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 transition-all hover:bg-black hover:text-white hover:border-black shrink-0" // w-10 h-10 a 9x9
+                        className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 transition-all hover:bg-black hover:text-white hover:border-black shrink-0"
                     >
                         <svg
                             viewBox="0 0 24 24"
-                            className="w-4 h-4 fill-none stroke-current translate-x-[0.5px]" // w-5 h-5 a 4x4
+                            className="w-4 h-4 fill-none stroke-current translate-x-[0.5px]"
                             strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"

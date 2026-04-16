@@ -10,7 +10,7 @@ import { useSettings } from '@/context/SettingsContext'
 // Funciones de obtención de datos (GROQ)
 async function getCar(slug: string) {
     const query = `*[_type == "car" && slug.current == $slug][0] {
-    _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage,
+    _id, make, model, version, year, listPrice, financedPrice, fuel, transmission, mileage,
     description,
     specsGeneral, specsHistory, specsExterior, specsComfort, specsSecurity, specsInterior, specsEntertainment,
     "images": images[].asset->url,
@@ -26,6 +26,7 @@ async function getRecommendedCars(currentId: string) {
         "slug": slug.current,
         make,
         model,
+        version,
         year,
         listPrice,
         financedPrice,
@@ -43,10 +44,8 @@ export default function CarCatalogDetailClient({ params }: { params: Promise<{ s
     const resolvedParams = use(params)
     const { contact, appearance } = useSettings()
 
-    // PASO A: Color primario dinámico
     const primaryColor = appearance?.primaryColor || '#000000'
 
-    // ESTADOS
     const [car, setCar] = useState<any>(null)
     const [recommendedCars, setRecommendedCars] = useState<any[]>([])
     const [selectedImage, setSelectedImage] = useState<string>('')
@@ -54,14 +53,13 @@ export default function CarCatalogDetailClient({ params }: { params: Promise<{ s
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
 
-    // Filtro para la inspección visual interna
     const [detailFilter, setDetailFilter] = useState<'all' | 'exterior' | 'interior'>('all')
     const [showDetails, setShowDetails] = useState(true)
 
-    // Lógica de WhatsApp dinámica
     const cleanNumber = contact.whatsapp.replace(/\D/g, '')
+    // MENSAJE DE WHATSAPP ACTUALIZADO CON VERSIÓN
     const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
-        `Hola, me interesa el ${car?.make} ${car?.model} (${car?.year}) que vi en la web. ¿Sigue disponible?`
+        `Hola, me interesa el ${car?.make} ${car?.model} ${car?.version || ''} (${car?.year}) que vi en la web. ¿Sigue disponible?`
     )}`
 
     const currentImageIndex = modalImages.findIndex((img) => img === selectedImage);
@@ -144,7 +142,7 @@ export default function CarCatalogDetailClient({ params }: { params: Promise<{ s
                         {car.year} · {car.transmission}
                     </p>
                     <h1 className="text-3xl font-black uppercase tracking-tighter leading-tight">
-                        {car.make} <span className="font-light text-zinc-400">{car.model}</span>
+                        {car.make} <span className="font-light text-zinc-400">{car.model} {car.version}</span> {/* VERSIÓN EN TÍTULO */}
                     </h1>
                 </div>
 
@@ -240,7 +238,14 @@ export default function CarCatalogDetailClient({ params }: { params: Promise<{ s
                             <div className="bg-[#FBFBFB] rounded-2xl p-6 border border-gray-100 shadow-sm">
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.1em] text-black mb-4">Especificaciones</h4>
                                 <div className="flex flex-col mb-4">
-                                    <DataRow label="Marca" value={car.make} /><DataRow label="Modelo" value={car.model} /><DataRow label="Año" value={car.year} /><DataRow label="Kilometraje" value={`${car.mileage?.toLocaleString('es-CL')} KM`} /><DataRow label="Combustible" value={car.fuel} /><DataRow label="Transmisión" value={car.transmission} /><DataRow label="Ubicación" value="Santiago" />
+                                    <DataRow label="Marca" value={car.make} />
+                                    <DataRow label="Modelo" value={car.model} />
+                                    {car.version && <DataRow label="Versión" value={car.version} />} {/* VERSIÓN EN TABLA */}
+                                    <DataRow label="Año" value={car.year} />
+                                    <DataRow label="Kilometraje" value={`${car.mileage?.toLocaleString('es-CL')} KM`} />
+                                    <DataRow label="Combustible" value={car.fuel} />
+                                    <DataRow label="Transmisión" value={car.transmission} />
+                                    <DataRow label="Ubicación" value="Santiago" />
                                 </div>
                                 <div className="text-center">
                                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">Cotiza en línea vía WhatsApp</p>
