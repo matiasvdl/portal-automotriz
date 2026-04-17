@@ -239,6 +239,8 @@ export default function PreferenciasPage() {
         badge: 'Comprador Satisfecho'
     })
 
+    const [editingFaqId, setEditingFaqId] = useState<string | null>(null)
+    const [editFaqForm, setEditFaqForm] = useState({ question: '', answer: '', order: 0 })
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
 
@@ -542,6 +544,29 @@ export default function PreferenciasPage() {
             } else {
                 alert("Error al eliminar la pregunta")
             }
+        }
+    }
+
+    const handleUpdateFaq = async () => {
+        if (!editingFaqId) return
+        if (!editFaqForm.question || !editFaqForm.answer) return alert("Completa los campos")
+
+        setIsSubmitting(true)
+        try {
+            const result = await updateSanityDocument(editingFaqId, editFaqForm)
+            if (result.success) {
+                setFaqs(prev =>
+                    prev
+                        .map(f => (f._id === editingFaqId ? { ...f, ...editFaqForm } : f))
+                        .sort((a, b) => (a.order || 0) - (b.order || 0))
+                )
+                setEditingFaqId(null)
+                alert("Pregunta actualizada")
+            } else {
+                alert("Error al actualizar la pregunta")
+            }
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -1439,15 +1464,71 @@ export default function PreferenciasPage() {
                                 </div>
                                 <div className="lg:col-span-2 space-y-4">
                                     {faqs.map(f => (
-                                        <div key={f._id} className="bg-white border border-gray-100 rounded-3xl p-6 flex justify-between items-center group shadow-none">
-                                            <div className="text-left">
-                                                <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nivel {f.order || 0}</p>
-                                                <h4 className="text-[11px] font-black uppercase tracking-tight text-black">{f.question}</h4>
-                                                <p className="text-[10px] text-zinc-500 font-medium mt-1 line-clamp-2 italic leading-relaxed">&quot;{f.answer}&quot;</p>
+                                        <div key={f._id} className={`bg-white border border-gray-100 rounded-3xl shadow-none relative transition-none ${editingFaqId === f._id ? 'p-4' : 'p-6'}`}>
+                                            <div className="absolute top-4 right-4 flex gap-1 items-center bg-white/80 p-1 rounded-full border border-gray-100 z-10">
+                                                {editingFaqId === f._id ? (
+                                                    <>
+                                                        <button onClick={handleUpdateFaq} className="text-emerald-500 p-1.5 rounded-full hover:bg-emerald-50 transition-none">
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg>
+                                                        </button>
+                                                        <button onClick={() => setEditingFaqId(null)} className="text-zinc-500 p-1.5 rounded-full hover:bg-gray-100 transition-none">
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingFaqId(f._id)
+                                                                setEditFaqForm({
+                                                                    question: f.question,
+                                                                    answer: f.answer,
+                                                                    order: f.order || 0,
+                                                                })
+                                                            }}
+                                                            className="p-1 text-zinc-400 hover:text-black rounded-full transition-none hover:bg-gray-50"
+                                                        >
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                        </button>
+                                                        <button onClick={() => handleDeleteFaq(f._id)} className="p-1 text-zinc-400 hover:text-red-500 rounded-full transition-none hover:bg-red-50">
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
-                                            <button onClick={() => handleDeleteFaq(f._id)} className="p-2 text-zinc-300 hover:text-red-500 transition-colors">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
-                                            </button>
+
+                                            {editingFaqId === f._id ? (
+                                                <div className="space-y-3 pt-2">
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                        <input
+                                                            value={editFaqForm.question}
+                                                            onChange={(e) => setEditFaqForm(prev => ({ ...prev, question: e.target.value }))}
+                                                            className="w-full h-10 bg-gray-50 rounded-lg px-3 text-[10px] font-bold border-none"
+                                                            placeholder="Pregunta"
+                                                        />
+                                                        <textarea
+                                                            value={editFaqForm.answer}
+                                                            onChange={(e) => setEditFaqForm(prev => ({ ...prev, answer: e.target.value }))}
+                                                            className="w-full bg-gray-50 rounded-xl p-3 text-[10.5px] font-medium min-h-[78px] resize-none border-none"
+                                                            placeholder="Respuesta"
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            value={editFaqForm.order}
+                                                            onChange={(e) => setEditFaqForm(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+                                                            className="w-full h-10 bg-gray-50 rounded-lg px-3 text-[10px] font-bold border-none"
+                                                            placeholder="Orden"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-left pr-10">
+                                                    <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nivel {f.order || 0}</p>
+                                                    <h4 className="text-[11px] font-black uppercase tracking-tight text-black">{f.question}</h4>
+                                                    <p className="text-[10px] text-zinc-500 font-medium mt-1 line-clamp-2 italic leading-relaxed">&quot;{f.answer}&quot;</p>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
