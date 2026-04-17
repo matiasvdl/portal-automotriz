@@ -101,15 +101,15 @@ export function resolvePrimaryColor(primaryColor?: string | null): string {
     return CONTENT_DEFAULTS.primaryColor
 }
 
-/** Marca para logo en texto / alt: preferencia apariencia, luego sitio. */
+/** Marca visual para logo en texto / alt: primero apariencia, luego sitio. */
 export function resolveBrandLabel(
     appearance: { brandName?: string | null } | undefined,
     config: { siteName?: string | null } | undefined
 ): string {
-    const fromSite = config?.siteName?.trim()
-    if (fromSite) return fromSite
     const fromAppearance = appearance?.brandName?.trim()
     if (fromAppearance) return fromAppearance
+    const fromSite = config?.siteName?.trim()
+    if (fromSite) return fromSite
     return CONTENT_DEFAULTS.siteDisplayName
 }
 

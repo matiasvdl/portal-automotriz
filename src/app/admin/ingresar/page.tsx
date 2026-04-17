@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useSettings } from '@/context/SettingsContext'
 import { requestAdminPasswordRecovery } from '@/app/actions/contact'
+import { resolveBrandLabel } from '@/lib/content-defaults'
 
 export default function LoginPage() {
     const { config, appearance } = useSettings()
@@ -28,7 +29,7 @@ export default function LoginPage() {
     const companyFirstWord = companyName.split(' ')[0] || companyName
     const companyDisplayName = companyName.replace(/\s+/g, '')
     const companyRestWords = companyDisplayName.substring(companyFirstWord.length)
-    const siteName = config?.siteName || appearance?.brandName || ''
+    const siteName = resolveBrandLabel(appearance, config)
     const siteFirstWord = siteName.split(' ')[0] || siteName
     const siteDisplayName = isJoined ? siteName.replace(/\s+/g, '') : siteName
     const siteRestWords = splitText

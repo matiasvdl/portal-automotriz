@@ -242,6 +242,11 @@ export default function PreferenciasPage() {
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
 
+    const handleSiteNameChange = (value: string) => {
+        setSettings(prev => ({ ...prev, siteName: value }))
+        setAppearanceData(prev => ({ ...prev, brandName: value }))
+    }
+
     const loadBrands = async () => {
         const brandList = await client.fetch<BrandEntry[]>(
             `*[_type == "brand"] | order(name asc){
@@ -281,10 +286,12 @@ export default function PreferenciasPage() {
                     client.fetch(`*[_id == "appearance-settings"][0]`, {}, { cache: 'no-store' })
                 ]);
 
+                const unifiedSiteName = (config?.siteName || appearance?.brandName || '').trim()
+
                 if (config) {
                     setSettings({
                         _id: config._id,
-                        siteName: config.siteName || '',
+                        siteName: unifiedSiteName,
                         siteUrl: config.siteUrl || '',
                         footerDescription: config.footerDescription || '',
                         footerTagline: config.footerTagline || '',
@@ -303,7 +310,7 @@ export default function PreferenciasPage() {
                 if (appearance) {
                     setAppearanceData({
                         _id: appearance._id || 'appearance-settings',
-                        brandName: appearance.brandName || '',
+                        brandName: appearance.brandName || config?.siteName || '',
                         logo: appearance.logo || null,
                         logoWidth: resolveLogoMaxHeightPx(appearance.logoWidth),
                         primaryColor: appearance.primaryColor || '#000000',
@@ -435,7 +442,7 @@ export default function PreferenciasPage() {
             const appearancePayload = {
                 _id: 'appearance-settings',
                 _type: 'appearance',
-                brandName: appearanceData.brandName,
+                brandName: settings.siteName.trim(),
                 primaryColor: appearanceData.primaryColor,
                 accessibilityScale: clampAccessibilityScale(Number(appearanceData.accessibilityScale)),
                 logoWidth: clampLogoMaxHeightPx(Number(appearanceData.logoWidth)),
@@ -622,11 +629,14 @@ export default function PreferenciasPage() {
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad</h3>
                                     <PrefInput
-                                        label="Nombre del Sitio"
-                                        placeholder="Nombre que aparecerá en Google y pestañas del navegador"
+                                        label="Nombre del Sitio y Marca"
+                                        placeholder="Nombre general del negocio"
                                         value={settings.siteName}
-                                        onChange={(v) => setSettings(prev => ({ ...prev, siteName: v }))}
+                                        onChange={handleSiteNameChange}
                                     />
+                                    <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none -mt-4">
+                                        Este nombre se usa en todo el sitio, el logo textual, el panel admin y las referencias generales.
+                                    </p>
 
                                     {/* NUEVO: Campo para el Dominio dinámico */}
                                     <PrefInput
@@ -710,12 +720,15 @@ export default function PreferenciasPage() {
                                                 <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">Presiona el cuadro para abrir la paleta de colores</p>
                                             </div>
 
-                                            <PrefInput
-                                                label="Nombre de la Marca"
-                                                placeholder="Nombre que aparecerá en el logo (puede ser igual al nombre del sitio)"
-                                                value={appearanceData.brandName}
-                                                onChange={(v) => setAppearanceData(prev => ({ ...prev, brandName: v }))}
-                                            />
+                                            <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Nombre Actual</label>
+                                                <div className="w-full rounded-xl bg-[#F7F8FA] px-5 py-4 text-[11px] font-bold text-black">
+                                                    {settings.siteName || 'Sin nombre configurado'}
+                                                </div>
+                                                <p className="text-[7px] font-bold text-zinc-400 uppercase tracking-tight ml-1 italic leading-none">
+                                                    El nombre se edita en la pestaña General.
+                                                </p>
+                                            </div>
                                         </div>
 
                                         {/* Opciones de Estilo de Logo (Texto) */}
