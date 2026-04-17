@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 // Importamos el cliente de lectura para la previsualización y la acción de subida para el proceso
 import { client as readClient } from '@/sanity/lib/client'
-import { uploadSanityImage } from '@/app/actions/vehiculosActions'
+import { uploadSanityFile, uploadSanityImage } from '@/app/actions/vehiculosActions'
 import imageUrlBuilder from '@sanity/image-url'
 import AdminNavigation from '@/components/AdminNavigation'
 import AdminSoftSelect from '@/components/AdminSoftSelect'
@@ -66,6 +66,8 @@ interface CarFormData {
     specsInterior: { pasajeros: string; materialAsientos: string };
     specsEntertainment: { pantalla: string; carplay: string; bluetooth: string; radio: string };
     description: string;
+    reportDocument: { _type: 'file'; asset: { _type: 'reference'; _ref: string } } | null;
+    reportLabel: string;
     images: SanityImage[];
     exteriorImages: SanityImage[];
     interiorImages: SanityImage[];
@@ -111,6 +113,7 @@ export default function NuevoVehiculoPage() {
     const mainImagesRef = useRef<HTMLInputElement>(null)
     const exteriorImagesRef = useRef<HTMLInputElement>(null)
     const interiorImagesRef = useRef<HTMLInputElement>(null)
+    const reportFileRef = useRef<HTMLInputElement>(null)
 
     // ESTADO CON LOS CAMPOS EXACTOS
     const [formData, setFormData] = useState<CarFormData>({
@@ -138,6 +141,8 @@ export default function NuevoVehiculoPage() {
         specsInterior: { pasajeros: '', materialAsientos: '' },
         specsEntertainment: { pantalla: '', carplay: '', bluetooth: '', radio: '' },
         description: '',
+        reportDocument: null,
+        reportLabel: 'Autofact',
         images: [],
         exteriorImages: [],
         interiorImages: []
@@ -208,6 +213,34 @@ export default function NuevoVehiculoPage() {
 
     const removeImage = (field: 'images' | 'exteriorImages' | 'interiorImages', index: number) => {
         setFormData(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }))
+    }
+
+    const handleReportUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        setIsSubmitting(true)
+        try {
+            const reportFormData = new FormData()
+            reportFormData.append('file', file)
+            const result = await uploadSanityFile(reportFormData)
+
+            if (!result.success || !result.assetId) {
+                throw new Error("Fallo en la subida del informe")
+            }
+
+            setFormData((prev) => ({
+                ...prev,
+                reportDocument: {
+                    _type: 'file',
+                    asset: { _type: 'reference', _ref: result.assetId },
+                },
+                reportLabel: result.originalFilename?.replace(/\.pdf$/i, '') || prev.reportLabel,
+            }))
+        } catch {
+            alert("Error al subir informe en el servidor.")
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     // --- NUEVA FUNCIÓN: MOVER IMÁGENES ---
@@ -356,7 +389,7 @@ export default function NuevoVehiculoPage() {
                                 </div>
                             </div>
                             <FormGroup label="Año" type="number" value={formData.year} onChange={(v) => handleChange('year', parseInt(v) || 0)} />
-                            <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reservado', 'Único Dueño', 'Oportunidad', 'Vendido']} onChange={(v) => handleChange('category', v)} />
+                            <FormSelect label="Etiqueta (Badge)" value={formData.category} options={['Seminuevo', 'Recién Llegado', 'Oferta de la Semana', 'Reservado', 'Único Dueño', 'Oportunidad', 'Vendido', 'Aseguradora']} onChange={(v) => handleChange('category', v)} />
 
                             {/* PRECIO LISTA CON PUNTOS */}
                             <FormGroup
@@ -425,7 +458,7 @@ export default function NuevoVehiculoPage() {
                             <div className="grid grid-cols-1 gap-5">
                                 <FormGroup label="Dueños" value={formData.specsHistory.duenos} onChange={(v) => handleNestedChange('specsHistory', 'duenos', v)} />
                                 <FormGroup label="Mantenciones" value={formData.specsHistory.mantenciones} onChange={(v) => handleNestedChange('specsHistory', 'mantenciones', v)} />
-                                <FormGroup label="Historial Autofact" value={formData.specsHistory.historial} onChange={(v) => handleNestedChange('specsHistory', 'historial', v)} />
+                                <FormSelect label="Historial Autofact" value={formData.specsHistory.historial} options={['Sí', 'No']} onChange={(v) => handleNestedChange('specsHistory', 'historial', v)} />
                             </div>
                         </AdminCollapsibleCard>
                     </div>
@@ -530,6 +563,7 @@ export default function NuevoVehiculoPage() {
                         <input type="file" multiple className="hidden" ref={mainImagesRef} onChange={(e) => handleImageUpload(e, 'images')} />
                         <input type="file" multiple className="hidden" ref={exteriorImagesRef} onChange={(e) => handleImageUpload(e, 'exteriorImages')} />
                         <input type="file" multiple className="hidden" ref={interiorImagesRef} onChange={(e) => handleImageUpload(e, 'interiorImages')} />
+                        <input type="file" accept=".pdf,application/pdf" className="hidden" ref={reportFileRef} onChange={handleReportUpload} />
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 leading-none pt-1">
                             {/* PASAMOS LA FUNCIÓN moveImage A LOS COMPONENTES */}
@@ -563,6 +597,37 @@ export default function NuevoVehiculoPage() {
                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Descripción</label>
                             <textarea value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={6} className="w-full bg-[#F7F8FA] border-none rounded-2xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed" />
                         </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end pt-4">
+                            <FormGroup label="Nombre del Informe" value={formData.reportLabel} onChange={(v) => handleChange('reportLabel', v)} placeholder="Autofact o Informe" />
+                            <button
+                                type="button"
+                                onClick={() => reportFileRef.current?.click()}
+                                className="h-[42px] rounded-xl border border-zinc-200 px-5 text-[9px] font-black uppercase tracking-[0.2em] hover:border-black transition-all whitespace-nowrap"
+                            >
+                                {formData.reportDocument ? 'Cambiar Informe' : 'Subir Informe'}
+                            </button>
+                        </div>
+
+                        {formData.reportDocument && (
+                            <div className="mt-3 flex items-center justify-between rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3 text-left">
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-black leading-none">
+                                        {formData.reportLabel || 'Informe'}
+                                    </p>
+                                    <p className="mt-1 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-none">
+                                        Archivo PDF cargado para descarga
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData((prev) => ({ ...prev, reportDocument: null }))}
+                                    className="rounded-lg px-3 py-2 text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                >
+                                    Quitar
+                                </button>
+                            </div>
+                        )}
                     </AdminCollapsibleCard>
                 </form>
             </main>

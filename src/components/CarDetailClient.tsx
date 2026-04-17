@@ -3,7 +3,7 @@
 
 import { client } from '@/sanity/lib/client'
 import { notFound } from 'next/navigation'
-import { useState, useEffect, use, useCallback } from 'react'
+import { useState, useEffect, use, useCallback, useMemo } from 'react'
 import FeaturesAccordion from '@/components/FeaturesAccordion'
 import CarCard from '@/components/CarCard'
 import { useSettings } from '@/context/SettingsContext'
@@ -25,6 +25,8 @@ interface DetailCar {
     transmission: string
     mileage: number
     description?: string
+    reportDocumentUrl?: string
+    reportLabel?: string
     specsGeneral?: Record<string, string>
     specsHistory?: Record<string, string>
     specsExterior?: Record<string, string>
@@ -57,10 +59,12 @@ async function getCar(slug: string) {
     const query = `*[_type == "car" && slug.current == $slug][0] {
     _id, make, model, year, listPrice, financedPrice, fuel, transmission, mileage, location,
     description,
+    reportLabel,
     specsGeneral, specsHistory, specsExterior, specsComfort, specsSecurity, specsInterior, specsEntertainment,
     "images": images[].asset->url,
     "exteriorImages": exteriorImages[].asset->url,
-    "interiorImages": interiorImages[].asset->url
+    "interiorImages": interiorImages[].asset->url,
+    "reportDocumentUrl": reportDocument.asset->url
   }`
     return await client.fetch<DetailCar | null>(query, { slug })
 }
@@ -100,6 +104,7 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
     const [detailFilter, setDetailFilter] = useState<'all' | 'exterior' | 'interior'>('all')
     const [showDetails, setShowDetails] = useState(true)
 
+    const mainImages = useMemo(() => car?.images ?? [], [car?.images])
     const currentImageIndex = modalImages.findIndex((img) => img === selectedImage);
     const showPreviousImage = useCallback(() => {
         if (modalImages.length === 0) return;
@@ -111,6 +116,20 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
         const nextIndex = currentImageIndex === -1 || currentImageIndex === modalImages.length - 1 ? 0 : currentImageIndex + 1;
         setSelectedImage(modalImages[nextIndex]);
     }, [currentImageIndex, modalImages]);
+
+    const showPreviousMainImage = useCallback(() => {
+        if (mainImages.length === 0) return
+        const selectedIndex = mainImages.findIndex((img) => img === selectedImage)
+        const prevIndex = selectedIndex > 0 ? selectedIndex - 1 : mainImages.length - 1
+        setSelectedImage(mainImages[prevIndex])
+    }, [mainImages, selectedImage])
+
+    const showNextMainImage = useCallback(() => {
+        if (mainImages.length === 0) return
+        const selectedIndex = mainImages.findIndex((img) => img === selectedImage)
+        const nextIndex = selectedIndex === -1 || selectedIndex === mainImages.length - 1 ? 0 : selectedIndex + 1
+        setSelectedImage(mainImages[nextIndex])
+    }, [mainImages, selectedImage])
 
     const openModalWithImage = (img: string, images: string[]) => {
         setModalImages(images)
@@ -128,6 +147,30 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isModalOpen, showNextImage, showPreviousImage]);
+
+    useEffect(() => {
+        if (isModalOpen || mainImages.length === 0) return
+
+        const handleGalleryKeyDown = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement | null
+            const tagName = target?.tagName?.toLowerCase()
+
+            if (tagName === 'input' || tagName === 'textarea' || target?.isContentEditable) {
+                return
+            }
+
+            if (e.key === 'ArrowRight') {
+                showNextMainImage()
+            }
+
+            if (e.key === 'ArrowLeft') {
+                showPreviousMainImage()
+            }
+        }
+
+        window.addEventListener('keydown', handleGalleryKeyDown)
+        return () => window.removeEventListener('keydown', handleGalleryKeyDown)
+    }, [isModalOpen, mainImages.length, showNextMainImage, showPreviousMainImage])
 
     useEffect(() => {
         if (!resolvedParams?.slug) return
@@ -193,9 +236,9 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
                             {selectedImage && <img src={selectedImage} className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105" alt="Principal" />}
                         </div>
 
-                        <div className="grid grid-cols-6 gap-3 mb-10">
+                        <div className="mb-10 flex gap-3 overflow-x-auto pb-2 no-scrollbar">
                             {car.images?.map((img: string, i: number) => (
-                                <button key={i} onClick={() => setSelectedImage(img)} className={`aspect-square rounded-lg overflow-hidden bg-zinc-50 border cursor-pointer transition-all ${selectedImage === img ? 'border-2' : 'border-gray-100 opacity-70 hover:opacity-100'}`} style={selectedImage === img ? { borderColor: primaryColor } : {}}>
+                                <button key={i} onClick={() => setSelectedImage(img)} className={`aspect-square h-20 w-20 shrink-0 rounded-lg overflow-hidden bg-zinc-50 border cursor-pointer transition-all ${selectedImage === img ? 'border-2' : 'border-gray-100 opacity-70 hover:opacity-100'}`} style={selectedImage === img ? { borderColor: primaryColor } : {}}>
                                     <img src={img} className="w-full h-full object-cover" alt="thumb" />
                                 </button>
                             ))}
@@ -240,9 +283,9 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
                                                             style={detailFilter === 'interior' ? { backgroundColor: primaryColor, color: 'white' } : { color: '#9ca3af', backgroundColor: '#f9fafb' }}
                                                         >Interior</button>
                                                     </div>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                                                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
                                                         {detailImages.map((img: string, i: number) => (
-                                                            <button key={i} onClick={() => openModalWithImage(img, detailImages)} className="aspect-square rounded-2xl overflow-hidden bg-zinc-50 border border-gray-100 cursor-zoom-in group relative">
+                                                            <button key={i} onClick={() => openModalWithImage(img, detailImages)} className="aspect-square h-24 w-24 shrink-0 rounded-2xl overflow-hidden bg-zinc-50 border border-gray-100 cursor-zoom-in group relative">
                                                                 <img src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="detalle" />
                                                             </button>
                                                         ))}
@@ -287,6 +330,23 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
                                     </a>
                                 </div>
                             </div>
+                            {car.reportDocumentUrl && (
+                                <div className="bg-[#FBFBFB] rounded-2xl p-6 border border-gray-100 shadow-sm">
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.1em] text-black mb-4">INFORME DEL VEHICULO</h4>
+                                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-4">
+                                        Descarga el informe disponible de este vehículo
+                                    </p>
+                                    <a
+                                        href={car.reportDocumentUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full text-white text-center font-bold text-[10px] uppercase tracking-[0.15em] py-4 rounded-xl hover:opacity-90 transition-all shadow-sm"
+                                        style={{ backgroundColor: primaryColor }}
+                                    >
+                                        DESCARGAR {car.reportLabel?.trim().toUpperCase() || 'INFORME DEL VEHICULO'}
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </aside>
                 </div>

@@ -55,6 +55,7 @@ export const car = defineType({
                     { title: 'Único Dueño', value: 'Único Dueño' },
                     { title: 'Oportunidad', value: 'Oportunidad' },
                     { title: 'Vendido', value: 'Vendido' },
+                    { title: 'Aseguradora', value: 'Aseguradora' },
                 ],
             },
             initialValue: 'Seminuevo'
@@ -269,6 +270,20 @@ export const car = defineType({
             title: 'Descripción',
             type: 'text',
             placeholder: 'Escribe aquí los detalles del vehículo...'
+        }),
+        defineField({
+            name: 'reportDocument',
+            title: 'Informe descargable',
+            type: 'file',
+            options: {
+                accept: '.pdf'
+            }
+        }),
+        defineField({
+            name: 'reportLabel',
+            title: 'Nombre del informe',
+            type: 'string',
+            initialValue: 'Autofact'
         }),
         defineField({
             name: 'status',

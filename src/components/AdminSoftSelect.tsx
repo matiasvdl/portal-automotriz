@@ -64,7 +64,7 @@ export default function AdminSoftSelect({
 
             {isOpen && !disabled && (
                 <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-gray-200 bg-white">
-                    <div className="max-h-64 overflow-y-auto py-2">
+                    <div className="max-h-64 overflow-y-auto py-2 no-scrollbar">
                         {options.map((option) => {
                             const isSelected = option.value === value
 
