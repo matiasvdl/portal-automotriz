@@ -314,6 +314,14 @@ export default function PreferenciasPage() {
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
     const [branchActiveDay, setBranchActiveDay] = useState<Record<string, string>>({})
+    const [branchCollapsed, setBranchCollapsed] = useState<Record<string, boolean>>({})
+    const [newBranchFormActiveDay, setNewBranchFormActiveDay] = useState('lun')
+    const [newBranchForm, setNewBranchForm] = useState({
+        name: '',
+        phone: '',
+        address: '',
+        daySchedules: defaultBranchDaySchedules(),
+    })
 
     const handleSiteNameChange = (value: string) => {
         setSettings(prev => ({ ...prev, siteName: value }))
@@ -362,6 +370,31 @@ export default function PreferenciasPage() {
                 const unifiedSiteName = (config?.siteName || appearance?.brandName || '').trim()
 
                 if (config) {
+                    const loadedBranches: BranchItem[] = (config.branches || []).map((branch: Partial<BranchItem>, index: number) => {
+                        const daySchedules = Array.isArray(branch.daySchedules)
+                            ? branch.daySchedules
+                                .filter((slot): slot is BranchDaySchedule =>
+                                    Boolean(slot && typeof slot.day === 'string' && slot.openTime && slot.closeTime)
+                                )
+                            : buildLegacyDaySchedules(
+                                Array.isArray(branch.workDays) ? branch.workDays : [],
+                                branch.openTime || '',
+                                branch.closeTime || ''
+                            )
+
+                        return {
+                            _key: branch._key || `${Date.now()}-${index}`,
+                            name: branch.name || '',
+                            address: branch.address || '',
+                            phone: branch.phone || '',
+                            daySchedules,
+                            hours: branch.hours || formatBranchSchedule(daySchedules),
+                            workDays: Array.isArray(branch.workDays) ? branch.workDays : [],
+                            openTime: branch.openTime || '',
+                            closeTime: branch.closeTime || '',
+                        }
+                    })
+
                     setSettings({
                         _id: config._id,
                         siteName: unifiedSiteName,
@@ -377,30 +410,7 @@ export default function PreferenciasPage() {
                             title: config.branchesContent?.title || 'Sucursales',
                             description: config.branchesContent?.description || '',
                         },
-                        branches: (config.branches || []).map((branch: Partial<BranchItem>, index: number) => {
-                            const daySchedules = Array.isArray(branch.daySchedules)
-                                ? branch.daySchedules
-                                    .filter((slot): slot is BranchDaySchedule =>
-                                        Boolean(slot && typeof slot.day === 'string' && slot.openTime && slot.closeTime)
-                                    )
-                                : buildLegacyDaySchedules(
-                                    Array.isArray(branch.workDays) ? branch.workDays : [],
-                                    branch.openTime || '',
-                                    branch.closeTime || ''
-                                )
-
-                            return {
-                                _key: branch._key || `${Date.now()}-${index}`,
-                                name: branch.name || '',
-                                address: branch.address || '',
-                                phone: branch.phone || '',
-                                daySchedules,
-                                hours: branch.hours || formatBranchSchedule(daySchedules),
-                                workDays: Array.isArray(branch.workDays) ? branch.workDays : [],
-                                openTime: branch.openTime || '',
-                                closeTime: branch.closeTime || '',
-                            }
-                        }),
+                        branches: loadedBranches,
                         termsAndConditions: config.termsAndConditions || '',
                         lastLegalUpdate: config.lastLegalUpdate || '',
                         // Sincronizamos las descripciones SEO
@@ -408,6 +418,12 @@ export default function PreferenciasPage() {
                             home: '', catalogo: '', vender: '', financiamiento: '', sucursales: '', contacto: '', faq: '', terminos: ''
                         }
                     })
+
+                    const collapsedState: Record<string, boolean> = {}
+                    loadedBranches.forEach((branch) => {
+                        collapsedState[branch._key] = true
+                    })
+                    setBranchCollapsed(collapsedState)
                 }
 
                 if (appearance) {
@@ -623,18 +639,61 @@ export default function PreferenciasPage() {
         setSettings(prev => ({ ...prev, [target]: updated }))
     }
 
-    const handleAddBranch = () => {
-        const daySchedules = defaultBranchDaySchedules()
+    const handleAddBranch = (seed?: { name?: string; phone?: string; address?: string; daySchedules?: BranchDaySchedule[] }) => {
+        const daySchedules = seed?.daySchedules?.length ? seed.daySchedules : defaultBranchDaySchedules()
+        const branchKey = Math.random().toString(36).slice(2, 11)
         const newBranch: BranchItem = {
-            _key: Math.random().toString(36).slice(2, 11),
-            name: '',
-            address: '',
-            phone: '',
+            _key: branchKey,
+            name: seed?.name || '',
+            address: seed?.address || '',
+            phone: seed?.phone || '',
             daySchedules,
             hours: formatBranchSchedule(daySchedules),
         }
 
         setSettings(prev => ({ ...prev, branches: [...prev.branches, newBranch] }))
+        setBranchCollapsed(prev => ({ ...prev, [branchKey]: true }))
+    }
+
+    const handleToggleNewBranchDay = (dayValue: string) => {
+        setNewBranchForm((prev) => {
+            const hasDay = prev.daySchedules.some((slot) => slot.day === dayValue)
+            const daySchedules = hasDay
+                ? prev.daySchedules.filter((slot) => slot.day !== dayValue)
+                : [...prev.daySchedules, { day: dayValue, openTime: '09:00', closeTime: '18:00' }]
+
+            return { ...prev, daySchedules }
+        })
+    }
+
+    const handleUpdateNewBranchDayTime = (
+        dayValue: string,
+        field: 'openTime' | 'closeTime',
+        value: string
+    ) => {
+        setNewBranchForm((prev) => ({
+            ...prev,
+            daySchedules: prev.daySchedules.map((slot) =>
+                slot.day === dayValue ? { ...slot, [field]: value } : slot
+            ),
+        }))
+    }
+
+    const handleCreateBranchFromForm = () => {
+        if (!newBranchForm.name.trim() || !newBranchForm.address.trim()) {
+            alert('Completa al menos nombre y dirección de la sucursal.')
+            return
+        }
+
+        handleAddBranch({
+            name: newBranchForm.name.trim(),
+            phone: newBranchForm.phone.trim(),
+            address: newBranchForm.address.trim(),
+            daySchedules: newBranchForm.daySchedules,
+        })
+
+        setNewBranchForm({ name: '', phone: '', address: '', daySchedules: defaultBranchDaySchedules() })
+        setNewBranchFormActiveDay('lun')
     }
 
     const handleUpdateBranch = (branchKey: string, field: keyof Pick<BranchItem, 'name' | 'phone' | 'address'>, value: string) => {
@@ -1604,59 +1663,109 @@ export default function PreferenciasPage() {
                         )}
 
                         {activeTab === 'sucursales' && (
-                            <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                <div className="flex flex-col gap-4 border-b border-gray-50 pb-5 lg:flex-row lg:items-center lg:justify-between">
-                                    <div className="text-left">
-                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">Página de Sucursales</h3>
-                                        <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
-                                            Activa esta página pública y administra las sucursales con su mapa individual.
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setSettings(prev => ({ ...prev, branchesPageEnabled: !prev.branchesPageEnabled }))}
-                                        className={`relative h-6 w-12 rounded-full transition-none ${settings.branchesPageEnabled ? 'bg-black' : 'bg-zinc-200'}`}
-                                        aria-label="Activar o desactivar página de sucursales"
-                                    >
-                                        <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-none ${settings.branchesPageEnabled ? 'left-7' : 'left-1'}`}></div>
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-1 space-y-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                                <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-4 leading-none">Nueva Sucursal</h3>
+                                    <div className="flex flex-col space-y-4">
                                         <PrefInput
-                                            label="Bajada Superior"
-                                            value={settings.branchesContent.eyebrow}
-                                            onChange={(v) => setSettings(prev => ({ ...prev, branchesContent: { ...prev.branchesContent, eyebrow: v } }))}
+                                            label="Nombre"
+                                            value={newBranchForm.name}
+                                            onChange={(v) => setNewBranchForm(prev => ({ ...prev, name: v }))}
                                         />
                                         <PrefInput
-                                            label="Título"
-                                            value={settings.branchesContent.title}
-                                            onChange={(v) => setSettings(prev => ({ ...prev, branchesContent: { ...prev.branchesContent, title: v } }))}
+                                            label="Teléfono"
+                                            value={newBranchForm.phone}
+                                            onChange={(v) => setNewBranchForm(prev => ({ ...prev, phone: v }))}
                                         />
-                                        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Descripción</label>
-                                            <textarea
-                                                value={settings.branchesContent.description}
-                                                onChange={(e) => setSettings(prev => ({ ...prev, branchesContent: { ...prev.branchesContent, description: e.target.value } }))}
-                                                className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[120px] resize-none shadow-none"
+                                        <div className="flex flex-col space-y-2.5 leading-none">
+                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección</label>
+                                            <input
+                                                type="text"
+                                                value={newBranchForm.address}
+                                                onChange={(e) => setNewBranchForm(prev => ({ ...prev, address: e.target.value }))}
+                                                className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
                                             />
                                         </div>
-                                        <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-4">
-                                            <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">Estado</p>
-                                            <p className="mt-2 text-[11px] font-black uppercase text-black leading-none">
-                                                {settings.branchesPageEnabled ? 'Página activa' : 'Página oculta'}
-                                            </p>
-                                            <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
-                                                Si la apagas, la ruta deja de mostrarse en el sitio aunque sigan guardadas tus sucursales.
-                                            </p>
-                                        </div>
-                                    </div>
+                                        <div className="rounded-[20px] border border-gray-100 bg-[#F7F8FA] p-3 space-y-3">
+                                            <p className="text-[8px] font-black uppercase tracking-[0.22em] text-zinc-400 leading-none">Horario</p>
 
-                                    <div className="lg:col-span-2 space-y-4">
+                                            <div className="flex flex-wrap gap-2">
+                                                {BRANCH_DAY_OPTIONS.map((day) => {
+                                                    const isSelectedDay = newBranchFormActiveDay === day.value
+                                                    return (
+                                                        <button
+                                                            key={day.value}
+                                                            type="button"
+                                                            onClick={() => setNewBranchFormActiveDay(day.value)}
+                                                            className={`h-[26px] rounded-full px-2.5 text-[8px] font-black uppercase tracking-tight transition-none ${isSelectedDay ? 'bg-black text-white' : 'border border-gray-100 bg-white text-zinc-500'}`}
+                                                        >
+                                                            {day.label}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+
+                                            {(() => {
+                                                const activeDay = newBranchFormActiveDay
+                                                const activeOption = BRANCH_DAY_OPTIONS.find((day) => day.value === activeDay)
+                                                const activeSchedule = newBranchForm.daySchedules.find((slot) => slot.day === activeDay)
+                                                const isActive = Boolean(activeSchedule)
+
+                                                return (
+                                                    <div className="space-y-2 rounded-xl border border-gray-100 bg-white p-2.5">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                                                                {activeOption?.fullLabel || 'Día'}
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleToggleNewBranchDay(activeDay)}
+                                                                className={`rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
+                                                            >
+                                                                {isActive ? 'Activo' : 'Cerrado'}
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <input
+                                                                type="time"
+                                                                value={activeSchedule?.openTime || ''}
+                                                                onChange={(e) => handleUpdateNewBranchDayTime(activeDay, 'openTime', e.target.value)}
+                                                                disabled={!isActive}
+                                                                className="h-[30px] rounded-lg border border-gray-100 bg-[#F7F8FA] px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                            />
+                                                            <input
+                                                                type="time"
+                                                                value={activeSchedule?.closeTime || ''}
+                                                                onChange={(e) => handleUpdateNewBranchDayTime(activeDay, 'closeTime', e.target.value)}
+                                                                disabled={!isActive}
+                                                                className="h-[30px] rounded-lg border border-gray-100 bg-[#F7F8FA] px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+                                        </div>
+                                        <button
+                                            onClick={handleCreateBranchFromForm}
+                                            disabled={isSubmitting}
+                                            className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none"
+                                        >
+                                            {isSubmitting ? 'Guardando...' : 'Agregar Sucursal'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-2 bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Sucursales Registradas</h4>
-                                            <button onClick={handleAddBranch} className="rounded-xl bg-black px-5 py-2.5 text-[9px] font-black uppercase text-white transition-none">
-                                                Agregar sucursal
+                                            <button
+                                                onClick={() => setSettings(prev => ({ ...prev, branchesPageEnabled: !prev.branchesPageEnabled }))}
+                                                className={`relative h-6 w-12 rounded-full transition-none ${settings.branchesPageEnabled ? 'bg-black' : 'bg-zinc-200'}`}
+                                                aria-label="Activar o desactivar página de sucursales"
+                                            >
+                                                <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-none ${settings.branchesPageEnabled ? 'left-7' : 'left-1'}`}></div>
                                             </button>
                                         </div>
 
@@ -1669,7 +1778,7 @@ export default function PreferenciasPage() {
                                             </div>
                                         ) : (
                                             settings.branches.map((branch, index) => (
-                                                <div key={branch._key} className="rounded-[26px] border border-gray-100 bg-[#F7F8FA] p-5 space-y-5">
+                                                <div key={branch._key} className="rounded-[24px] border border-gray-100 bg-[#F7F8FA] p-4 space-y-4">
                                                     <div className="flex items-center justify-between gap-4">
                                                         <div>
                                                             <p className="text-[7px] font-black uppercase tracking-[0.25em] text-zinc-400">Sucursal {index + 1}</p>
@@ -1677,118 +1786,144 @@ export default function PreferenciasPage() {
                                                                 {branch.name || 'Nueva sucursal'}
                                                             </p>
                                                         </div>
-                                                        <button
-                                                            onClick={() => handleDeleteBranch(branch._key)}
-                                                            className="rounded-full p-2 text-red-400 transition-none hover:bg-red-50"
-                                                            aria-label="Eliminar sucursal"
-                                                        >
-                                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
-                                                        </button>
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setBranchCollapsed(prev => ({ ...prev, [branch._key]: !prev[branch._key] }))}
+                                                                className="rounded-full p-2 text-zinc-400 transition-none hover:bg-zinc-100"
+                                                                aria-label={branchCollapsed[branch._key] ? 'Expandir sucursal' : 'Contraer sucursal'}
+                                                            >
+                                                                {branchCollapsed[branch._key] ? (
+                                                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M19 9l-7 7-7-7" /></svg>
+                                                                ) : (
+                                                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M5 15l7-7 7 7" /></svg>
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteBranch(branch._key)}
+                                                                className="rounded-full p-2 text-red-400 transition-none hover:bg-red-50"
+                                                                aria-label="Eliminar sucursal"
+                                                            >
+                                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                                            </button>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                                                        <div className="space-y-4">
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <div className="flex flex-col space-y-2.5 text-left leading-none">
-                                                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Nombre</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={branch.name}
-                                                                        onChange={(e) => handleUpdateBranch(branch._key, 'name', e.target.value)}
-                                                                        className="h-[42px] w-full rounded-xl border border-gray-100 bg-white px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
-                                                                    />
-                                                                </div>
-                                                                <div className="flex flex-col space-y-2.5 text-left leading-none">
-                                                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Teléfono</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={branch.phone}
-                                                                        onChange={(e) => handleUpdateBranch(branch._key, 'phone', e.target.value)}
-                                                                        className="h-[42px] w-full rounded-xl border border-gray-100 bg-white px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                                                <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección</label>
-                                                                <textarea
-                                                                    value={branch.address}
-                                                                    onChange={(e) => handleUpdateBranch(branch._key, 'address', e.target.value)}
-                                                                    className="w-full bg-white border border-gray-100 rounded-xl p-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[58px] resize-none shadow-none"
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="rounded-[22px] border border-gray-100 bg-white p-4 space-y-4">
-                                                            <div className="space-y-1">
-                                                                <p className="text-[8px] font-black uppercase tracking-[0.22em] text-zinc-400 leading-none">Horario</p>
-                                                                <p className="text-[10px] font-black uppercase text-black leading-relaxed">
-                                                                    {branch.hours || 'Sin horario definido'}
-                                                                </p>
-                                                            </div>
-
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {BRANCH_DAY_OPTIONS.map((day) => {
-                                                                    const isSelectedDay = (branchActiveDay[branch._key] || 'lun') === day.value
-                                                                    return (
-                                                                        <button
-                                                                            key={day.value}
-                                                                            type="button"
-                                                                            onClick={() => setBranchActiveDay(prev => ({ ...prev, [branch._key]: day.value }))}
-                                                                            className={`h-[30px] rounded-full px-3 text-[8px] font-black uppercase tracking-tight transition-none ${isSelectedDay ? 'bg-black text-white' : 'border border-gray-100 bg-[#F7F8FA] text-zinc-500'}`}
-                                                                        >
-                                                                            {day.label}
-                                                                        </button>
-                                                                    )
-                                                                })}
-                                                            </div>
-
-                                                            {(() => {
-                                                                const activeDay = branchActiveDay[branch._key] || 'lun'
-                                                                const activeOption = BRANCH_DAY_OPTIONS.find((day) => day.value === activeDay)
-                                                                const activeSchedule = branch.daySchedules.find((slot) => slot.day === activeDay)
-                                                                const isActive = Boolean(activeSchedule)
-
-                                                                return (
-                                                                    <div className="space-y-3 rounded-xl border border-gray-100 bg-[#F7F8FA] p-3">
-                                                                        <div className="flex items-center justify-between gap-2">
-                                                                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                                                                                {activeOption?.fullLabel || 'Día'}
-                                                                            </p>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => handleToggleBranchDay(branch._key, activeDay)}
-                                                                                className={`rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
-                                                                            >
-                                                                                {isActive ? 'Activo' : 'Cerrado'}
-                                                                            </button>
-                                                                        </div>
-
-                                                                        <div className="grid grid-cols-2 gap-2">
-                                                                            <input
-                                                                                type="time"
-                                                                                value={activeSchedule?.openTime || ''}
-                                                                                onChange={(e) => handleUpdateBranchDayTime(branch._key, activeDay, 'openTime', e.target.value)}
-                                                                                disabled={!isActive}
-                                                                                className="h-[34px] rounded-lg border border-gray-100 bg-white px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
-                                                                            />
-                                                                            <input
-                                                                                type="time"
-                                                                                value={activeSchedule?.closeTime || ''}
-                                                                                onChange={(e) => handleUpdateBranchDayTime(branch._key, activeDay, 'closeTime', e.target.value)}
-                                                                                disabled={!isActive}
-                                                                                className="h-[34px] rounded-lg border border-gray-100 bg-white px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                )
-                                                            })()}
-
-                                                            <p className="text-[7px] font-bold uppercase tracking-tight text-zinc-400 ml-1 italic leading-none">
-                                                                Edita un día a la vez para ahorrar espacio.
+                                                    {branchCollapsed[branch._key] ? (
+                                                        <div className="grid grid-cols-1 gap-2 rounded-xl border border-gray-100 bg-white px-4 py-3 text-left">
+                                                            <p className="text-[9px] font-black uppercase leading-relaxed text-black">
+                                                                {branch.address || 'Sin dirección'}
+                                                            </p>
+                                                            <p className="text-[8px] font-black uppercase leading-relaxed text-zinc-500">
+                                                                {branch.hours || 'Sin horario definido'}
                                                             </p>
                                                         </div>
-                                                    </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_290px]">
+                                                            <div className="space-y-3">
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                    <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                                                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Nombre</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={branch.name}
+                                                                            onChange={(e) => handleUpdateBranch(branch._key, 'name', e.target.value)}
+                                                                            className="h-[38px] w-full rounded-xl border border-gray-100 bg-white px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                                                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Teléfono</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={branch.phone}
+                                                                            onChange={(e) => handleUpdateBranch(branch._key, 'phone', e.target.value)}
+                                                                            className="h-[38px] w-full rounded-xl border border-gray-100 bg-white px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                                                    <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={branch.address}
+                                                                        onChange={(e) => handleUpdateBranch(branch._key, 'address', e.target.value)}
+                                                                        className="h-[38px] w-full bg-white border border-gray-100 rounded-xl px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black shadow-none"
+                                                                    />
+                                                                </div>
+                                                                <div className="rounded-xl border border-gray-100 bg-white px-4 py-3">
+                                                                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 leading-none">
+                                                                        Resumen Horario
+                                                                    </p>
+                                                                    <p className="mt-2 text-[9px] font-black uppercase text-black leading-relaxed">
+                                                                        {branch.hours || 'Sin horario definido'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="rounded-[20px] border border-gray-100 bg-white p-3 space-y-3">
+                                                                <p className="text-[8px] font-black uppercase tracking-[0.22em] text-zinc-400 leading-none">Horario</p>
+
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {BRANCH_DAY_OPTIONS.map((day) => {
+                                                                        const isSelectedDay = (branchActiveDay[branch._key] || 'lun') === day.value
+                                                                        return (
+                                                                            <button
+                                                                                key={day.value}
+                                                                                type="button"
+                                                                                onClick={() => setBranchActiveDay(prev => ({ ...prev, [branch._key]: day.value }))}
+                                                                                className={`h-[26px] rounded-full px-2.5 text-[8px] font-black uppercase tracking-tight transition-none ${isSelectedDay ? 'bg-black text-white' : 'border border-gray-100 bg-[#F7F8FA] text-zinc-500'}`}
+                                                                            >
+                                                                                {day.label}
+                                                                            </button>
+                                                                        )
+                                                                    })}
+                                                                </div>
+
+                                                                {(() => {
+                                                                    const activeDay = branchActiveDay[branch._key] || 'lun'
+                                                                    const activeOption = BRANCH_DAY_OPTIONS.find((day) => day.value === activeDay)
+                                                                    const activeSchedule = branch.daySchedules.find((slot) => slot.day === activeDay)
+                                                                    const isActive = Boolean(activeSchedule)
+
+                                                                    return (
+                                                                        <div className="space-y-2 rounded-xl border border-gray-100 bg-[#F7F8FA] p-2.5">
+                                                                            <div className="flex items-center justify-between gap-2">
+                                                                                <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                                                                                    {activeOption?.fullLabel || 'Día'}
+                                                                                </p>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleToggleBranchDay(branch._key, activeDay)}
+                                                                                    className={`rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
+                                                                                >
+                                                                                    {isActive ? 'Activo' : 'Cerrado'}
+                                                                                </button>
+                                                                            </div>
+
+                                                                            <div className="grid grid-cols-2 gap-2">
+                                                                                <input
+                                                                                    type="time"
+                                                                                    value={activeSchedule?.openTime || ''}
+                                                                                    onChange={(e) => handleUpdateBranchDayTime(branch._key, activeDay, 'openTime', e.target.value)}
+                                                                                    disabled={!isActive}
+                                                                                    className="h-[30px] rounded-lg border border-gray-100 bg-white px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                                />
+                                                                                <input
+                                                                                    type="time"
+                                                                                    value={activeSchedule?.closeTime || ''}
+                                                                                    onChange={(e) => handleUpdateBranchDayTime(branch._key, activeDay, 'closeTime', e.target.value)}
+                                                                                    disabled={!isActive}
+                                                                                    className="h-[30px] rounded-lg border border-gray-100 bg-white px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                })()}
+
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))
                                         )}

@@ -106,11 +106,6 @@ export default function SucursalesClient() {
                     <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
                         {content.title || 'Sucursales'}
                     </h1>
-                    {content.description ? (
-                        <p className="mt-4 max-w-2xl text-[12px] font-medium leading-relaxed text-zinc-500">
-                            {content.description}
-                        </p>
-                    ) : null}
                 </header>
 
                 {branches.length === 0 ? (
@@ -134,24 +129,9 @@ export default function SucursalesClient() {
                                             <p className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-400 leading-none">
                                                 Sucursal {index + 1}
                                             </p>
-                                            <div className="mt-2 flex items-center gap-2">
-                                                <h2 className="text-[20px] font-black uppercase tracking-tight leading-none text-black">
-                                                    {branch.name || 'Sucursal'}
-                                                </h2>
-                                                {openMapUrl ? (
-                                                    <a
-                                                        href={openMapUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        aria-label={`Ir a ${branch.name || 'la sucursal'} en Google Maps`}
-                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-[#F7F8FA] text-zinc-600 transition-none hover:text-black"
-                                                    >
-                                                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M9 7h8v8" />
-                                                        </svg>
-                                                    </a>
-                                                ) : null}
-                                            </div>
+                                            <h2 className="mt-2 text-[20px] font-black uppercase tracking-tight leading-none text-black">
+                                                {branch.name || 'Sucursal'}
+                                            </h2>
                                         </div>
 
                                         <div className="space-y-4">
