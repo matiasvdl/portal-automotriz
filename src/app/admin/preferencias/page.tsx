@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 /* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect } from 'react'
@@ -1180,29 +1180,36 @@ export default function PreferenciasPage() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3.5">
-                                                <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">
-                                                    Estado actual
-                                                </p>
-                                                <p className="mt-2 text-[11px] font-black uppercase text-black leading-none">
-                                                    {appearanceData.favicon ? 'Cargado' : 'Sin icono'}
-                                                </p>
-                                                <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
-                                                    Visible en pestañas, favoritos y accesos del navegador.
-                                                </p>
+                                        <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-4">
+                                            <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">
+                                                Vista previa
+                                            </p>
+                                            <div className="mt-3 flex items-center gap-3">
+                                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-gray-200 bg-white">
+                                                    {appearanceData.favicon && isSanityImageValue(appearanceData.favicon) ? (
+                                                        <img
+                                                            src={urlFor(appearanceData.favicon).width(48).height(48).url()}
+                                                            alt="Vista previa del favicon"
+                                                            className="h-8 w-8 object-contain"
+                                                        />
+                                                    ) : (
+                                                        <span className="text-[8px] font-black uppercase tracking-tight text-zinc-300">
+                                                            Sin icono
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0 space-y-1">
+                                                    <p className="text-[11px] font-black uppercase text-black leading-none">
+                                                        {appearanceData.favicon ? 'Icono cargado' : 'Sin favicon'}
+                                                    </p>
+                                                    <p className="text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                        Recomendado en PNG cuadrado, simple y reconocible.
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3.5">
-                                                <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">
-                                                    Recomendado
-                                                </p>
-                                                <p className="mt-2 text-[11px] font-black uppercase text-black leading-none">
-                                                    PNG cuadrado
-                                                </p>
-                                                <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
-                                                    Simple, centrado y legible incluso en tamaño pequeño.
-                                                </p>
-                                            </div>
+                                            <p className="mt-3 text-[8px] font-medium leading-relaxed text-zinc-400">
+                                                Este icono se usa para identificar tu sitio en la pestaña del navegador.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -1703,4 +1710,8 @@ function SEOTextarea({ label, value, onChange }: { label: string; value: string;
         </div>
     )
 }
+
+
+
+
 
