@@ -171,3 +171,40 @@ export async function updateAdminProfile(
         return { success: false, error: getErrorMessage(error, "Error desconocido") }
     }
 }
+
+export async function clearAuditLogs() {
+    try {
+        await requirePrincipalSession()
+
+        const auditLogIds = await client.fetch<string[]>(
+            `*[_type == "auditLog"]._id`
+        )
+
+        if (auditLogIds.length > 0) {
+            let transaction = writeClient.transaction()
+
+            for (const id of auditLogIds) {
+                transaction = transaction.delete(id)
+            }
+
+            await transaction.commit()
+        }
+
+        await recordAuditLogFromSession({
+            action: 'clear_audit_logs',
+            entityType: 'preferencias',
+            entityId: 'auditLog',
+            entityTitle: 'Registro de actividad',
+            message: 'Limpió el registro de actividad del panel administrativo.',
+            metadata: {
+                deletedCount: auditLogIds.length,
+            },
+        })
+
+        revalidatePath('/admin/administracion')
+        return { success: true, deletedCount: auditLogIds.length }
+    } catch (error: unknown) {
+        console.error('clearAuditLogs:', error)
+        return { success: false, error: getErrorMessage(error, 'Error al limpiar el registro') }
+    }
+}

@@ -23,6 +23,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
+body,
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* 3. UTILIDADES DE MARCA BLANCA (DINÁMICAS)
    Estas clases se adaptan al color que elijas en el Admin.
 */

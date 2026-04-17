@@ -7,7 +7,7 @@ import AdminSoftSelect from '@/components/AdminSoftSelect'
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import bcrypt from "bcryptjs"
-import { deleteAdminProfile, updateAdminProfile } from '@/app/actions/updateProfile'
+import { clearAuditLogs, deleteAdminProfile, updateAdminProfile } from '@/app/actions/updateProfile'
 
 type SessionUser = {
     role?: string
@@ -60,6 +60,9 @@ const EMPTY_USER_DATA: AdminFormState = {
     confirmPassword: ''
 }
 
+const ACTIVITY_LOG_FETCH_LIMIT = 120
+const ACTIVITY_LOG_VISIBLE_LIMIT = 20
+
 function formatDateTime(value?: string) {
     if (!value) return 'Sin registros'
 
@@ -100,7 +103,7 @@ export default function AdministracionPage() {
                 { cache: 'no-store' }
             ),
             client.fetch<ActivityLog[]>(
-                `*[_type == "auditLog"] | order(eventAt desc)[0...200]{
+                `*[_type == "auditLog"] | order(eventAt desc)[0...${ACTIVITY_LOG_FETCH_LIMIT}]{
                     _id,
                     action,
                     entityType,
@@ -209,6 +212,24 @@ export default function AdministracionPage() {
             }
         } catch (error) {
             console.error(error)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleClearActivityLogs = async () => {
+        if (!confirm('¿Limpiar todo el registro de actividad? Esta acción dejará solo un nuevo registro indicando la limpieza.')) return
+
+        setIsSubmitting(true)
+        try {
+            const result = await clearAuditLogs()
+            if (!result.success) {
+                alert(result.error || 'No se pudo limpiar el registro')
+                return
+            }
+
+            await loadTeam()
+            alert('Registro de actividad limpiado correctamente')
         } finally {
             setIsSubmitting(false)
         }
@@ -356,13 +377,26 @@ export default function AdministracionPage() {
                         </div>
 
                         <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-5">
-                            <div className="border-b border-gray-50 pb-5 leading-none">
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">
+                            <div className="flex flex-col gap-4 border-b border-gray-50 pb-5 sm:flex-row sm:items-end sm:justify-between">
+                                <div className="leading-none">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">
                                     Registro de Actividad
                                 </h3>
                                 <p className="mt-2 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-tight">
                                     Últimas conexiones y acciones del usuario seleccionado.
                                 </p>
+                                    <p className="mt-2 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-tight">
+                                        Se cargan hasta {ACTIVITY_LOG_FETCH_LIMIT} registros recientes y se muestran {ACTIVITY_LOG_VISIBLE_LIMIT} por usuario.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => void handleClearActivityLogs()}
+                                    disabled={isSubmitting}
+                                    className="h-[42px] rounded-xl border border-black bg-black px-5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all disabled:opacity-60"
+                                >
+                                    Limpiar Registro
+                                </button>
                             </div>
 
                             {userData._id === 'new' ? (
@@ -376,8 +410,8 @@ export default function AdministracionPage() {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
-                                    {selectedUserLogs.slice(0, 20).map((log) => (
+                                <div className="max-h-[720px] space-y-3 overflow-y-auto pr-1">
+                                    {selectedUserLogs.slice(0, ACTIVITY_LOG_VISIBLE_LIMIT).map((log) => (
                                         <div key={log._id} className="rounded-[20px] bg-[#F7F8FA] border border-gray-100 px-5 py-4 space-y-2">
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="min-w-0">

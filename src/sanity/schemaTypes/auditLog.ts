@@ -44,6 +44,7 @@ export const auditLog = {
                 { name: 'phone', title: 'Teléfono', type: 'string' },
                 { name: 'role', title: 'Rol', type: 'string' },
                 { name: 'deletedRole', title: 'Rol eliminado', type: 'string' },
+                { name: 'deletedCount', title: 'Cantidad eliminada', type: 'number' },
                 { name: 'updatedOwnProfile', title: 'Actualizó su propio perfil', type: 'boolean' },
             ],
         },
