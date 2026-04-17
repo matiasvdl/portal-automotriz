@@ -629,7 +629,7 @@ export default function PreferenciasPage() {
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad</h3>
                                     <PrefInput
-                                        label="Nombre del Sitio y Marca"
+                                        label="Nombre de la Empresa"
                                         placeholder="Nombre general del negocio"
                                         value={settings.siteName}
                                         onChange={handleSiteNameChange}

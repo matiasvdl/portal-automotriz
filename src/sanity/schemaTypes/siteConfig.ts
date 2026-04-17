@@ -7,7 +7,7 @@ export const siteConfig = {
     fields: [
         {
             name: 'siteName',
-            title: 'Nombre del Sitio',
+            title: 'Nombre de la Empresa',
             type: 'string',
             initialValue: 'VDL MOTORS'
         },
