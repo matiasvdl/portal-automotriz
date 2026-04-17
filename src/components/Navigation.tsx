@@ -20,6 +20,7 @@ interface NavigationLink {
 interface NavigationConfig {
     navMenu?: NavigationLink[]
     siteName?: string | null
+    branchesPageEnabled?: boolean
 }
 
 export default function Navigation({ config: propConfig }: { config?: NavigationConfig }) {
@@ -28,11 +29,12 @@ export default function Navigation({ config: propConfig }: { config?: Navigation
     const config = (propConfig || contextConfig) as NavigationConfig
     const primaryColor = resolvePrimaryColor(appearance?.primaryColor)
 
-    const menuItems: NavigationLink[] = (config?.navMenu?.length ?? 0) > 0 ? config.navMenu ?? [] : [
+    const baseMenuItems: NavigationLink[] = (config?.navMenu?.length ?? 0) > 0 ? config.navMenu ?? [] : [
         { title: 'Comprar un auto', path: '/catalogo' },
         { title: 'Vende tu auto', path: '/vender' },
         { title: 'Financiamiento', path: '/financiamiento' },
     ]
+    const menuItems = baseMenuItems.filter((item) => item.path !== '/sucursales')
 
     const brandName = resolveBrandLabel(appearance, config)
     const { splitText, isJoined, firstWord, displayName, restText } = resolveBrandTextParts(brandName, {

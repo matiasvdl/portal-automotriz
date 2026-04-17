@@ -9,20 +9,27 @@ export const siteConfig = {
             name: 'siteName',
             title: 'Nombre de la Empresa',
             type: 'string',
-            initialValue: 'VDL MOTORS'
+            initialValue: 'VDL MOTORS',
         },
         {
             name: 'siteUrl',
             title: 'URL del Sitio (Dominio)',
             type: 'string',
-            description: 'Ejemplo: dominio.cl (sin https:// si prefieres)'
+            description: 'Ejemplo: dominio.cl (sin https:// si prefieres)',
+        },
+        {
+            name: 'branchesPageEnabled',
+            title: 'Página de Sucursales Activa',
+            type: 'boolean',
+            description: 'Activa o desactiva la página pública de sucursales.',
+            initialValue: false,
         },
         {
             name: 'maintenanceMode',
             title: 'Modo Mantenimiento',
             type: 'boolean',
             description: 'Si está activo, el sitio mostrará una página de mantenimiento',
-            initialValue: false
+            initialValue: false,
         },
         {
             name: 'footerDescription',
@@ -49,15 +56,16 @@ export const siteConfig = {
                                     { title: 'Comprar un Auto', value: '/catalogo' },
                                     { title: 'Vende tu Auto', value: '/vender' },
                                     { title: 'Financiamiento', value: '/financiamiento' },
+                                    { title: 'Sucursales', value: '/sucursales' },
                                     { title: 'Preguntas Frecuentes', value: '/faq' },
                                     { title: 'Términos y Condiciones', value: '/terminos' },
-                                    { title: 'Contacto', value: '/contacto' }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            ]
+                                    { title: 'Contacto', value: '/contacto' },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ],
         },
         {
             name: 'footerLinks',
@@ -78,21 +86,22 @@ export const siteConfig = {
                                     { title: 'Comprar un Auto', value: '/catalogo' },
                                     { title: 'Vende tu Auto', value: '/vender' },
                                     { title: 'Financiamiento', value: '/financiamiento' },
+                                    { title: 'Sucursales', value: '/sucursales' },
                                     { title: 'Preguntas Frecuentes', value: '/faq' },
                                     { title: 'Términos y Condiciones', value: '/terminos' },
-                                    { title: 'Contacto', value: '/contacto' }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            ]
+                                    { title: 'Contacto', value: '/contacto' },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ],
         },
         {
             name: 'footerTagline',
             title: 'Frase final del Footer',
             type: 'string',
-            description: 'Ejemplo: TRANSFORMA TU CAMINO'
+            description: 'Ejemplo: TRANSFORMA TU CAMINO',
         },
         {
             name: 'whatsappNumber',
@@ -124,16 +133,17 @@ export const siteConfig = {
                 { name: 'catalogo', title: 'Descripción Catálogo', type: 'text', rows: 2 },
                 { name: 'vender', title: 'Descripción Vende tu Auto', type: 'text', rows: 2 },
                 { name: 'financiamiento', title: 'Descripción Financiamiento', type: 'text', rows: 2 },
+                { name: 'sucursales', title: 'Descripción Sucursales', type: 'text', rows: 2 },
                 { name: 'contacto', title: 'Descripción Contacto', type: 'text', rows: 2 },
                 { name: 'faq', title: 'Descripción FAQ', type: 'text', rows: 2 },
                 { name: 'terminos', title: 'Descripción Términos y Condiciones', type: 'text', rows: 2 },
-            ]
+            ],
         },
         {
             name: 'defaultLocation',
             title: 'Ubicación por Defecto',
             type: 'string',
-            initialValue: ''
+            initialValue: '',
         },
         {
             name: 'homeContent',
@@ -142,7 +152,7 @@ export const siteConfig = {
             fields: [
                 { name: 'featuredTitle', title: 'Título Autos Destacados', type: 'string' },
                 { name: 'reviewsTitle', title: 'Título Reseñas', type: 'string' },
-            ]
+            ],
         },
         {
             name: 'catalogContent',
@@ -151,7 +161,7 @@ export const siteConfig = {
             fields: [
                 { name: 'recommendedTitle', title: 'Título Vehículos Recomendados', type: 'string' },
                 { name: 'whatsappLabel', title: 'Texto CTA WhatsApp', type: 'string' },
-            ]
+            ],
         },
         {
             name: 'faqContent',
@@ -163,7 +173,7 @@ export const siteConfig = {
                 { name: 'ctaButtonLabel', title: 'Texto botón lateral', type: 'string' },
                 { name: 'trustTitle', title: 'Título sello de confianza', type: 'string' },
                 { name: 'trustSubtitle', title: 'Subtítulo sello de confianza', type: 'string' },
-            ]
+            ],
         },
         {
             name: 'sellContent',
@@ -182,13 +192,13 @@ export const siteConfig = {
                             fields: [
                                 { name: 'title', title: 'Título', type: 'string' },
                                 { name: 'description', title: 'Descripción', type: 'text', rows: 2 },
-                            ]
-                        }
-                    ]
+                            ],
+                        },
+                    ],
                 },
                 { name: 'trustTitle', title: 'Título bloque inferior', type: 'string' },
                 { name: 'trustSubtitle', title: 'Subtítulo bloque inferior', type: 'string' },
-            ]
+            ],
         },
         {
             name: 'financeContent',
@@ -202,7 +212,7 @@ export const siteConfig = {
                 { name: 'digitalTitle', title: 'Texto evaluación digital', type: 'string' },
                 { name: 'trustTitle', title: 'Título bloque inferior', type: 'string' },
                 { name: 'trustSubtitle', title: 'Subtítulo bloque inferior', type: 'string' },
-            ]
+            ],
         },
         {
             name: 'maintenanceContent',
@@ -215,7 +225,82 @@ export const siteConfig = {
                 { name: 'contactLabel', title: 'Etiqueta contacto', type: 'string' },
                 { name: 'contactEmail', title: 'Correo mostrado', type: 'string' },
                 { name: 'footerText', title: 'Texto pie de página', type: 'string' },
-            ]
-        }
-    ]
+            ],
+        },
+        {
+            name: 'branchesContent',
+            title: 'Contenido Sucursales',
+            type: 'object',
+            fields: [
+                { name: 'eyebrow', title: 'Bajada superior', type: 'string' },
+                { name: 'title', title: 'Título principal', type: 'string' },
+                { name: 'description', title: 'Descripción', type: 'text', rows: 3 },
+            ],
+        },
+        {
+            name: 'branches',
+            title: 'Sucursales',
+            type: 'array',
+            of: [
+                {
+                    type: 'object',
+                    fields: [
+                        { name: 'name', title: 'Nombre de la sucursal', type: 'string' },
+                        { name: 'address', title: 'Dirección', type: 'text', rows: 2 },
+                        { name: 'phone', title: 'Teléfono', type: 'string' },
+                        {
+                            name: 'daySchedules',
+                            title: 'Horarios por día',
+                            type: 'array',
+                            of: [
+                                {
+                                    type: 'object',
+                                    fields: [
+                                        {
+                                            name: 'day',
+                                            title: 'Día',
+                                            type: 'string',
+                                            options: {
+                                                list: [
+                                                    { title: 'Lunes', value: 'lun' },
+                                                    { title: 'Martes', value: 'mar' },
+                                                    { title: 'Miércoles', value: 'mie' },
+                                                    { title: 'Jueves', value: 'jue' },
+                                                    { title: 'Viernes', value: 'vie' },
+                                                    { title: 'Sábado', value: 'sab' },
+                                                    { title: 'Domingo', value: 'dom' },
+                                                ],
+                                            },
+                                        },
+                                        { name: 'openTime', title: 'Abre', type: 'string' },
+                                        { name: 'closeTime', title: 'Cierra', type: 'string' },
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            name: 'workDays',
+                            title: 'Días de atención',
+                            type: 'array',
+                            of: [{ type: 'string' }],
+                            options: {
+                                list: [
+                                    { title: 'Lunes', value: 'lun' },
+                                    { title: 'Martes', value: 'mar' },
+                                    { title: 'Miércoles', value: 'mie' },
+                                    { title: 'Jueves', value: 'jue' },
+                                    { title: 'Viernes', value: 'vie' },
+                                    { title: 'Sábado', value: 'sab' },
+                                    { title: 'Domingo', value: 'dom' },
+                                ],
+                            },
+                        },
+                        { name: 'openTime', title: 'Hora de apertura', type: 'string' },
+                        { name: 'closeTime', title: 'Hora de cierre', type: 'string' },
+                        { name: 'hours', title: 'Resumen de horario', type: 'string' },
+                    ],
+                },
+            ],
+        },
+    ],
 }

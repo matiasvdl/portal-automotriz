@@ -16,6 +16,28 @@ interface FooterConfig {
     footerDescription?: string
     footerTagline?: string
     footerLinks?: FooterLink[]
+    branchesPageEnabled?: boolean
+}
+
+function resolveFooterLinks(items: FooterLink[], branchesPageEnabled?: boolean) {
+    const cleanedItems = items.filter((item) => item.path !== '/sucursales')
+    const faqIndex = cleanedItems.findIndex((item) => item.path === '/faq')
+    const preferredIndex = faqIndex >= 0 ? faqIndex : cleanedItems.length
+
+    if (branchesPageEnabled) {
+        const nextItems = [...cleanedItems]
+        nextItems.splice(preferredIndex, 0, { title: 'Sucursales', path: '/sucursales' })
+        return nextItems
+    }
+
+    const hasCatalogLink = cleanedItems.some((item) => item.path === '/catalogo')
+    if (hasCatalogLink) {
+        return cleanedItems
+    }
+
+    const nextItems = [...cleanedItems]
+    nextItems.splice(preferredIndex, 0, { title: 'Comprar un Auto', path: '/catalogo' })
+    return nextItems
 }
 
 export default function Footer({ config: propConfig }: { config?: FooterConfig }) {
@@ -46,6 +68,7 @@ export default function Footer({ config: propConfig }: { config?: FooterConfig }
     const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null
     const logoMaxH = resolveLogoMaxHeightPx(appearance?.logoWidth)
     const year = new Date().getFullYear()
+    const footerLinks = resolveFooterLinks(config?.footerLinks || [], config?.branchesPageEnabled)
 
     return (
         <footer className="border-t border-white/5 bg-black pb-8 pt-16 text-white">
@@ -84,7 +107,7 @@ export default function Footer({ config: propConfig }: { config?: FooterConfig }
                 </div>
 
                 <div className="space-y-4 text-sm font-medium text-gray-400 md:hidden">
-                    {config?.footerLinks?.map((link, i: number) => (
+                    {footerLinks.map((link, i: number) => (
                         <Link key={i} href={link.path || '#'} className="block transition-colors hover:text-white">
                             {link.title}
                         </Link>
@@ -92,7 +115,7 @@ export default function Footer({ config: propConfig }: { config?: FooterConfig }
                 </div>
 
                 <div className="hidden space-y-4 text-sm font-medium text-gray-400 md:col-span-3 md:block">
-                    {config?.footerLinks?.slice(0, 3).map((link, i: number) => (
+                    {footerLinks.slice(0, 3).map((link, i: number) => (
                         <Link key={i} href={link.path || '#'} className="block transition-colors hover:text-white">
                             {link.title}
                         </Link>
@@ -100,7 +123,7 @@ export default function Footer({ config: propConfig }: { config?: FooterConfig }
                 </div>
 
                 <div className="hidden space-y-4 text-sm font-medium text-gray-400 md:col-span-3 md:block">
-                    {config?.footerLinks?.slice(3).map((link, i: number) => (
+                    {footerLinks.slice(3).map((link, i: number) => (
                         <Link key={i} href={link.path || '#'} className="block transition-colors hover:text-white">
                             {link.title}
                         </Link>

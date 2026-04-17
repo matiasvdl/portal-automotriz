@@ -18,6 +18,7 @@ interface SiteConfig {
     siteName?: string
     footerDescription?: string
     footerTagline?: string
+    branchesPageEnabled?: boolean
     whatsappNumber?: string;
     supportMessage?: string;
     termsAndConditions?: string
@@ -29,6 +30,26 @@ interface SiteConfig {
     defaultLocation?: string
     navMenu?: Array<{ title: string; path: string }>
     footerLinks?: Array<{ title: string; path: string }>
+    branchesContent?: {
+        eyebrow?: string
+        title?: string
+        description?: string
+    }
+    branches?: Array<{
+        _key?: string
+        name?: string
+        address?: string
+        hours?: string
+        phone?: string
+        daySchedules?: Array<{
+            day?: string
+            openTime?: string
+            closeTime?: string
+        }>
+        workDays?: string[]
+        openTime?: string
+        closeTime?: string
+    }>
     homeContent?: {
         featuredTitle?: string
         reviewsTitle?: string
@@ -67,6 +88,16 @@ interface SiteConfig {
         contactLabel?: string
         contactEmail?: string
         footerText?: string
+    }
+    seoDescriptions?: {
+        home?: string
+        catalogo?: string
+        vender?: string
+        financiamiento?: string
+        contacto?: string
+        faq?: string
+        terminos?: string
+        sucursales?: string
     }
 }
 

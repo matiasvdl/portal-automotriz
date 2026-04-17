@@ -127,9 +127,71 @@ type BrandEntry = {
     models?: BrandModel[]
 }
 
+type BranchDaySchedule = {
+    day: string
+    openTime: string
+    closeTime: string
+}
+
+type BranchItem = {
+    _key: string
+    name: string
+    address: string
+    hours: string
+    phone: string
+    daySchedules: BranchDaySchedule[]
+    // Compatibilidad con datos previos
+    workDays?: string[]
+    openTime?: string
+    closeTime?: string
+}
+
+const BRANCH_DAY_OPTIONS = [
+    { value: 'lun', label: 'Lun', fullLabel: 'Lunes' },
+    { value: 'mar', label: 'Mar', fullLabel: 'Martes' },
+    { value: 'mie', label: 'Mié', fullLabel: 'Miércoles' },
+    { value: 'jue', label: 'Jue', fullLabel: 'Jueves' },
+    { value: 'vie', label: 'Vie', fullLabel: 'Viernes' },
+    { value: 'sab', label: 'Sáb', fullLabel: 'Sábado' },
+    { value: 'dom', label: 'Dom', fullLabel: 'Domingo' },
+]
+
+function buildLegacyDaySchedules(workDays: string[], openTime: string, closeTime: string): BranchDaySchedule[] {
+    if (!workDays.length || !openTime || !closeTime) {
+        return []
+    }
+
+    return workDays.map((day) => ({ day, openTime, closeTime }))
+}
+
+function defaultBranchDaySchedules(): BranchDaySchedule[] {
+    return ['lun', 'mar', 'mie', 'jue', 'vie'].map((day) => ({
+        day,
+        openTime: '09:00',
+        closeTime: '18:00',
+    }))
+}
+
+function formatBranchSchedule(daySchedules: BranchDaySchedule[]) {
+    if (!daySchedules.length) {
+        return ''
+    }
+
+    const sorted = [...daySchedules].sort(
+        (a, b) => BRANCH_DAY_OPTIONS.findIndex((d) => d.value === a.day) - BRANCH_DAY_OPTIONS.findIndex((d) => d.value === b.day)
+    )
+
+    return sorted
+        .map((slot) => {
+            const dayLabel = BRANCH_DAY_OPTIONS.find((d) => d.value === slot.day)?.label || slot.day
+            return `${dayLabel} ${slot.openTime}-${slot.closeTime}`
+        })
+        .join(' | ')
+}
+
 // Añadimos pestañas nuevas de configuración
-type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'resenas' | 'contacto' | 'preguntas' | 'legales' | 'seo' | 'marcas';
-const TABS: TabType[] = ['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'preguntas', 'resenas', 'seo', 'marcas', 'legales']
+type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'contacto' | 'sucursales' | 'preguntas' | 'resenas' | 'seo' | 'marcas' | 'legales';
+const TABS: TabType[] = ['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'sucursales', 'preguntas', 'resenas', 'seo', 'marcas', 'legales']
 
 function isSanityImageValue(value: SanityImageValue | File | null | undefined): value is SanityImageValue {
     return Boolean(
@@ -186,6 +248,13 @@ export default function PreferenciasPage() {
         navMenu: [] as NavItem[],
         footerLinks: [] as NavItem[],
         maintenanceMode: false,
+        branchesPageEnabled: false,
+        branchesContent: {
+            eyebrow: 'Red presencial',
+            title: 'Sucursales',
+            description: '',
+        },
+        branches: [] as BranchItem[],
         termsAndConditions: '',
         lastLegalUpdate: '',
         // BLOQUE SEO: Campos para Google
@@ -194,6 +263,7 @@ export default function PreferenciasPage() {
             catalogo: '',
             vender: '',
             financiamiento: '',
+            sucursales: '',
             contacto: '',
             faq: '',
             terminos: ''
@@ -243,6 +313,7 @@ export default function PreferenciasPage() {
     const [editFaqForm, setEditFaqForm] = useState({ question: '', answer: '', order: 0 })
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
+    const [branchActiveDay, setBranchActiveDay] = useState<Record<string, string>>({})
 
     const handleSiteNameChange = (value: string) => {
         setSettings(prev => ({ ...prev, siteName: value }))
@@ -300,11 +371,41 @@ export default function PreferenciasPage() {
                         navMenu: config.navMenu || [],
                         footerLinks: config.footerLinks || [],
                         maintenanceMode: config.maintenanceMode || false,
+                        branchesPageEnabled: config.branchesPageEnabled || false,
+                        branchesContent: {
+                            eyebrow: config.branchesContent?.eyebrow || 'Red presencial',
+                            title: config.branchesContent?.title || 'Sucursales',
+                            description: config.branchesContent?.description || '',
+                        },
+                        branches: (config.branches || []).map((branch: Partial<BranchItem>, index: number) => {
+                            const daySchedules = Array.isArray(branch.daySchedules)
+                                ? branch.daySchedules
+                                    .filter((slot): slot is BranchDaySchedule =>
+                                        Boolean(slot && typeof slot.day === 'string' && slot.openTime && slot.closeTime)
+                                    )
+                                : buildLegacyDaySchedules(
+                                    Array.isArray(branch.workDays) ? branch.workDays : [],
+                                    branch.openTime || '',
+                                    branch.closeTime || ''
+                                )
+
+                            return {
+                                _key: branch._key || `${Date.now()}-${index}`,
+                                name: branch.name || '',
+                                address: branch.address || '',
+                                phone: branch.phone || '',
+                                daySchedules,
+                                hours: branch.hours || formatBranchSchedule(daySchedules),
+                                workDays: Array.isArray(branch.workDays) ? branch.workDays : [],
+                                openTime: branch.openTime || '',
+                                closeTime: branch.closeTime || '',
+                            }
+                        }),
                         termsAndConditions: config.termsAndConditions || '',
                         lastLegalUpdate: config.lastLegalUpdate || '',
                         // Sincronizamos las descripciones SEO
                         seoDescriptions: config.seoDescriptions || {
-                            home: '', catalogo: '', vender: '', financiamiento: '', contacto: '', faq: '', terminos: ''
+                            home: '', catalogo: '', vender: '', financiamiento: '', sucursales: '', contacto: '', faq: '', terminos: ''
                         }
                     })
                 }
@@ -484,6 +585,7 @@ export default function PreferenciasPage() {
         { title: 'Comprar un Auto', value: '/catalogo' },
         { title: 'Vende tu Auto', value: '/vender' },
         { title: 'Financiamiento', value: '/financiamiento' },
+        { title: 'Sucursales', value: '/sucursales' },
         { title: 'Preguntas Frecuentes', value: '/faq' },
         { title: 'Terminos y Condiciones', value: '/terminos' },
         { title: 'Contacto', value: '/contacto' }
@@ -494,6 +596,7 @@ export default function PreferenciasPage() {
         { title: 'Comprar un Auto', value: '/catalogo' },
         { title: 'Vende tu Auto', value: '/vender' },
         { title: 'Financiamiento', value: '/financiamiento' },
+        { title: 'Sucursales', value: '/sucursales' },
         { title: 'Preguntas Frecuentes', value: '/faq' },
         { title: 'Terminos y Condiciones', value: '/terminos' },
         { title: 'Contacto', value: '/contacto' }
@@ -518,6 +621,86 @@ export default function PreferenciasPage() {
         const [movedItem] = updated.splice(index, 1)
         updated.splice(newIndex, 0, movedItem)
         setSettings(prev => ({ ...prev, [target]: updated }))
+    }
+
+    const handleAddBranch = () => {
+        const daySchedules = defaultBranchDaySchedules()
+        const newBranch: BranchItem = {
+            _key: Math.random().toString(36).slice(2, 11),
+            name: '',
+            address: '',
+            phone: '',
+            daySchedules,
+            hours: formatBranchSchedule(daySchedules),
+        }
+
+        setSettings(prev => ({ ...prev, branches: [...prev.branches, newBranch] }))
+    }
+
+    const handleUpdateBranch = (branchKey: string, field: keyof Pick<BranchItem, 'name' | 'phone' | 'address'>, value: string) => {
+        setSettings(prev => ({
+            ...prev,
+            branches: prev.branches.map(branch => {
+                if (branch._key !== branchKey) return branch
+
+                const nextBranch = { ...branch, [field]: value }
+                return {
+                    ...nextBranch,
+                    hours: formatBranchSchedule(nextBranch.daySchedules),
+                }
+            }),
+        }))
+    }
+
+    const handleToggleBranchDay = (branchKey: string, dayValue: string) => {
+        setSettings(prev => ({
+            ...prev,
+            branches: prev.branches.map(branch => {
+                if (branch._key !== branchKey) return branch
+
+                const hasDay = branch.daySchedules.some((slot) => slot.day === dayValue)
+                const daySchedules = hasDay
+                    ? branch.daySchedules.filter((slot) => slot.day !== dayValue)
+                    : [...branch.daySchedules, { day: dayValue, openTime: '09:00', closeTime: '18:00' }]
+
+                return {
+                    ...branch,
+                    daySchedules,
+                    hours: formatBranchSchedule(daySchedules),
+                }
+            }),
+        }))
+    }
+
+    const handleUpdateBranchDayTime = (
+        branchKey: string,
+        dayValue: string,
+        field: 'openTime' | 'closeTime',
+        value: string
+    ) => {
+        setSettings(prev => ({
+            ...prev,
+            branches: prev.branches.map(branch => {
+                if (branch._key !== branchKey) return branch
+
+                const daySchedules = branch.daySchedules.map((slot) =>
+                    slot.day === dayValue ? { ...slot, [field]: value } : slot
+                )
+
+                return {
+                    ...branch,
+                    daySchedules,
+                    hours: formatBranchSchedule(daySchedules),
+                }
+            }),
+        }))
+    }
+
+    const handleDeleteBranch = (branchKey: string) => {
+        setSettings(prev => ({
+            ...prev,
+            branches: prev.branches.filter(branch => branch._key !== branchKey),
+        }))
     }
 
     // FUNCIONES FAQ
@@ -642,7 +825,7 @@ export default function PreferenciasPage() {
                                 onClick={() => setActiveTab(tab)}
                                 className={`px-4 sm:px-5 py-2.5 sm:py-2 rounded-full text-[8px] sm:text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
-                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'preguntas' ? 'Preguntas' : tab === 'seo' ? 'SEO' : tab === 'marcas' ? 'Marcas' : tab === 'legales' ? 'Legales' : 'Reseñas'}
+                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'sucursales' ? 'Sucursales' : tab === 'preguntas' ? 'Preguntas' : tab === 'seo' ? 'SEO' : tab === 'marcas' ? 'Marcas' : tab === 'legales' ? 'Legales' : 'Reseñas'}
                             </button>
                         ))}
                     </div>
@@ -1420,6 +1603,200 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {activeTab === 'sucursales' && (
+                            <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                <div className="flex flex-col gap-4 border-b border-gray-50 pb-5 lg:flex-row lg:items-center lg:justify-between">
+                                    <div className="text-left">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">Página de Sucursales</h3>
+                                        <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
+                                            Activa esta página pública y administra las sucursales con su mapa individual.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setSettings(prev => ({ ...prev, branchesPageEnabled: !prev.branchesPageEnabled }))}
+                                        className={`relative h-6 w-12 rounded-full transition-none ${settings.branchesPageEnabled ? 'bg-black' : 'bg-zinc-200'}`}
+                                        aria-label="Activar o desactivar página de sucursales"
+                                    >
+                                        <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-none ${settings.branchesPageEnabled ? 'left-7' : 'left-1'}`}></div>
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-1 space-y-4">
+                                        <PrefInput
+                                            label="Bajada Superior"
+                                            value={settings.branchesContent.eyebrow}
+                                            onChange={(v) => setSettings(prev => ({ ...prev, branchesContent: { ...prev.branchesContent, eyebrow: v } }))}
+                                        />
+                                        <PrefInput
+                                            label="Título"
+                                            value={settings.branchesContent.title}
+                                            onChange={(v) => setSettings(prev => ({ ...prev, branchesContent: { ...prev.branchesContent, title: v } }))}
+                                        />
+                                        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Descripción</label>
+                                            <textarea
+                                                value={settings.branchesContent.description}
+                                                onChange={(e) => setSettings(prev => ({ ...prev, branchesContent: { ...prev.branchesContent, description: e.target.value } }))}
+                                                className="w-full bg-[#F7F8FA] border-none rounded-xl p-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[120px] resize-none shadow-none"
+                                            />
+                                        </div>
+                                        <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-4">
+                                            <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">Estado</p>
+                                            <p className="mt-2 text-[11px] font-black uppercase text-black leading-none">
+                                                {settings.branchesPageEnabled ? 'Página activa' : 'Página oculta'}
+                                            </p>
+                                            <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                Si la apagas, la ruta deja de mostrarse en el sitio aunque sigan guardadas tus sucursales.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="lg:col-span-2 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Sucursales Registradas</h4>
+                                            <button onClick={handleAddBranch} className="rounded-xl bg-black px-5 py-2.5 text-[9px] font-black uppercase text-white transition-none">
+                                                Agregar sucursal
+                                            </button>
+                                        </div>
+
+                                        {settings.branches.length === 0 ? (
+                                            <div className="rounded-[24px] border border-gray-100 bg-[#F7F8FA] px-5 py-8 text-left">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Sin sucursales</p>
+                                                <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                    Agrega al menos una sucursal para completar esta página.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            settings.branches.map((branch, index) => (
+                                                <div key={branch._key} className="rounded-[26px] border border-gray-100 bg-[#F7F8FA] p-5 space-y-5">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <div>
+                                                            <p className="text-[7px] font-black uppercase tracking-[0.25em] text-zinc-400">Sucursal {index + 1}</p>
+                                                            <p className="mt-1 text-[11px] font-black uppercase text-black leading-none">
+                                                                {branch.name || 'Nueva sucursal'}
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleDeleteBranch(branch._key)}
+                                                            className="rounded-full p-2 text-red-400 transition-none hover:bg-red-50"
+                                                            aria-label="Eliminar sucursal"
+                                                        >
+                                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+                                                        <div className="space-y-4">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Nombre</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={branch.name}
+                                                                        onChange={(e) => handleUpdateBranch(branch._key, 'name', e.target.value)}
+                                                                        className="h-[42px] w-full rounded-xl border border-gray-100 bg-white px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
+                                                                    />
+                                                                </div>
+                                                                <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Teléfono</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={branch.phone}
+                                                                        onChange={(e) => handleUpdateBranch(branch._key, 'phone', e.target.value)}
+                                                                        className="h-[42px] w-full rounded-xl border border-gray-100 bg-white px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                                                <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección</label>
+                                                                <textarea
+                                                                    value={branch.address}
+                                                                    onChange={(e) => handleUpdateBranch(branch._key, 'address', e.target.value)}
+                                                                    className="w-full bg-white border border-gray-100 rounded-xl p-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black min-h-[58px] resize-none shadow-none"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="rounded-[22px] border border-gray-100 bg-white p-4 space-y-4">
+                                                            <div className="space-y-1">
+                                                                <p className="text-[8px] font-black uppercase tracking-[0.22em] text-zinc-400 leading-none">Horario</p>
+                                                                <p className="text-[10px] font-black uppercase text-black leading-relaxed">
+                                                                    {branch.hours || 'Sin horario definido'}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {BRANCH_DAY_OPTIONS.map((day) => {
+                                                                    const isSelectedDay = (branchActiveDay[branch._key] || 'lun') === day.value
+                                                                    return (
+                                                                        <button
+                                                                            key={day.value}
+                                                                            type="button"
+                                                                            onClick={() => setBranchActiveDay(prev => ({ ...prev, [branch._key]: day.value }))}
+                                                                            className={`h-[30px] rounded-full px-3 text-[8px] font-black uppercase tracking-tight transition-none ${isSelectedDay ? 'bg-black text-white' : 'border border-gray-100 bg-[#F7F8FA] text-zinc-500'}`}
+                                                                        >
+                                                                            {day.label}
+                                                                        </button>
+                                                                    )
+                                                                })}
+                                                            </div>
+
+                                                            {(() => {
+                                                                const activeDay = branchActiveDay[branch._key] || 'lun'
+                                                                const activeOption = BRANCH_DAY_OPTIONS.find((day) => day.value === activeDay)
+                                                                const activeSchedule = branch.daySchedules.find((slot) => slot.day === activeDay)
+                                                                const isActive = Boolean(activeSchedule)
+
+                                                                return (
+                                                                    <div className="space-y-3 rounded-xl border border-gray-100 bg-[#F7F8FA] p-3">
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                                                                                {activeOption?.fullLabel || 'Día'}
+                                                                            </p>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleToggleBranchDay(branch._key, activeDay)}
+                                                                                className={`rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
+                                                                            >
+                                                                                {isActive ? 'Activo' : 'Cerrado'}
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <div className="grid grid-cols-2 gap-2">
+                                                                            <input
+                                                                                type="time"
+                                                                                value={activeSchedule?.openTime || ''}
+                                                                                onChange={(e) => handleUpdateBranchDayTime(branch._key, activeDay, 'openTime', e.target.value)}
+                                                                                disabled={!isActive}
+                                                                                className="h-[34px] rounded-lg border border-gray-100 bg-white px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                            />
+                                                                            <input
+                                                                                type="time"
+                                                                                value={activeSchedule?.closeTime || ''}
+                                                                                onChange={(e) => handleUpdateBranchDayTime(branch._key, activeDay, 'closeTime', e.target.value)}
+                                                                                disabled={!isActive}
+                                                                                className="h-[34px] rounded-lg border border-gray-100 bg-white px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })()}
+
+                                                            <p className="text-[7px] font-bold uppercase tracking-tight text-zinc-400 ml-1 italic leading-none">
+                                                                Edita un día a la vez para ahorrar espacio.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* PESTAÑA SEO (NUEVA) */}
                         {activeTab === 'seo' && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
@@ -1430,6 +1807,7 @@ export default function PreferenciasPage() {
                                         <SEOTextarea label="Catálogo General" value={settings.seoDescriptions.catalogo} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, catalogo: v } })} />
                                         <SEOTextarea label="Vender mi Auto" value={settings.seoDescriptions.vender} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, vender: v } })} />
                                         <SEOTextarea label="Financiamiento" value={settings.seoDescriptions.financiamiento} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, financiamiento: v } })} />
+                                        <SEOTextarea label="Sucursales" value={settings.seoDescriptions.sucursales} onChange={(v) => setSettings({ ...settings, seoDescriptions: { ...settings.seoDescriptions, sucursales: v } })} />
                                     </div>
                                 </div>
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">

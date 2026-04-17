@@ -17,6 +17,27 @@ type SiteSettingsPayload = {
     navMenu?: unknown[]
     footerLinks?: unknown[]
     maintenanceMode?: boolean
+    branchesPageEnabled?: boolean
+    branchesContent?: {
+        eyebrow?: string
+        title?: string
+        description?: string
+    }
+    branches?: Array<{
+        _key: string
+        name?: string
+        address?: string
+        hours?: string
+        phone?: string
+        daySchedules?: Array<{
+            day?: string
+            openTime?: string
+            closeTime?: string
+        }>
+        workDays?: string[]
+        openTime?: string
+        closeTime?: string
+    }>
     termsAndConditions?: string
     lastLegalUpdate?: string
     seoDescriptions?: {
@@ -27,6 +48,7 @@ type SiteSettingsPayload = {
         contacto?: string
         faq?: string
         terminos?: string
+        sucursales?: string
     }
 }
 
@@ -90,6 +112,13 @@ export async function saveGlobalPreferences(
             navMenu: settings.navMenu,
             footerLinks: settings.footerLinks,
             maintenanceMode: settings.maintenanceMode,
+            branchesPageEnabled: settings.branchesPageEnabled === true,
+            branchesContent: {
+                eyebrow: settings.branchesContent?.eyebrow || "",
+                title: settings.branchesContent?.title || "",
+                description: settings.branchesContent?.description || "",
+            },
+            branches: settings.branches || [],
             termsAndConditions: settings.termsAndConditions || "",
             lastLegalUpdate: settings.lastLegalUpdate || "",
             seoDescriptions: {
@@ -99,7 +128,8 @@ export async function saveGlobalPreferences(
                 financiamiento: settings.seoDescriptions?.financiamiento || "",
                 contacto: settings.seoDescriptions?.contacto || "",
                 faq: settings.seoDescriptions?.faq || "",
-                terminos: settings.seoDescriptions?.terminos || ""
+                terminos: settings.seoDescriptions?.terminos || "",
+                sucursales: settings.seoDescriptions?.sucursales || "",
             }
         })
 
