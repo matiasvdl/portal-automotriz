@@ -99,6 +99,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     const { id } = use(params)
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [successNotice, setSuccessNotice] = useState('')
     const [isLoading, setIsLoading] = useState(true)
     const [tags, setTags] = useState<string[]>([])
     const [currentTag, setCurrentTag] = useState('')
@@ -238,6 +239,12 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         loadData()
     }, [id])
 
+    useEffect(() => {
+        if (!successNotice) return
+        const timer = setTimeout(() => setSuccessNotice(''), 2500)
+        return () => clearTimeout(timer)
+    }, [successNotice])
+
     const handleChange = (field: keyof CarFormData, value: string | number) => {
         setFormData(prev => ({ ...prev, [field]: value }))
     }
@@ -351,6 +358,8 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
             }
 
             await saveCarAction(id, doc)
+            setSuccessNotice('Cambios guardados correctamente.')
+            await new Promise((resolve) => setTimeout(resolve, 1100))
             router.push('/admin/dashboard')
         } catch {
             alert('Error al guardar.')
@@ -739,6 +748,20 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                     {isSubmitting ? '...' : 'Guardar'}
                 </button>
             </div>
+
+            {successNotice && (
+                <div className="fixed bottom-6 right-6 z-[140] flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
+                    <div className="flex flex-col justify-center text-left">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-black leading-none">
+                            Vehículo guardado
+                        </p>
+                        <p className="mt-[4px] text-[8px] font-bold uppercase tracking-tighter text-zinc-400 leading-none">
+                            {successNotice}
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

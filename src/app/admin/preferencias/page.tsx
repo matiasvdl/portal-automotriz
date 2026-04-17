@@ -18,11 +18,16 @@ import {
 import { deleteBrandAction, deleteBrandModelAction } from '@/app/actions/brandActions'
 import { urlFor } from '@/sanity/lib/image'
 import {
+    ACCESSIBILITY_SCALE_MAX,
+    ACCESSIBILITY_SCALE_MIN,
+    ACCESSIBILITY_SCALE_STEP,
     CONTENT_DEFAULTS,
+    clampAccessibilityScale,
     clampLogoMaxHeightPx,
     LOGO_MAX_HEIGHT_MAX_PX,
     LOGO_MAX_HEIGHT_MIN_PX,
     LOGO_MAX_HEIGHT_STEP_PX,
+    resolveAccessibilityScale,
     resolveLogoMaxHeightPx,
 } from '@/lib/content-defaults'
 
@@ -76,6 +81,7 @@ type AppearanceState = {
     _id: string
     brandName: string
     primaryColor: string
+    accessibilityScale: number
     logo: SanityImageValue | File | null
     logoWidth: number
     favicon: SanityImageValue | File | null
@@ -198,6 +204,7 @@ export default function PreferenciasPage() {
         _id: 'appearance-settings',
         brandName: '',
         primaryColor: '#000000',
+        accessibilityScale: CONTENT_DEFAULTS.accessibilityScale,
         logo: null,
         logoWidth: clampLogoMaxHeightPx(CONTENT_DEFAULTS.logoMaxHeightPx),
         favicon: null,
@@ -300,6 +307,7 @@ export default function PreferenciasPage() {
                         logo: appearance.logo || null,
                         logoWidth: resolveLogoMaxHeightPx(appearance.logoWidth),
                         primaryColor: appearance.primaryColor || '#000000',
+                        accessibilityScale: resolveAccessibilityScale(appearance.accessibilityScale),
                         favicon: appearance.favicon || null,
                         splitText: appearance.splitText !== undefined ? appearance.splitText : true,
                         isJoined: appearance.isJoined || false,
@@ -429,6 +437,7 @@ export default function PreferenciasPage() {
                 _type: 'appearance',
                 brandName: appearanceData.brandName,
                 primaryColor: appearanceData.primaryColor,
+                accessibilityScale: clampAccessibilityScale(Number(appearanceData.accessibilityScale)),
                 logoWidth: clampLogoMaxHeightPx(Number(appearanceData.logoWidth)),
                 // Usamos las referencias procesadas
                 logo: isSanityImageValue(logoRef) ? { _type: 'image', asset: logoRef.asset } : undefined,
@@ -612,7 +621,6 @@ export default function PreferenciasPage() {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start no-scrollbar">
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad</h3>
-
                                     <PrefInput
                                         label="Nombre del Sitio"
                                         placeholder="Nombre que aparecerá en Google y pestañas del navegador"
@@ -676,7 +684,6 @@ export default function PreferenciasPage() {
                                     {/* BLOQUE 1: IDENTIDAD VISUAL */}
                                     <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad Visual</h3>
-
                                         <div className="space-y-6">
                                             {/* Color de Marca con Selector Visual */}
                                             <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
@@ -741,6 +748,74 @@ export default function PreferenciasPage() {
                                         </div>
                                     </div>
 
+                                    <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Accesibilidad Visual</h3>
+                                        <div className="space-y-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                                    Escala general del sitio:{' '}
+                                                    <span className="text-black">
+                                                        {Math.round(clampAccessibilityScale(appearanceData.accessibilityScale) * 100)}%
+                                                    </span>
+                                                </label>
+                                                <p className="text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                    Aumenta el tamaño base de textos y elementos tanto en las páginas públicas como en el panel administrativo.
+                                                </p>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                {[1, 1.1, 1.2, 1.25].map((scale) => (
+                                                    <button
+                                                        key={scale}
+                                                        type="button"
+                                                        onClick={() => setAppearanceData((prev) => ({ ...prev, accessibilityScale: scale }))}
+                                                        className={`rounded-full px-3 py-1.5 text-[8px] font-black uppercase tracking-tight transition-colors ${clampAccessibilityScale(appearanceData.accessibilityScale) === scale
+                                                            ? 'bg-black text-white'
+                                                            : 'bg-[#F7F8FA] text-zinc-600 hover:bg-zinc-200'
+                                                            }`}
+                                                    >
+                                                        {Math.round(scale * 100)}%
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <input
+                                                type="range"
+                                                min={ACCESSIBILITY_SCALE_MIN}
+                                                max={ACCESSIBILITY_SCALE_MAX}
+                                                step={ACCESSIBILITY_SCALE_STEP}
+                                                value={clampAccessibilityScale(appearanceData.accessibilityScale)}
+                                                onChange={(e) =>
+                                                    setAppearanceData((prev) => ({
+                                                        ...prev,
+                                                        accessibilityScale: clampAccessibilityScale(parseFloat(e.target.value)),
+                                                    }))
+                                                }
+                                                className="w-full h-1.5 cursor-pointer rounded-lg bg-gray-100 accent-black appearance-none"
+                                            />
+
+                                            <div className="flex justify-between text-[7px] font-black uppercase tracking-tighter text-zinc-400">
+                                                <span>{Math.round(ACCESSIBILITY_SCALE_MIN * 100)}%</span>
+                                                <span>{Math.round(ACCESSIBILITY_SCALE_MAX * 100)}%</span>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-4">
+                                                <p
+                                                    className="font-black uppercase text-black leading-none"
+                                                    style={{ fontSize: `${clampAccessibilityScale(appearanceData.accessibilityScale)}rem` }}
+                                                >
+                                                    Vista previa
+                                                </p>
+                                                <p
+                                                    className="mt-2 font-medium leading-relaxed text-zinc-600"
+                                                    style={{ fontSize: `${0.8 * clampAccessibilityScale(appearanceData.accessibilityScale)}rem` }}
+                                                >
+                                                    Este ajuste mejora la lectura sin cambiar el diseño base del sitio.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* BLOQUE 3: FAVICON (misma columna que Identidad, pegado debajo) */}
                                     <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Icono de Navegador (Favicon)</h3>
@@ -793,7 +868,6 @@ export default function PreferenciasPage() {
                                 {/* BLOQUE 2: LOGO PRINCIPAL (columna derecha) */}
                                 <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Logo de Empresa</h3>
-
                                     {/* Control de Tamaño del Logo (rango acotado; coincide con el sitio) */}
                                     <div className="space-y-4 px-1">
                                         <div className="space-y-1">
@@ -901,7 +975,6 @@ export default function PreferenciasPage() {
                                     <div className="border-b border-gray-50 pb-5">
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 leading-none">Banner Principal (Hero)</h3>
                                     </div>
-
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3 text-left">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none block">Imagen del Banner</label>

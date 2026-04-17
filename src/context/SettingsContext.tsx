@@ -77,6 +77,7 @@ interface SiteConfig {
 interface AppearanceSettings {
     Sitename?: string
     primaryColor?: string
+    accessibilityScale?: number
     brandName?: string
     logo?: SanityImageLike
     /** Altura máxima del logo (px). El campo Sanity conserva el nombre `logoWidth`. */

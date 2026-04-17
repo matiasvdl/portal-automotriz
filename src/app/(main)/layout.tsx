@@ -74,6 +74,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
             logoWidth,
             splitText, 
             isJoined, 
+            accessibilityScale,
             primaryColor,
             minDepositPercent, 
             minIncome, 

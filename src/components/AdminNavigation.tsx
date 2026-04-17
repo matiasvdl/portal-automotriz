@@ -9,7 +9,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { client } from '@/sanity/lib/client'
 import { urlFor } from '@/sanity/lib/image'
 import { useSettings } from '@/context/SettingsContext'
-import { resolveBrandLabel, resolveLogoMaxHeightPx } from '@/lib/content-defaults'
+import { resolveBrandLabel, resolveBrandTextParts, resolveLogoMaxHeightPx } from '@/lib/content-defaults'
 
 interface NavigationUserData {
     image?: { asset?: unknown }
@@ -37,11 +37,13 @@ export default function AdminNavigation() {
         fetchUserData()
     }, [session])
 
-    const displayName = userData?.firstName || session?.user?.name?.split(' ')[0] || 'Admin'
-    const initial = displayName.charAt(0).toUpperCase()
+    const userDisplayName = userData?.firstName || session?.user?.name?.split(' ')[0] || 'Admin'
+    const initial = userDisplayName.charAt(0).toUpperCase()
     const brandName = resolveBrandLabel(appearance, config)
-    const firstWord = brandName.split(' ')[0] || brandName
-    const restWords = brandName.split(' ').slice(1).join(' ')
+    const { splitText, isJoined, firstWord, displayName, restText } = resolveBrandTextParts(brandName, {
+        splitText: appearance?.splitText,
+        isJoined: appearance?.isJoined,
+    })
     const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null
     const logoMaxH = resolveLogoMaxHeightPx(appearance?.logoWidth)
 
@@ -77,9 +79,14 @@ export default function AdminNavigation() {
                                 />
                             </div>
                         ) : (
-                            <>
-                                {firstWord}<span className="font-light text-zinc-700">{restWords ? ` ${restWords}` : ''}</span>
-                            </>
+                            splitText ? (
+                                <>
+                                    {firstWord}
+                                    {restText ? <span className={`font-light text-zinc-700${isJoined ? '' : ' ml-1'}`}>{restText}</span> : null}
+                                </>
+                            ) : (
+                                displayName
+                            )
                         )}
                     </Link>
                 </div>
@@ -92,14 +99,14 @@ export default function AdminNavigation() {
                     >
                         <div className="text-right hidden sm:block leading-none">
                             <p className="text-[11px] font-black uppercase tracking-widest text-black group-hover:text-zinc-600 transition-colors">
-                                {displayName}
+                                {userDisplayName}
                             </p>
                             <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-1 leading-none">Panel Admin</p>
                         </div>
 
                         <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black shrink-0 overflow-hidden border border-gray-100 shadow-sm">
                             {userData?.image ? (
-                                <img src={urlFor(userData.image).url()} className="w-full h-full object-cover" alt={displayName} />
+                                <img src={urlFor(userData.image).url()} className="w-full h-full object-cover" alt={userDisplayName} />
                             ) : (
                                 <span>{initial}</span>
                             )}

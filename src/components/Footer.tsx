@@ -4,7 +4,7 @@
 import Link from 'next/link'
 import { useSettings } from '@/context/SettingsContext'
 import { urlFor } from '@/sanity/lib/image'
-import { resolveBrandLabel, resolveLogoMaxHeightPx } from '@/lib/content-defaults'
+import { resolveBrandLabel, resolveBrandTextParts, resolveLogoMaxHeightPx } from '@/lib/content-defaults'
 
 interface FooterLink {
     title: string
@@ -19,48 +19,38 @@ interface FooterConfig {
 }
 
 export default function Footer({ config: propConfig }: { config?: FooterConfig }) {
-    const { appearance, config: contextConfig } = useSettings();
-    const config = (propConfig || contextConfig) as FooterConfig;
+    const { appearance, config: contextConfig } = useSettings()
+    const config = (propConfig || contextConfig) as FooterConfig
 
-    // --- PASO A: Extraemos datos dinámicos ---
-    const brandName = resolveBrandLabel(appearance, config);
-    const splitText = appearance?.splitText !== false;
-    const isJoined = appearance?.isJoined === true;
+    const brandName = resolveBrandLabel(appearance, config)
+    const { splitText, isJoined, firstWord, displayName, restText } = resolveBrandTextParts(brandName, {
+        splitText: appearance?.splitText,
+        isJoined: appearance?.isJoined,
+    })
 
-    /**
-     * Renderiza el logo en formato texto basándose en la configuración de Sanity.
-     */
     const renderTextLogo = () => {
-        const displayName = isJoined ? brandName.replace(/\s+/g, '') : brandName;
-        if (!splitText) return <span>{displayName}</span>;
-
-        const firstWord = brandName.split(" ")[0];
-        const restOfName = isJoined
-            ? brandName.replace(/\s+/g, '').substring(firstWord.length)
-            : brandName.substring(firstWord.length);
+        if (!splitText) return <span>{displayName}</span>
 
         return (
             <>
                 {firstWord}
-                {/* CORRECCIÓN: Usamos text-zinc-400 en lugar del color primario para que se vea en fondo negro */}
-                <span className={`font-light text-zinc-400 ${isJoined ? 'ml-0' : 'ml-1'}`}>
-                    {restOfName}
-                </span>
+                {restText ? (
+                    <span className={`font-light text-zinc-400${isJoined ? '' : ' ml-1'}`}>
+                        {restText}
+                    </span>
+                ) : null}
             </>
-        );
-    };
+        )
+    }
 
-    // Obtención segura de la URL del logo
-    const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null;
-    const logoMaxH = resolveLogoMaxHeightPx(appearance?.logoWidth);
-    const year = new Date().getFullYear();
+    const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null
+    const logoMaxH = resolveLogoMaxHeightPx(appearance?.logoWidth)
+    const year = new Date().getFullYear()
 
     return (
-        <footer className="bg-black text-white pt-16 pb-8 border-t border-white/5">
-            <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-16 mb-12 text-left">
-
-                {/* 1. Logo y descripción */}
-                <div className="md:col-span-4 space-y-6">
+        <footer className="border-t border-white/5 bg-black pb-8 pt-16 text-white">
+            <div className="mx-auto mb-12 grid max-w-7xl grid-cols-1 gap-8 px-6 text-left md:grid-cols-12 md:gap-16">
+                <div className="space-y-6 md:col-span-4">
                     <div className="space-y-4">
                         <Link href="/" className="block">
                             {logoUrl ? (
@@ -81,51 +71,61 @@ export default function Footer({ config: propConfig }: { config?: FooterConfig }
                                     />
                                 </div>
                             ) : (
-                                <div className="text-2xl font-black italic tracking-tighter uppercase text-white">
+                                <div className="text-2xl font-black italic uppercase tracking-tighter text-white">
                                     {renderTextLogo()}
                                 </div>
                             )}
                         </Link>
 
-                        <p className="text-zinc-400 text-sm leading-relaxed max-w-xs font-medium">
-                            {config?.footerDescription || ""}
+                        <p className="max-w-xs text-sm font-medium leading-relaxed text-zinc-400">
+                            {config?.footerDescription || ''}
                         </p>
                     </div>
                 </div>
 
-                {/* 2. Enlaces Columna 1 */}
-                <div className="md:col-span-3 space-y-4 text-sm font-medium text-gray-400">
-                    {config?.footerLinks?.slice(0, 3).map((link, i: number) => (
-                        <Link key={i} href={link.path || '#'} className="block hover:text-white transition-colors">
+                <div className="space-y-4 text-sm font-medium text-gray-400 md:hidden">
+                    {config?.footerLinks?.map((link, i: number) => (
+                        <Link key={i} href={link.path || '#'} className="block transition-colors hover:text-white">
                             {link.title}
                         </Link>
                     ))}
                 </div>
 
-                {/* 3. Enlaces Columna 2 */}
-                <div className="md:col-span-3 space-y-4 text-sm font-medium text-gray-400">
-                    {config?.footerLinks?.slice(3).map((link, i: number) => (
-                        <Link key={i} href={link.path || '#'} className="block hover:text-white transition-colors">
+                <div className="hidden space-y-4 text-sm font-medium text-gray-400 md:col-span-3 md:block">
+                    {config?.footerLinks?.slice(0, 3).map((link, i: number) => (
+                        <Link key={i} href={link.path || '#'} className="block transition-colors hover:text-white">
                             {link.title}
                         </Link>
                     ))}
-                    <div className="flex items-center gap-2 pt-4 opacity-50 text-white">
-                        <span className="text-[10px] font-bold border border-white px-1.5 py-0.5 rounded uppercase tracking-tighter">CL</span>
+                </div>
+
+                <div className="hidden space-y-4 text-sm font-medium text-gray-400 md:col-span-3 md:block">
+                    {config?.footerLinks?.slice(3).map((link, i: number) => (
+                        <Link key={i} href={link.path || '#'} className="block transition-colors hover:text-white">
+                            {link.title}
+                        </Link>
+                    ))}
+                    <div className="flex items-center gap-2 pt-4 text-white opacity-50">
+                        <span className="rounded border border-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-tighter">CL</span>
                         <span className="text-sm font-normal">Chile</span>
                     </div>
                 </div>
+
+                <div className="flex items-center gap-2 text-white opacity-50 md:hidden">
+                    <span className="rounded border border-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-tighter">CL</span>
+                    <span className="text-sm font-normal">Chile</span>
+                </div>
             </div>
 
-            {/* 4. Barra final */}
-            <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] gap-4">
-                <Link href="/admin/ingresar" className="cursor-default hover:text-gray-500 transition-none ml-0.5">
-                    <p className="text-center md:text-left select-none">
+            <div className="mx-auto mt-16 flex max-w-7xl flex-col items-center justify-between gap-4 border-t border-white/10 px-6 pt-8 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 md:flex-row">
+                <Link href="/admin/ingresar" className="ml-0.5 cursor-default transition-none hover:text-gray-500">
+                    <p className="select-none text-center md:text-left">
                         © {year} {config?.siteName?.trim() || brandName} | TODOS LOS DERECHOS RESERVADOS
                     </p>
                 </Link>
 
-                <p className="hidden md:block italic font-medium text-white uppercase tracking-normal">
-                    {config?.footerTagline || ""}
+                <p className="hidden font-medium uppercase tracking-normal text-white md:block">
+                    {config?.footerTagline || ''}
                 </p>
             </div>
         </footer>

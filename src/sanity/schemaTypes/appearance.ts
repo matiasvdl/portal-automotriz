@@ -9,7 +9,7 @@ export const appearance = defineType({
             name: 'primaryColor',
             title: 'Color Primario',
             type: 'string',
-            description: 'Hexadecimal (ej: #000000)'
+            description: 'Hexadecimal (ej: #000000)',
         },
         defineField({
             name: 'brandName',
@@ -26,20 +26,17 @@ export const appearance = defineType({
             name: 'logoWidth',
             title: 'Altura máxima del logo (px)',
             type: 'number',
-            description:
-                'Altura máxima visible en header y pie (48–72 px). El nombre técnico del campo sigue siendo logoWidth por compatibilidad.',
-            initialValue: 64, // alinear con CONTENT_DEFAULTS.logoMaxHeightPx en src/lib/content-defaults.ts
+            description: 'Altura máxima visible en header y pie (48-72 px). El nombre técnico del campo sigue siendo logoWidth por compatibilidad.',
+            initialValue: 64,
             validation: (Rule) => Rule.min(48).max(72).integer(),
         }),
-        // --- NUEVO: CAMPO PARA EL FAVICON ---
         defineField({
             name: 'favicon',
             title: 'Favicon (Icono de la pestaña)',
             type: 'image',
-            description: 'Sube una imagen cuadrada (PNG o ICO). Si no subes nada, se usará el logo principal.',
+            description: 'Sube una imagen cuadrada. Si no subes nada, se usará el logo principal.',
             options: { hotspot: true },
         }),
-
         defineField({
             name: 'splitText',
             title: 'Estilo Dividido',
@@ -51,12 +48,20 @@ export const appearance = defineType({
             type: 'boolean',
         }),
         defineField({
+            name: 'accessibilityScale',
+            title: 'Escala de Accesibilidad',
+            type: 'number',
+            description: 'Aumenta el tamaño general del sitio y del panel administrativo para facilitar la lectura.',
+            initialValue: 1,
+            validation: (Rule) => Rule.min(1).max(1.25),
+        }),
+        defineField({
             name: 'minDepositPercent',
             title: 'Porcentaje de Pie Mínimo (%)',
             type: 'number',
             description: 'Porcentaje por defecto para el cálculo del financiamiento (ej: 30)',
             initialValue: 30,
-            validation: Rule => Rule.min(0).max(100)
+            validation: (Rule) => Rule.min(0).max(100),
         }),
         defineField({
             name: 'minIncome',
@@ -72,7 +77,6 @@ export const appearance = defineType({
             description: 'Texto descriptivo (ej: Mínimo 1 año de continuidad)',
             initialValue: 'Mínimo 1 año de continuidad laboral.',
         }),
-        // --- SECCIÓN DEL BANNER ---
         defineField({
             name: 'hero',
             title: 'Banner Principal (Hero)',
@@ -84,7 +88,7 @@ export const appearance = defineType({
                     name: 'image',
                     title: 'Imagen de Fondo',
                     type: 'image',
-                    options: { hotspot: true }
+                    options: { hotspot: true },
                 },
                 {
                     name: 'position',
@@ -95,11 +99,11 @@ export const appearance = defineType({
                             { title: 'Centro (Recomendado)', value: 'center' },
                             { title: 'Superior (Enfocar arriba)', value: 'top' },
                             { title: 'Inferior (Enfocar abajo)', value: 'bottom' },
-                        ]
+                        ],
                     },
-                    initialValue: 'center'
-                }
-            ]
-        })
+                    initialValue: 'center',
+                },
+            ],
+        }),
     ],
 })

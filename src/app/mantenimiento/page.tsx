@@ -1,4 +1,5 @@
 import { client } from '@/sanity/lib/client'
+import { resolveBrandTextParts } from '@/lib/content-defaults'
 
 interface MaintenanceData {
     siteName?: string
@@ -12,6 +13,8 @@ interface MaintenanceData {
     }
     appearance?: {
         brandName?: string
+        splitText?: boolean
+        isJoined?: boolean
     }
     contact?: {
         email?: string
@@ -22,7 +25,7 @@ async function getMaintenanceData() {
     return client.fetch<MaintenanceData>(`{
         "siteName": *[_type == "siteConfig"][0].siteName,
         "maintenanceContent": *[_type == "siteConfig"][0].maintenanceContent,
-        "appearance": *[_id == "appearance-settings"][0]{ brandName },
+        "appearance": *[_id == "appearance-settings"][0]{ brandName, splitText, isJoined },
         "contact": coalesce(*[_id == "contact-settings" && _type == "contact"][0], *[_type == "contact"][0], *[_type == "contactSettings"][0]){ email }
     }`, {}, { cache: 'no-store' })
 }
@@ -37,75 +40,56 @@ export default async function MantenimientoPage() {
     const contactEmail = data?.maintenanceContent?.contactEmail?.trim() || data?.contact?.email?.trim() || ''
     const footerText = data?.maintenanceContent?.footerText?.trim() || `© ${new Date().getFullYear()} ${brandName}`
 
-    const firstWord = brandName.split(' ')[0] || brandName
-    const restWords = brandName.split(' ').slice(1).join(' ')
+    const { splitText, isJoined, firstWord, displayName, restText } = resolveBrandTextParts(brandName, {
+        splitText: data?.appearance?.splitText,
+        isJoined: data?.appearance?.isJoined,
+    })
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-[#F7F8FA] text-black font-sans">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.95),rgba(247,248,250,0.75)_45%,rgba(240,242,245,0.9)_100%)]" />
-            <div className="absolute left-[-120px] top-[-120px] h-[280px] w-[280px] rounded-full bg-white/70 blur-3xl" />
-            <div className="absolute bottom-[-120px] right-[-80px] h-[260px] w-[260px] rounded-full bg-white/60 blur-3xl" />
+        <div className="min-h-screen bg-white text-black font-sans">
+            <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-10">
+                <div className="flex flex-1 items-center justify-center">
+                    <div className="w-full max-w-3xl text-center">
+                        <div className="mb-10 space-y-3">
+                            <div className="mb-8 text-3xl font-black italic uppercase leading-none tracking-tighter md:text-4xl">
+                                {splitText ? (
+                                    <>
+                                        {firstWord}
+                                        {restText ? <span className={`font-light text-zinc-500${isJoined ? '' : ' ml-1'}`}>{restText}</span> : null}
+                                    </>
+                                ) : (
+                                    displayName
+                                )}
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 leading-none">
+                                {eyebrow}
+                            </p>
+                            <h1 className="text-3xl font-black uppercase tracking-tight leading-[0.95] md:text-5xl">
+                                {title}
+                            </h1>
+                        </div>
 
-            <div className="relative flex min-h-screen flex-col px-6 py-8 md:px-10 md:py-10">
-                <header className="flex items-start justify-start">
-                    <div className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none">
-                        {firstWord}
-                        {restWords ? <span className="font-light text-zinc-500"> {restWords}</span> : null}
-                    </div>
-                </header>
-
-                <main className="flex flex-1 items-center justify-center">
-                    <div className="w-full max-w-5xl">
-                        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_0.8fr] lg:gap-10 items-end">
-                            <section className="text-left">
-                                <p className="mb-5 text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400 leading-none">
-                                    {eyebrow}
+                        <div className="mx-auto max-w-xl rounded-2xl border border-gray-200 bg-[#F7F8F9] p-6 text-left">
+                            <p className="mb-6 text-[13px] font-medium leading-relaxed text-zinc-700">
+                                {message}
+                            </p>
+                            <div className="flex flex-col gap-1.5">
+                                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                                    {contactLabel}
                                 </p>
-                                <h1 className="max-w-3xl text-5xl md:text-7xl lg:text-[88px] font-black uppercase tracking-tighter leading-[0.88]">
-                                    {title}
-                                </h1>
-                                <div className="mt-8 max-w-2xl rounded-[32px] border border-white/80 bg-white/80 px-7 py-7 shadow-[0_20px_60px_rgba(0,0,0,0.04)] backdrop-blur-sm">
-                                    <p className="text-sm md:text-[15px] font-bold leading-relaxed text-zinc-600">
-                                        {message}
-                                    </p>
-                                </div>
-                            </section>
-
-                            <aside className="rounded-[32px] border border-white/80 bg-white px-7 py-8 shadow-[0_20px_60px_rgba(0,0,0,0.05)]">
-                                <div className="space-y-6 text-left">
-                                    <div className="space-y-2">
-                                        <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400 leading-none">
-                                            Estado
-                                        </p>
-                                        <div className="inline-flex items-center gap-2 rounded-full bg-[#F7F8FA] px-4 py-2">
-                                            <span className="h-2 w-2 rounded-full bg-black" />
-                                            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-black">
-                                                En mantenimiento
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="border-t border-gray-100 pt-6">
-                                        <p className="mb-3 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400 leading-none">
-                                            {contactLabel}
-                                        </p>
-                                        <div className="rounded-[24px] bg-[#F7F8FA] px-5 py-5">
-                                            <p className="text-[13px] font-black italic tracking-tight uppercase break-words leading-relaxed">
-                                                {contactEmail || 'Pronto volveremos a estar disponibles'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </aside>
+                                <p className="break-words text-[12px] font-extrabold uppercase tracking-tight">
+                                    {contactEmail}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </main>
+                </div>
 
-                <footer className="flex justify-center pt-6 md:justify-end">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-300">
+                <div className="pt-8 text-center">
+                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-300">
                         {footerText}
                     </p>
-                </footer>
+                </div>
             </div>
         </div>
     )
