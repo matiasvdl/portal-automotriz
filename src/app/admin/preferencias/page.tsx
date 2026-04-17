@@ -692,7 +692,7 @@ export default function PreferenciasPage() {
                                 {/* Columna izquierda: identidad + favicon (evita hueco gigante si el logo es alto) */}
                                 <div className="flex flex-col gap-7">
                                     {/* BLOQUE 1: IDENTIDAD VISUAL */}
-                                    <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    <div className="min-h-[420px] bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Identidad Visual</h3>
                                         <div className="space-y-6">
                                             {/* Color de Marca con Selector Visual */}
@@ -761,7 +761,111 @@ export default function PreferenciasPage() {
                                         </div>
                                     </div>
 
-                                    <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                    {/* BLOQUE 2: LOGO PRINCIPAL (debajo de identidad visual) */}
+                                    <div className="min-h-[430px] bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Logo de Empresa</h3>
+                                        <div className="space-y-4 px-1">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                                    Altura máxima del logo:{' '}
+                                                    <span className="text-black">
+                                                        {clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx)} px
+                                                    </span>
+                                                </label>
+                                                <p className="text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                    Altura máxima del logo en header y pie (entre {LOGO_MAX_HEIGHT_MIN_PX} y {LOGO_MAX_HEIGHT_MAX_PX}{' '}
+                                                    px). El ancho se calcula solo para mantener la proporción; en móvil no desborda el contenedor.
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {LOGO_SIZE_PRESETS.map((p) => (
+                                                    <button
+                                                        key={p.value}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setAppearanceData((prev) => ({ ...prev, logoWidth: p.value }))
+                                                        }
+                                                        className={`rounded-full px-3 py-1.5 text-[8px] font-black uppercase tracking-tight transition-colors ${clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx) === p.value
+                                                            ? 'bg-black text-white'
+                                                            : 'bg-[#F7F8FA] text-zinc-600 hover:bg-zinc-200'
+                                                            }`}
+                                                    >
+                                                        {p.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={LOGO_MAX_HEIGHT_MIN_PX}
+                                                max={LOGO_MAX_HEIGHT_MAX_PX}
+                                                step={LOGO_MAX_HEIGHT_STEP_PX}
+                                                value={clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx)}
+                                                onChange={(e) =>
+                                                    setAppearanceData((prev) => ({
+                                                        ...prev,
+                                                        logoWidth: clampLogoMaxHeightPx(parseInt(e.target.value, 10)),
+                                                    }))
+                                                }
+                                                className="w-full h-1.5 cursor-pointer rounded-lg bg-gray-100 accent-black appearance-none"
+                                            />
+                                            <div className="flex justify-between text-[7px] font-black uppercase tracking-tighter text-zinc-400">
+                                                <span>{LOGO_MAX_HEIGHT_MIN_PX} px</span>
+                                                <span>{LOGO_MAX_HEIGHT_MAX_PX} px</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">
+                                                Imagen del Logo (PNG con fondo transparente recomendado)
+                                            </label>
+                                            <div className="relative bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[160px] overflow-hidden group">
+                                                {appearanceData.logo ? (
+                                                    <div className="flex flex-col items-center space-y-4 w-full">
+                                                        <div
+                                                            className="flex max-w-full items-center justify-center"
+                                                            style={{
+                                                                maxHeight: clampLogoMaxHeightPx(
+                                                                    appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx
+                                                                ),
+                                                            }}
+                                                        >
+                                                            <img
+                                                                src={isSanityImageValue(appearanceData.logo) ? urlFor(appearanceData.logo).url() : ""}
+                                                                alt="Logo Preview"
+                                                                style={{
+                                                                    maxHeight: clampLogoMaxHeightPx(
+                                                                        appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx
+                                                                    ),
+                                                                }}
+                                                                className="h-auto w-auto max-w-full object-contain transition-all duration-300"
+                                                            />
+                                                        </div>
+                                                        <p className="text-center text-[7px] font-bold uppercase tracking-tight text-zinc-400">
+                                                            Misma altura máxima que en la web
+                                                        </p>
+                                                        <button
+                                                            onClick={() => setAppearanceData(prev => ({ ...prev, logo: null }))}
+                                                            className="text-[8px] font-black uppercase text-red-500 hover:underline transition-all"
+                                                        >
+                                                            Quitar logo
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Seleccionar logo principal</p>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={handleLogoUpload}
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                        />
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="hidden bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Accesibilidad Visual</h3>
                                         <div className="space-y-4">
                                             <div className="space-y-1">
@@ -829,18 +933,218 @@ export default function PreferenciasPage() {
                                         </div>
                                     </div>
 
-                                    {/* BLOQUE 3: FAVICON (misma columna que Identidad, pegado debajo) */}
-                                    <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                </div>
+
+                                <div className="flex flex-col gap-7">
+                                    <div className="min-h-[423px] bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Accesibilidad Visual</h3>
+                                        <div className="space-y-3">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                                    Escala general del sitio:{' '}
+                                                    <span className="text-black">
+                                                        {Math.round(clampAccessibilityScale(appearanceData.accessibilityScale) * 100)}%
+                                                    </span>
+                                                </label>
+                                                <p className="text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                    Aumenta el tamaño base de textos y elementos tanto en las páginas públicas como en el panel administrativo.
+                                                </p>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                {[1, 1.1, 1.2, 1.25].map((scale) => (
+                                                    <button
+                                                        key={scale}
+                                                        type="button"
+                                                        onClick={() => setAppearanceData((prev) => ({ ...prev, accessibilityScale: scale }))}
+                                                        className={`rounded-full px-3 py-1.5 text-[8px] font-black uppercase tracking-tight transition-colors ${clampAccessibilityScale(appearanceData.accessibilityScale) === scale
+                                                            ? 'bg-black text-white'
+                                                            : 'bg-[#F7F8FA] text-zinc-600 hover:bg-zinc-200'
+                                                            }`}
+                                                    >
+                                                        {Math.round(scale * 100)}%
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <input
+                                                type="range"
+                                                min={ACCESSIBILITY_SCALE_MIN}
+                                                max={ACCESSIBILITY_SCALE_MAX}
+                                                step={ACCESSIBILITY_SCALE_STEP}
+                                                value={clampAccessibilityScale(appearanceData.accessibilityScale)}
+                                                onChange={(e) =>
+                                                    setAppearanceData((prev) => ({
+                                                        ...prev,
+                                                        accessibilityScale: clampAccessibilityScale(parseFloat(e.target.value)),
+                                                    }))
+                                                }
+                                                className="w-full h-1.5 cursor-pointer rounded-lg bg-gray-100 accent-black appearance-none"
+                                            />
+
+                                            <div className="flex justify-between text-[7px] font-black uppercase tracking-tighter text-zinc-400">
+                                                <span>{Math.round(ACCESSIBILITY_SCALE_MIN * 100)}%</span>
+                                                <span>{Math.round(ACCESSIBILITY_SCALE_MAX * 100)}%</span>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3.5">
+                                                <p
+                                                    className="font-black uppercase text-black leading-none"
+                                                    style={{ fontSize: `${clampAccessibilityScale(appearanceData.accessibilityScale)}rem` }}
+                                                >
+                                                    Vista previa
+                                                </p>
+                                                <p
+                                                    className="mt-2 font-medium leading-relaxed text-zinc-600"
+                                                    style={{ fontSize: `${0.8 * clampAccessibilityScale(appearanceData.accessibilityScale)}rem` }}
+                                                >
+                                                    Este ajuste mejora la lectura sin cambiar el diseño base del sitio.
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3.5">
+                                                    <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">
+                                                        Ajuste actual
+                                                    </p>
+                                                    <p className="mt-2 text-[11px] font-black uppercase text-black leading-none">
+                                                        {Math.round(clampAccessibilityScale(appearanceData.accessibilityScale) * 100)}%
+                                                    </p>
+                                                    <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                        Se aplica en el sitio público y en el panel administrativo.
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3.5">
+                                                    <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">
+                                                        Recomendado
+                                                    </p>
+                                                    <p className="mt-2 text-[11px] font-black uppercase text-black leading-none">
+                                                        110% o 120%
+                                                    </p>
+                                                    <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                        Mejora la lectura sin modificar demasiado la composición general.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* BLOQUE 2: LOGO PRINCIPAL (columna derecha) */}
+                                    <div className="hidden bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Logo de Empresa</h3>
+                                        {/* Control de Tamaño del Logo (rango acotado; coincide con el sitio) */}
+                                        <div className="space-y-4 px-1">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                                    Altura máxima del logo:{' '}
+                                                    <span className="text-black">
+                                                        {clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx)} px
+                                                    </span>
+                                                </label>
+                                                <p className="text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                    Altura máxima del logo en header y pie (entre {LOGO_MAX_HEIGHT_MIN_PX} y {LOGO_MAX_HEIGHT_MAX_PX}{' '}
+                                                    px). El ancho se calcula solo para mantener la proporción; en móvil no desborda el contenedor.
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {LOGO_SIZE_PRESETS.map((p) => (
+                                                    <button
+                                                        key={p.value}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setAppearanceData((prev) => ({ ...prev, logoWidth: p.value }))
+                                                        }
+                                                        className={`rounded-full px-3 py-1.5 text-[8px] font-black uppercase tracking-tight transition-colors ${clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx) === p.value
+                                                            ? 'bg-black text-white'
+                                                            : 'bg-[#F7F8FA] text-zinc-600 hover:bg-zinc-200'
+                                                            }`}
+                                                    >
+                                                        {p.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={LOGO_MAX_HEIGHT_MIN_PX}
+                                                max={LOGO_MAX_HEIGHT_MAX_PX}
+                                                step={LOGO_MAX_HEIGHT_STEP_PX}
+                                                value={clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx)}
+                                                onChange={(e) =>
+                                                    setAppearanceData((prev) => ({
+                                                        ...prev,
+                                                        logoWidth: clampLogoMaxHeightPx(parseInt(e.target.value, 10)),
+                                                    }))
+                                                }
+                                                className="w-full h-1.5 cursor-pointer rounded-lg bg-gray-100 accent-black appearance-none"
+                                            />
+                                            <div className="flex justify-between text-[7px] font-black uppercase tracking-tighter text-zinc-400">
+                                                <span>{LOGO_MAX_HEIGHT_MIN_PX} px</span>
+                                                <span>{LOGO_MAX_HEIGHT_MAX_PX} px</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
+                                            <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">
+                                                Imagen del Logo (PNG con fondo transparente recomendado)
+                                            </label>
+                                            <div className="relative bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[160px] overflow-hidden group">
+                                                {appearanceData.logo ? (
+                                                    <div className="flex flex-col items-center space-y-4 w-full">
+                                                        <div
+                                                            className="flex max-w-full items-center justify-center"
+                                                            style={{
+                                                                maxHeight: clampLogoMaxHeightPx(
+                                                                    appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx
+                                                                ),
+                                                            }}
+                                                        >
+                                                            <img
+                                                                src={isSanityImageValue(appearanceData.logo) ? urlFor(appearanceData.logo).url() : ""}
+                                                                alt="Logo Preview"
+                                                                style={{
+                                                                    maxHeight: clampLogoMaxHeightPx(
+                                                                        appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx
+                                                                    ),
+                                                                }}
+                                                                className="h-auto w-auto max-w-full object-contain transition-all duration-300"
+                                                            />
+                                                        </div>
+                                                        <p className="text-center text-[7px] font-bold uppercase tracking-tight text-zinc-400">
+                                                            Misma altura máxima que en la web
+                                                        </p>
+                                                        <button
+                                                            onClick={() => setAppearanceData(prev => ({ ...prev, logo: null }))}
+                                                            className="text-[8px] font-black uppercase text-red-500 hover:underline transition-all"
+                                                        >
+                                                            Quitar logo
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Seleccionar logo principal</p>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={handleLogoUpload}
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                        />
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* BLOQUE 3: FAVICON (debajo del logo de empresa) */}
+                                    <div className="min-h-[443px] bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
                                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Icono de Navegador (Favicon)</h3>
                                         <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
                                             <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Imagen del Icono (Cuadrada)</label>
-                                            <div className="relative bg-[#F7F8FA] rounded-2xl p-6 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[130px] overflow-hidden group">
+                                            <div className="relative bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[160px] overflow-hidden group">
                                                 {appearanceData.favicon ? (
                                                     <div className="flex flex-col items-center space-y-3 w-full">
                                                         <img
                                                             src={isSanityImageValue(appearanceData.favicon) ? urlFor(appearanceData.favicon).width(64).url() : ""}
                                                             alt="Favicon Preview"
-                                                            className="w-8 h-8 object-contain rounded shadow-sm"
+                                                            className="w-10 h-10 object-contain rounded shadow-sm"
                                                         />
                                                         <button
                                                             onClick={() => setAppearanceData(prev => ({ ...prev, favicon: null }))}
@@ -875,110 +1179,30 @@ export default function PreferenciasPage() {
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                {/* BLOQUE 2: LOGO PRINCIPAL (columna derecha) */}
-                                <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 border-b border-gray-50 pb-5 leading-none mb-5">Logo de Empresa</h3>
-                                    {/* Control de Tamaño del Logo (rango acotado; coincide con el sitio) */}
-                                    <div className="space-y-4 px-1">
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
-                                                Altura máxima del logo:{' '}
-                                                <span className="text-black">
-                                                    {clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx)} px
-                                                </span>
-                                            </label>
-                                            <p className="text-[8px] font-medium leading-relaxed text-zinc-500">
-                                                Altura máxima del logo en header y pie (entre {LOGO_MAX_HEIGHT_MIN_PX} y {LOGO_MAX_HEIGHT_MAX_PX}{' '}
-                                                px). El ancho se calcula solo para mantener la proporción; en móvil no desborda el contenedor.
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {LOGO_SIZE_PRESETS.map((p) => (
-                                                <button
-                                                    key={p.value}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setAppearanceData((prev) => ({ ...prev, logoWidth: p.value }))
-                                                    }
-                                                    className={`rounded-full px-3 py-1.5 text-[8px] font-black uppercase tracking-tight transition-colors ${clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx) === p.value
-                                                        ? 'bg-black text-white'
-                                                        : 'bg-[#F7F8FA] text-zinc-600 hover:bg-zinc-200'
-                                                        }`}
-                                                >
-                                                    {p.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min={LOGO_MAX_HEIGHT_MIN_PX}
-                                            max={LOGO_MAX_HEIGHT_MAX_PX}
-                                            step={LOGO_MAX_HEIGHT_STEP_PX}
-                                            value={clampLogoMaxHeightPx(appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx)}
-                                            onChange={(e) =>
-                                                setAppearanceData((prev) => ({
-                                                    ...prev,
-                                                    logoWidth: clampLogoMaxHeightPx(parseInt(e.target.value, 10)),
-                                                }))
-                                            }
-                                            className="w-full h-1.5 cursor-pointer rounded-lg bg-gray-100 accent-black appearance-none"
-                                        />
-                                        <div className="flex justify-between text-[7px] font-black uppercase tracking-tighter text-zinc-400">
-                                            <span>{LOGO_MAX_HEIGHT_MIN_PX} px</span>
-                                            <span>{LOGO_MAX_HEIGHT_MAX_PX} px</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                        <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">
-                                            Imagen del Logo (PNG con fondo transparente recomendado)
-                                        </label>
-                                        <div className="relative bg-[#F7F8FA] rounded-2xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center space-y-4 min-h-[160px] overflow-hidden group">
-                                            {appearanceData.logo ? (
-                                                <div className="flex flex-col items-center space-y-4 w-full">
-                                                    <div
-                                                        className="flex max-w-full items-center justify-center"
-                                                        style={{
-                                                            maxHeight: clampLogoMaxHeightPx(
-                                                                appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx
-                                                            ),
-                                                        }}
-                                                    >
-                                                        <img
-                                                            src={isSanityImageValue(appearanceData.logo) ? urlFor(appearanceData.logo).url() : ""}
-                                                            alt="Logo Preview"
-                                                            style={{
-                                                                maxHeight: clampLogoMaxHeightPx(
-                                                                    appearanceData.logoWidth ?? CONTENT_DEFAULTS.logoMaxHeightPx
-                                                                ),
-                                                            }}
-                                                            className="h-auto w-auto max-w-full object-contain transition-all duration-300"
-                                                        />
-                                                    </div>
-                                                    <p className="text-center text-[7px] font-bold uppercase tracking-tight text-zinc-400">
-                                                        Misma altura máxima que en la web
-                                                    </p>
-                                                    <button
-                                                        onClick={() => setAppearanceData(prev => ({ ...prev, logo: null }))}
-                                                        className="text-[8px] font-black uppercase text-red-500 hover:underline transition-all"
-                                                    >
-                                                        Quitar logo
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase text-center">Seleccionar logo principal</p>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={handleLogoUpload}
-                                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                                    />
-                                                </>
-                                            )}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3.5">
+                                                <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">
+                                                    Estado actual
+                                                </p>
+                                                <p className="mt-2 text-[11px] font-black uppercase text-black leading-none">
+                                                    {appearanceData.favicon ? 'Cargado' : 'Sin icono'}
+                                                </p>
+                                                <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                    Visible en pestañas, favoritos y accesos del navegador.
+                                                </p>
+                                            </div>
+                                            <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3.5">
+                                                <p className="text-[7px] font-black uppercase tracking-widest text-zinc-400 leading-none">
+                                                    Recomendado
+                                                </p>
+                                                <p className="mt-2 text-[11px] font-black uppercase text-black leading-none">
+                                                    PNG cuadrado
+                                                </p>
+                                                <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                    Simple, centrado y legible incluso en tamaño pequeño.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
