@@ -611,7 +611,7 @@ export default function NuevoVehiculoPage() {
                             <button
                                 type="button"
                                 onClick={() => reportFileRef.current?.click()}
-                                className="h-[42px] rounded-xl border border-zinc-200 px-5 text-[9px] font-black uppercase tracking-[0.2em] hover:border-black transition-all whitespace-nowrap"
+                                className="h-[42px] rounded-xl border border-black bg-black px-5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all whitespace-nowrap"
                             >
                                 {formData.reportDocument ? 'Cambiar Informe' : 'Subir Informe'}
                             </button>

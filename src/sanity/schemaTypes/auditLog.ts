@@ -31,7 +31,22 @@ export const auditLog = {
         { name: 'entityTitle', title: 'Título entidad', type: 'string' },
         { name: 'message', title: 'Descripción', type: 'text', rows: 3 },
         { name: 'eventAt', title: 'Fecha del evento', type: 'datetime' },
-        { name: 'metadata', title: 'Metadatos', type: 'object' },
+        {
+            name: 'metadata',
+            title: 'Metadatos',
+            type: 'object',
+            fields: [
+                { name: 'requestIdentifier', title: 'Identificador de solicitud', type: 'string' },
+                { name: 'matched', title: 'Coincidencia encontrada', type: 'boolean' },
+                { name: 'submittedIdentifier', title: 'Identificador enviado', type: 'string' },
+                { name: 'fullName', title: 'Nombre completo', type: 'string' },
+                { name: 'contactEmail', title: 'Correo de contacto', type: 'string' },
+                { name: 'phone', title: 'Teléfono', type: 'string' },
+                { name: 'role', title: 'Rol', type: 'string' },
+                { name: 'deletedRole', title: 'Rol eliminado', type: 'string' },
+                { name: 'updatedOwnProfile', title: 'Actualizó su propio perfil', type: 'boolean' },
+            ],
+        },
     ],
     orderings: [
         {
