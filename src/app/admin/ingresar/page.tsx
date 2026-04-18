@@ -12,6 +12,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState(false)
+    const [loginErrorMessage, setLoginErrorMessage] = useState('Credenciales incorrectas')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showRecoveryForm, setShowRecoveryForm] = useState(false)
     const [recoveryIdentifier, setRecoveryIdentifier] = useState('')
@@ -53,8 +54,15 @@ export default function LoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!email.trim() || !password.trim()) {
+            setLoginErrorMessage('Completa usuario y contraseña')
+            setError(true)
+            return
+        }
+
         setIsSubmitting(true)
         setError(false)
+        setLoginErrorMessage('Credenciales incorrectas')
 
         const result = await signIn('credentials', {
             username: email,
@@ -161,7 +169,6 @@ export default function LoginPage() {
                                         value={email}
                                         onChange={(e) => { setEmail(e.target.value); if (error) setError(false) }}
                                         placeholder="INGRESE SU CORREO O USUARIO"
-                                        required
                                         className="w-full bg-[#F7F7F7] border border-gray-200 px-4 py-3 rounded-xl text-[9px] font-black text-zinc-600 focus:outline-none focus:border-black uppercase placeholder:text-zinc-400"
                                     />
                                 </div>
@@ -175,7 +182,6 @@ export default function LoginPage() {
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); if (error) setError(false) }}
                                         placeholder="••••••••"
-                                        required
                                         className={`w-full bg-[#F7F7F7] border ${error ? 'border-red-500/50' : 'border-gray-200'} px-4 py-3 rounded-xl text-[11px] font-black text-zinc-600 focus:outline-none focus:border-black placeholder:text-zinc-400`}
                                     />
 
@@ -330,7 +336,7 @@ export default function LoginPage() {
                                 Error de acceso
                             </p>
                             <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-[4px] leading-none">
-                                Credenciales incorrectas
+                                {loginErrorMessage}
                             </p>
                         </div>
                     </div>
