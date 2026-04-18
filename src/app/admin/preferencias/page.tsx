@@ -1772,7 +1772,7 @@ export default function PreferenciasPage() {
                                         {settings.branches.length === 0 ? (
                                             <div className="rounded-[24px] border border-gray-100 bg-[#F7F8FA] px-5 py-8 text-left">
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Sin sucursales</p>
-                                                <p className="mt-2 text-[8px] font-medium leading-relaxed text-zinc-500">
+                                                <p className="mt-2 text-[9px] font-medium leading-relaxed text-zinc-500">
                                                     Agrega al menos una sucursal para completar esta página.
                                                 </p>
                                             </div>
