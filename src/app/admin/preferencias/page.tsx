@@ -1787,7 +1787,7 @@ export default function PreferenciasPage() {
                                                         <h4 className="text-[11px] font-black uppercase tracking-tight text-black">
                                                             {isEditing ? (editBranchForm.name || branch.name || 'Sucursal') : (branch.name || 'Nueva sucursal')}
                                                         </h4>
-                                                        <div className="flex gap-1 items-center bg-white/80 p-1 rounded-full border border-gray-100">
+                                                        <div className="-translate-y-1.5 flex gap-1 items-center bg-white/80 p-1 rounded-full border border-gray-100">
                                                             {isEditing ? (
                                                                 <>
                                                                     <button
