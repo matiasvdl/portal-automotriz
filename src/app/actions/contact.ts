@@ -171,7 +171,7 @@ export async function requestAdminPasswordRecovery(formData: {
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
         if (!cleanedIdentifier) {
-            return { success: false, error: 'Ingresa tu usuario o correo.' }
+            return { success: false, error: 'Ingresa los campos solicitados.' }
         }
 
         if (!cleanedFullName) {

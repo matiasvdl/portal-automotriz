@@ -41,14 +41,15 @@ export default function LoginPage() {
         : ''
 
     useEffect(() => {
-        if (error || recoveryNotice) {
+        if (error || recoveryNotice || recoveryError) {
             const timer = setTimeout(() => {
                 setError(false)
                 setRecoveryNotice('')
+                setRecoveryError('')
             }, 5000)
             return () => clearTimeout(timer)
         }
-    }, [error, recoveryNotice])
+    }, [error, recoveryNotice, recoveryError])
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -301,12 +302,12 @@ export default function LoginPage() {
                                     type="button"
                                     onClick={() => void handlePasswordRecovery()}
                                     disabled={isRecoverySubmitting}
-                                    className="w-full bg-black text-white text-[9px] font-black uppercase tracking-[0.25em] py-3.5 rounded-xl hover:bg-zinc-950 shadow-xl shadow-black/10 disabled:bg-zinc-800 disabled:cursor-not-allowed"
+                                    className="w-full bg-black text-white text-[8.5px] font-black uppercase tracking-[0.25em] py-3.5 rounded-xl hover:bg-zinc-950 shadow-xl shadow-black/10 disabled:bg-zinc-800 disabled:cursor-not-allowed"
                                 >
                                     {isRecoverySubmitting ? 'ENVIANDO...' : 'SOLICITAR RECUPERACIÓN'}
                                 </button>
 
-                                <div className="flex justify-center pt-1">
+                                <div className="flex justify-center pt-0">
                                     <button
                                         type="button"
                                         onClick={closeRecoveryScreen}
@@ -316,11 +317,6 @@ export default function LoginPage() {
                                     </button>
                                 </div>
 
-                                {recoveryError && (
-                                    <p className="text-[8px] font-bold uppercase tracking-tight text-red-500 leading-tight text-left">
-                                        {recoveryError}
-                                    </p>
-                                )}
                             </div>
                         </>
                     )}
@@ -349,6 +345,20 @@ export default function LoginPage() {
                             </p>
                             <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-[4px] leading-none">
                                 {recoveryNotice}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {recoveryError && (
+                    <div className="fixed bottom-6 right-6 bg-white border border-gray-100 p-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] flex items-center gap-4 z-[200]">
+                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                        <div className="flex flex-col justify-center text-left">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black leading-none">
+                                Recuperación fallida
+                            </p>
+                            <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter mt-[4px] leading-none">
+                                {recoveryError}
                             </p>
                         </div>
                     </div>

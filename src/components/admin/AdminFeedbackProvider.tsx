@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 
 type FeedbackType = 'success' | 'error' | 'info' | 'warning'
@@ -11,7 +11,7 @@ type NotificationItem = {
     title: string
     message: string
     eventKey: string
-    routePath: string
+    locationLabel: string
     createdAt: number
     read: boolean
 }
@@ -50,31 +50,75 @@ type FeedbackContextValue = {
 }
 
 const FeedbackContext = createContext<FeedbackContextValue | null>(null)
+const MAX_VISIBLE_TOASTS = 3
+const MAX_STORED_NOTIFICATIONS = 150
+const STORAGE_NOTIFICATIONS_KEY = 'admin-feedback-notifications-v1'
+const STORAGE_TOAST_IDS_KEY = 'admin-feedback-toast-ids-v1'
 
-const TYPE_STYLES: Record<FeedbackType, { badge: string; dot: string; title: string; subtitle: string }> = {
+function readStoredNotifications(): NotificationItem[] {
+    if (typeof window === 'undefined') return []
+
+    try {
+        const rawNotifications = window.localStorage.getItem(STORAGE_NOTIFICATIONS_KEY)
+        if (!rawNotifications) return []
+
+        const parsed = JSON.parse(rawNotifications) as NotificationItem[]
+        if (!Array.isArray(parsed)) return []
+
+        return parsed
+            .filter((item) => item && typeof item.id === 'string')
+            .slice(0, MAX_STORED_NOTIFICATIONS)
+    } catch {
+        return []
+    }
+}
+
+function readStoredToastIds(): string[] {
+    if (typeof window === 'undefined') return []
+
+    try {
+        const rawToastIds = window.localStorage.getItem(STORAGE_TOAST_IDS_KEY)
+        if (!rawToastIds) return []
+
+        const parsed = JSON.parse(rawToastIds) as string[]
+        if (!Array.isArray(parsed)) return []
+
+        return parsed
+            .filter((id) => typeof id === 'string')
+            .slice(0, MAX_VISIBLE_TOASTS)
+    } catch {
+        return []
+    }
+}
+
+const TYPE_STYLES: Record<FeedbackType, { badge: string; dot: string; title: string; subtitle: string; panelCard: string }> = {
     success: {
         badge: 'text-emerald-700 bg-emerald-50 border-emerald-200',
         dot: 'bg-emerald-500',
         title: 'text-black',
         subtitle: 'text-zinc-800',
+        panelCard: 'border-emerald-200 bg-emerald-50/60',
     },
     error: {
         badge: 'text-red-700 bg-red-50 border-red-200',
         dot: 'bg-red-500',
         title: 'text-black',
         subtitle: 'text-zinc-800',
+        panelCard: 'border-red-200 bg-red-50/60',
     },
     warning: {
         badge: 'text-amber-700 bg-amber-50 border-amber-200',
         dot: 'bg-amber-500',
         title: 'text-black',
         subtitle: 'text-zinc-800',
+        panelCard: 'border-amber-200 bg-amber-50/60',
     },
     info: {
         badge: 'text-zinc-700 bg-zinc-50 border-zinc-200',
         dot: 'bg-zinc-500',
         title: 'text-black',
         subtitle: 'text-zinc-800',
+        panelCard: 'border-zinc-200 bg-zinc-50/70',
     },
 }
 
@@ -139,20 +183,40 @@ function summarizeAlertMessage(message: string) {
     const compact = toCompactText(message)
     const normalized = compact.toLowerCase().replace(/[.!?]+$/g, '')
 
-    if (normalized === 'cambios guardados') return 'Los cambios se guardaron correctamente'
+    if (normalized === 'cambios guardados') return 'Se guardaron los cambios'
     if (normalized === 'error al guardar' || normalized === 'hubo un error al guardar') {
         return 'No se pudieron guardar los cambios'
     }
-    if (normalized.includes('ajustes guardados correctamente')) return 'Ajustes guardados correctamente'
+    if (normalized.includes('ajustes guardados correctamente')) return 'Se guardaron los ajustes'
     if (normalized.includes('completa los campos')) return 'Completa los campos obligatorios'
     if (normalized.includes('faltan datos')) return 'Faltan datos obligatorios para continuar'
     if (normalized.includes('no se pudo eliminar')) return 'No se pudo eliminar el registro seleccionado'
 
-    if (compact.length > 62) {
-        return `${compact.slice(0, 59).trim()}...`
+    return compact
+}
+
+function explainErrorReason(message: string) {
+    const compact = toCompactText(message)
+    const normalized = compact.toLowerCase()
+
+    if (normalized.includes('motivo:')) return compact
+    if (normalized.includes('no se pudo eliminar la marca')) {
+        return 'No se pudo eliminar la marca. Motivo: está en uso por vehículos o no existe.'
+    }
+    if (normalized.includes('no se pudo eliminar el modelo')) {
+        return 'No se pudo eliminar el modelo. Motivo: está en uso por vehículos o no existe.'
+    }
+    if (normalized.includes('error al guardar') || normalized.includes('hubo un error al guardar')) {
+        return 'No se pudo guardar. Motivo: validación de datos o error del servidor.'
+    }
+    if (normalized.includes('error al subir imagen') || normalized.includes('no pudo procesar la imagen')) {
+        return 'No se pudo subir la imagen. Motivo: formato inválido o fallo del servidor.'
+    }
+    if (normalized.startsWith('error:')) {
+        return compact.replace(/^error:\s*/i, 'Error. Motivo: ')
     }
 
-    return compact
+    return `${compact}. Motivo: no especificado por el sistema.`
 }
 
 function deriveAlertTitle(type: FeedbackType, message: string) {
@@ -189,28 +253,56 @@ function deriveEventKey(type: FeedbackType, title: string, message: string) {
     return `${type}:${normalized.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`
 }
 
+function deriveLocationLabel(pathname: string, message: string) {
+    const normalized = message.toLowerCase()
+
+    if (pathname.startsWith('/admin/preferencias')) {
+        if (normalized.includes('sucursal') || normalized.includes('horario')) return 'Preferencias · Sucursales'
+        if (normalized.includes('reseña') || normalized.includes('resena')) return 'Preferencias · Reseñas'
+        if (normalized.includes('pregunta') || normalized.includes('faq')) return 'Preferencias · Preguntas'
+        if (normalized.includes('marca') || normalized.includes('modelo')) return 'Preferencias · Marcas'
+        if (normalized.includes('seo')) return 'Preferencias · SEO'
+        return 'Preferencias · General'
+    }
+
+    if (pathname.startsWith('/admin/administracion')) {
+        if (normalized.includes('registro')) return 'Administración · Registro de actividad'
+        if (normalized.includes('usuario')) return 'Administración · Usuarios'
+        return 'Administración'
+    }
+
+    if (pathname.startsWith('/admin/dashboard')) return 'Dashboard'
+    if (pathname.startsWith('/admin/editar')) return 'Editar vehículo'
+    if (pathname.startsWith('/admin/nuevo')) return 'Nuevo vehículo'
+    if (pathname.startsWith('/admin/cuenta')) return 'Cuenta'
+
+    return 'Panel administrativo'
+}
+
 function normalizeNotifyInput(input: NotifyInput) {
     if (typeof input === 'string') {
         const inferredType = inferLegacyAlertType(input)
         const compactMessage = summarizeAlertMessage(input)
-        const title = deriveAlertTitle(inferredType, compactMessage)
+        const resolvedMessage = inferredType === 'error' ? explainErrorReason(compactMessage) : compactMessage
+        const title = deriveAlertTitle(inferredType, resolvedMessage)
         return {
             type: inferredType,
             title,
-            message: compactMessage,
-            eventKey: deriveEventKey(inferredType, title, compactMessage),
+            message: resolvedMessage,
+            eventKey: deriveEventKey(inferredType, title, resolvedMessage),
             autoCloseMs: resolveAutoCloseMs(inferredType),
         }
     }
 
     const type = input.type || 'info'
     const compactMessage = summarizeAlertMessage(input.message)
-    const title = input.title || deriveAlertTitle(type, compactMessage)
+    const resolvedMessage = type === 'error' ? explainErrorReason(compactMessage) : compactMessage
+    const title = input.title || deriveAlertTitle(type, resolvedMessage)
     return {
         type,
         title,
-        message: compactMessage,
-        eventKey: deriveEventKey(type, title, compactMessage),
+        message: resolvedMessage,
+        eventKey: deriveEventKey(type, title, resolvedMessage),
         autoCloseMs: resolveAutoCloseMs(type, input.sticky, input.autoCloseMs),
     }
 }
@@ -237,17 +329,19 @@ function normalizeConfirmInput(input: ConfirmInput): ConfirmState {
 
 export function AdminFeedbackProvider({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
-    const [notifications, setNotifications] = useState<NotificationItem[]>([])
-    const [toastIds, setToastIds] = useState<string[]>([])
+    const [notifications, setNotifications] = useState<NotificationItem[]>(() => readStoredNotifications())
+    const [toastIds, setToastIds] = useState<string[]>(() => readStoredToastIds())
     const [panelOpen, setPanelOpen] = useState(false)
     const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
     const confirmResolverRef = useRef<((result: boolean) => void) | null>(null)
+    const toastTimeoutsRef = useRef<Record<string, number>>({})
 
     const addNotification = useCallback((input: NotifyInput) => {
         const normalized = normalizeNotifyInput(input)
         const createdAt = Date.now()
         const duplicateWindowMs = 15000
-        const routePath = pathname || '/'
+        const currentPath = pathname || '/'
+        const locationLabel = deriveLocationLabel(currentPath, normalized.message)
 
         let notificationId = `${createdAt}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -255,7 +349,7 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
             const duplicate = prev.find(
                 (item) =>
                     item.eventKey === normalized.eventKey &&
-                    item.routePath === routePath &&
+                    item.locationLabel === locationLabel &&
                     createdAt - item.createdAt <= duplicateWindowMs
             )
 
@@ -275,24 +369,27 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                     title: normalized.title,
                     message: normalized.message,
                     eventKey: normalized.eventKey,
-                    routePath,
+                    locationLabel,
                     createdAt,
                     read: false,
                 },
-                ...prev.slice(0, 149),
+                ...prev.slice(0, MAX_STORED_NOTIFICATIONS - 1),
             ]
         })
 
         setToastIds((prev) => {
             const withoutCurrent = prev.filter((itemId) => itemId !== notificationId)
-            return [notificationId, ...withoutCurrent].slice(0, 1)
+            return [notificationId, ...withoutCurrent].slice(0, MAX_VISIBLE_TOASTS)
         })
 
-        if (normalized.autoCloseMs > 0) {
-            window.setTimeout(() => {
-                setToastIds((prev) => prev.filter((itemId) => itemId !== notificationId))
-            }, normalized.autoCloseMs)
+        if (toastTimeoutsRef.current[notificationId]) {
+            window.clearTimeout(toastTimeoutsRef.current[notificationId])
         }
+
+        toastTimeoutsRef.current[notificationId] = window.setTimeout(() => {
+            setToastIds((prev) => prev.filter((itemId) => itemId !== notificationId))
+            delete toastTimeoutsRef.current[notificationId]
+        }, 5000)
     }, [pathname])
 
     const confirmAction = useCallback((input: ConfirmInput) => {
@@ -317,11 +414,19 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
     }, [])
 
     const clearNotifications = useCallback(() => {
+        Object.values(toastTimeoutsRef.current).forEach((timeoutId) => {
+            window.clearTimeout(timeoutId)
+        })
+        toastTimeoutsRef.current = {}
         setNotifications([])
         setToastIds([])
     }, [])
 
-    const removeToast = useCallback((id: string) => {
+    const closeToast = useCallback((id: string) => {
+        if (toastTimeoutsRef.current[id]) {
+            window.clearTimeout(toastTimeoutsRef.current[id])
+            delete toastTimeoutsRef.current[id]
+        }
         setToastIds((prev) => prev.filter((itemId) => itemId !== id))
     }, [])
 
@@ -337,8 +442,21 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
         return () => {
             window.alert = originalAlert
             window.confirm = originalConfirm
+            Object.values(toastTimeoutsRef.current).forEach((timeoutId) => {
+                window.clearTimeout(timeoutId)
+            })
+            toastTimeoutsRef.current = {}
         }
     }, [addNotification])
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(STORAGE_NOTIFICATIONS_KEY, JSON.stringify(notifications))
+            window.localStorage.setItem(STORAGE_TOAST_IDS_KEY, JSON.stringify(toastIds))
+        } catch {
+            // Ignoramos errores de persistencia para no bloquear la UI.
+        }
+    }, [notifications, toastIds])
 
     const unreadCount = notifications.filter((item) => !item.read).length
     const visibleToasts = toastIds
@@ -351,16 +469,22 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
     }), [addNotification, confirmAction])
 
     const hideFeedbackUi = pathname === '/admin/ingresar'
+    const isHydrated = useSyncExternalStore(
+        () => () => { },
+        () => true,
+        () => false
+    )
+    const shouldRenderFeedbackUi = isHydrated && !hideFeedbackUi
 
     return (
         <FeedbackContext.Provider value={contextValue}>
             {children}
 
-            {!hideFeedbackUi ? (
+            {shouldRenderFeedbackUi ? (
                 <div className="fixed bottom-4 right-4 z-[80]">
                     <div className="relative flex flex-col items-end">
                         {visibleToasts.length > 0 ? (
-                            <div className="grid w-[320px] grid-cols-1 gap-2">
+                            <div className="grid w-[360px] grid-cols-1 gap-2">
                                 {visibleToasts.map((toast) => (
                                     <div key={toast.id} className="w-full rounded-xl border border-gray-100 bg-white p-4">
                                         <div className="flex items-start justify-between gap-4">
@@ -374,13 +498,13 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                                                         {toast.message}
                                                     </p>
                                                     <p className="mt-[6px] text-[8px] font-bold uppercase tracking-tighter text-zinc-500 leading-none">
-                                                        Ruta: {toast.routePath}
+                                                        {toast.locationLabel}
                                                     </p>
                                                 </div>
                                             </div>
                                             <button
                                                 type="button"
-                                                onClick={() => removeToast(toast.id)}
+                                                onClick={() => closeToast(toast.id)}
                                                 className="rounded-full p-1 text-zinc-400 transition-none hover:bg-zinc-100 hover:text-zinc-700"
                                                 aria-label="Cerrar aviso"
                                             >
@@ -417,14 +541,14 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                 </div>
             ) : null}
 
-            {panelOpen && !hideFeedbackUi ? (
+            {panelOpen && shouldRenderFeedbackUi ? (
                 <div className="fixed inset-0 z-[75] bg-transparent" onClick={() => setPanelOpen(false)}>
                     <div
                         className="absolute bottom-4 right-4 w-[360px] max-h-[70vh] overflow-hidden rounded-3xl border border-gray-200 bg-white"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Notificaciones</p>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Notificaciones</p>
                             <div className="flex items-center gap-2">
                                 <button
                                     type="button"
@@ -443,16 +567,26 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                                 </div>
                             ) : (
                                 notifications.map((item) => (
-                                    <div key={item.id} className={`rounded-2xl border px-3 py-3 text-left ${item.read ? 'border-gray-100 bg-[#F7F8FA]' : 'border-zinc-200 bg-white'}`}>
-                                        <div className="flex items-start justify-between gap-3">
-                                            <span className={`rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-widest ${TYPE_STYLES[item.type].badge}`}>
-                                                {item.title}
-                                            </span>
-                                            <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-400">
+                                    <div key={item.id} className={`w-full rounded-xl border p-4 text-left ${TYPE_STYLES[item.type].panelCard} ${item.read ? 'opacity-75' : 'opacity-100'}`}>
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex items-start gap-4">
+                                                <span className={`mt-0.5 inline-flex h-1.5 w-1.5 rounded-full ${TYPE_STYLES[item.type].dot}`}></span>
+                                                <div className="flex min-w-0 flex-col justify-center text-left">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-black leading-none">
+                                                        {item.title}
+                                                    </p>
+                                                    <p className="mt-[7px] text-[8px] font-bold uppercase tracking-tighter text-zinc-400 leading-none">
+                                                        {item.message}
+                                                    </p>
+                                                    <p className="mt-[6px] text-[8px] font-bold uppercase tracking-tighter text-zinc-500 leading-none">
+                                                        {item.locationLabel}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className="mt-0.5 shrink-0 whitespace-nowrap text-right text-[8px] font-bold uppercase tracking-widest text-zinc-400 leading-none">
                                                 {new Date(item.createdAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
-                                        <p className="mt-2 text-[11px] font-medium leading-relaxed text-zinc-700">{item.message}</p>
                                     </div>
                                 ))
                             )}
@@ -462,9 +596,9 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
             ) : null}
 
             {confirmState ? (
-                <div className="fixed inset-0 z-[90] flex items-center justify-center bg-transparent px-4">
+                <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/10 px-4 pt-24">
                     <div className="w-full max-w-md rounded-3xl border border-gray-300 bg-white p-6 text-left">
-                        <h3 className="text-[14px] font-black uppercase tracking-tight text-black">{confirmState.title}</h3>
+                        <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-black">{confirmState.title}</h3>
                         <p className="mt-3 text-[12px] font-medium leading-relaxed text-zinc-600">{confirmState.message}</p>
                         <div className="mt-6 flex items-center justify-end gap-2">
                             <button

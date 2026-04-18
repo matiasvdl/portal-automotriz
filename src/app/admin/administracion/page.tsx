@@ -281,7 +281,7 @@ export default function AdministracionPage() {
                         <div className="bg-white rounded-[30px] border border-gray-100 p-6 space-y-5">
                             <div className="flex justify-between items-center border-b border-gray-50 pb-5 leading-none">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Miembros</h3>
-                                <button onClick={prepareNew} className="text-[9px] font-black uppercase text-black tracking-widest hover:opacity-50">
+                                <button onClick={prepareNew} className="text-[9px] font-black uppercase text-black tracking-widest hover:opacity-75">
                                     + Nuevo
                                 </button>
                             </div>
@@ -398,11 +398,11 @@ export default function AdministracionPage() {
                             <div className="flex flex-col gap-4 border-b border-gray-50 pb-5 sm:flex-row sm:items-end sm:justify-between">
                                 <div className="leading-none">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">
-                                    Registro de Actividad
-                                </h3>
-                                <p className="mt-2 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-tight">
-                                    Últimas conexiones y acciones del usuario seleccionado.
-                                </p>
+                                        Registro de Actividad
+                                    </h3>
+                                    <p className="mt-2 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-tight">
+                                        Últimas conexiones y acciones del usuario seleccionado.
+                                    </p>
                                     <p className="mt-2 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-tight">
                                         Se cargan hasta {ACTIVITY_LOG_FETCH_LIMIT} registros recientes y se muestran {ACTIVITY_LOG_VISIBLE_LIMIT} por usuario.
                                     </p>
@@ -411,7 +411,7 @@ export default function AdministracionPage() {
                                     type="button"
                                     onClick={() => void handleClearActivityLogs()}
                                     disabled={isSubmitting}
-                                    className="h-[42px] rounded-xl border border-black bg-black px-5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all disabled:opacity-60"
+                                    className="h-[42px] rounded-xl border border-black bg-black px-5 text-[8px] font-black uppercase tracking-[0.2em] text-white transition-all disabled:opacity-60"
                                 >
                                     Limpiar Registro
                                 </button>

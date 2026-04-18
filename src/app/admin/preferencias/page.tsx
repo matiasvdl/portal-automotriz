@@ -193,6 +193,26 @@ function formatBranchSchedule(daySchedules: BranchDaySchedule[]) {
 // Añadimos pestañas nuevas de configuración
 type TabType = 'general' | 'personalizacion' | 'navegacion' | 'financiamiento' | 'contacto' | 'sucursales' | 'preguntas' | 'resenas' | 'seo' | 'marcas' | 'legales';
 const TABS: TabType[] = ['general', 'personalizacion', 'navegacion', 'financiamiento', 'contacto', 'sucursales', 'preguntas', 'resenas', 'seo', 'marcas', 'legales']
+const TAB_LABELS: Record<TabType, string> = {
+    general: 'General',
+    personalizacion: 'Personalización',
+    navegacion: 'Navegación',
+    financiamiento: 'Financiamiento',
+    contacto: 'Contacto',
+    sucursales: 'Sucursales',
+    preguntas: 'Preguntas',
+    resenas: 'Reseñas',
+    seo: 'SEO',
+    marcas: 'Marcas',
+    legales: 'Legales',
+}
+type DeletionType = 'branches' | 'branchHours' | 'navigationLinks'
+type PendingDeletions = Record<DeletionType, number>
+const INITIAL_PENDING_DELETIONS: PendingDeletions = {
+    branches: 0,
+    branchHours: 0,
+    navigationLinks: 0,
+}
 
 function isSanityImageValue(value: SanityImageValue | File | null | undefined): value is SanityImageValue {
     return Boolean(
@@ -240,6 +260,7 @@ export default function PreferenciasPage() {
     const { confirmAction } = useAdminFeedback()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [activeTab, setActiveTab] = useState<TabType>('general')
+    const [pendingDeletions, setPendingDeletions] = useState<PendingDeletions>(INITIAL_PENDING_DELETIONS)
 
     const [settings, setSettings] = useState({
         _id: '',
@@ -300,6 +321,8 @@ export default function PreferenciasPage() {
 
     const [allReviews, setAllReviews] = useState<ReviewItem[]>([])
     const [faqs, setFaqs] = useState<FaqItem[]>([])
+    const [persistedReviews, setPersistedReviews] = useState<ReviewItem[]>([])
+    const [persistedFaqs, setPersistedFaqs] = useState<FaqItem[]>([])
     const [brands, setBrands] = useState<BrandEntry[]>([])
     const [newFaq, setNewFaq] = useState({ question: '', answer: '', order: 0 })
 
@@ -334,6 +357,33 @@ export default function PreferenciasPage() {
     const handleSiteNameChange = (value: string) => {
         setSettings(prev => ({ ...prev, siteName: value }))
         setAppearanceData(prev => ({ ...prev, brandName: value }))
+    }
+
+    const isTempDocumentId = (id: string) => id.startsWith('temp-')
+
+    const registerDeletion = (type: DeletionType) => {
+        setPendingDeletions((prev) => ({
+            ...prev,
+            [type]: prev[type] + 1,
+        }))
+    }
+
+    const resetPendingDeletions = () => {
+        setPendingDeletions(INITIAL_PENDING_DELETIONS)
+    }
+
+    const getDeletionSummaryText = () => {
+        const parts: string[] = []
+        if (pendingDeletions.branches > 0) {
+            parts.push(`${pendingDeletions.branches} sucursal(es)`)
+        }
+        if (pendingDeletions.branchHours > 0) {
+            parts.push(`${pendingDeletions.branchHours} día(s)/horario(s) de sucursales`)
+        }
+        if (pendingDeletions.navigationLinks > 0) {
+            parts.push(`${pendingDeletions.navigationLinks} enlace(s) de navegación/footer`)
+        }
+        return parts.join(', ')
     }
 
     const loadBrands = async () => {
@@ -450,8 +500,14 @@ export default function PreferenciasPage() {
                     })
                 }
 
-                if (reviews) setAllReviews(reviews)
-                if (faqData) setFaqs(faqData)
+                if (reviews) {
+                    setAllReviews(reviews)
+                    setPersistedReviews(reviews)
+                }
+                if (faqData) {
+                    setFaqs(faqData)
+                    setPersistedFaqs(faqData)
+                }
                 await loadBrands()
                 if (contactData) {
                     setContact({
@@ -542,8 +598,126 @@ export default function PreferenciasPage() {
     }
 
     const handleSaveGlobal = async () => {
+        const totalPendingDeletions =
+            pendingDeletions.branches +
+            pendingDeletions.branchHours +
+            pendingDeletions.navigationLinks
+
+        if (totalPendingDeletions > 0) {
+            const confirmedDeletionSave = await confirmAction({
+                title: 'Confirmar guardado con eliminaciones',
+                message: `Detectamos eliminaciones pendientes (${getDeletionSummaryText()}). ¿Confirmas guardar estos cambios?`,
+                confirmText: 'Guardar',
+                cancelText: 'Cancelar',
+                tone: 'danger',
+            })
+
+            if (!confirmedDeletionSave) return
+        }
+
         setIsSubmitting(true)
         try {
+            const hasFaqChanged = (current: FaqItem, previous: FaqItem) =>
+                current.question !== previous.question ||
+                current.answer !== previous.answer ||
+                (current.order || 0) !== (previous.order || 0)
+
+            const hasReviewChanged = (current: ReviewItem, previous: ReviewItem) =>
+                current.name !== previous.name ||
+                current.date !== previous.date ||
+                current.rating !== previous.rating ||
+                current.comment !== previous.comment ||
+                current.badge !== previous.badge
+
+            const syncFaqsAndReviews = async () => {
+                const persistedFaqMap = new Map(persistedFaqs.map((item) => [item._id, item]))
+                const currentFaqIds = new Set(faqs.filter((item) => !isTempDocumentId(item._id)).map((item) => item._id))
+                const faqDeletes = persistedFaqs.filter((item) => !currentFaqIds.has(item._id))
+
+                for (const item of faqDeletes) {
+                    const result = await deleteSanityDocument(item._id)
+                    if (!result.success) {
+                        throw new Error('No se pudo eliminar una pregunta pendiente.')
+                    }
+                }
+
+                for (const item of faqs) {
+                    const payload = {
+                        question: item.question,
+                        answer: item.answer,
+                        order: item.order || 0,
+                    }
+
+                    if (isTempDocumentId(item._id)) {
+                        const result = await createSanityDocument('faq', payload)
+                        if (!result.success) {
+                            throw new Error('No se pudo crear una pregunta pendiente.')
+                        }
+                        continue
+                    }
+
+                    const previous = persistedFaqMap.get(item._id)
+                    if (!previous) continue
+                    if (!hasFaqChanged(item, previous)) continue
+
+                    const result = await updateSanityDocument(item._id, payload)
+                    if (!result.success) {
+                        throw new Error('No se pudo actualizar una pregunta pendiente.')
+                    }
+                }
+
+                const persistedReviewMap = new Map(persistedReviews.map((item) => [item._id, item]))
+                const currentReviewIds = new Set(allReviews.filter((item) => !isTempDocumentId(item._id)).map((item) => item._id))
+                const reviewDeletes = persistedReviews.filter((item) => !currentReviewIds.has(item._id))
+
+                for (const item of reviewDeletes) {
+                    const result = await deleteSanityDocument(item._id)
+                    if (!result.success) {
+                        throw new Error('No se pudo eliminar una reseña pendiente.')
+                    }
+                }
+
+                for (const item of allReviews) {
+                    const payload = {
+                        name: item.name,
+                        date: item.date,
+                        rating: item.rating,
+                        comment: item.comment,
+                        badge: item.badge,
+                    }
+
+                    if (isTempDocumentId(item._id)) {
+                        const result = await createSanityDocument('review', payload)
+                        if (!result.success) {
+                            throw new Error('No se pudo crear una reseña pendiente.')
+                        }
+                        continue
+                    }
+
+                    const previous = persistedReviewMap.get(item._id)
+                    if (!previous) continue
+                    if (!hasReviewChanged(item, previous)) continue
+
+                    const result = await updateSanityDocument(item._id, payload)
+                    if (!result.success) {
+                        throw new Error('No se pudo actualizar una reseña pendiente.')
+                    }
+                }
+
+                const [freshFaqs, freshReviews] = await Promise.all([
+                    client.fetch(`*[_type == "faq"] | order(order asc)`, {}, { cache: 'no-store' }),
+                    client.fetch(`*[_type == "review"] | order(date desc)`, {}, { cache: 'no-store' }),
+                ])
+
+                const normalizedFaqs = (freshFaqs || []).map((item: SanityFaqDocument) => toFaqItem(item))
+                const normalizedReviews = (freshReviews || []).map((item: SanityReviewDocument) => toReviewItem(item))
+
+                setFaqs(normalizedFaqs)
+                setPersistedFaqs(normalizedFaqs)
+                setAllReviews(normalizedReviews)
+                setPersistedReviews(normalizedReviews)
+            }
+
             // 1. Subir Hero si es nuevo
             let heroImageRef = appearanceData.heroImage;
             if (appearanceData.heroImage instanceof File) {
@@ -603,7 +777,16 @@ export default function PreferenciasPage() {
             const response = await saveGlobalPreferences(settings, appearancePayload, contact);
 
             if (response.success) {
-                alert('Ajustes guardados correctamente')
+                await syncFaqsAndReviews()
+                const sectionLabel = TAB_LABELS[activeTab]
+                if (activeTab === 'sucursales') {
+                    alert(`Se actualizaron sucursales y horarios en Preferencias (${sectionLabel}).`)
+                } else if (activeTab === 'resenas') {
+                    alert(`Se guardaron cambios de reseñas en Preferencias (${sectionLabel}).`)
+                } else {
+                    alert(`Se guardaron cambios en Preferencias (${sectionLabel}).`)
+                }
+                resetPendingDeletions()
             } else {
                 alert('Hubo un error al guardar')
             }
@@ -719,6 +902,7 @@ export default function PreferenciasPage() {
             ...prev,
             branches: prev.branches.filter(branch => branch._key !== branchKey),
         }))
+        registerDeletion('branches')
 
         if (editingBranchKey === branchKey) {
             setEditingBranchKey(null)
@@ -742,6 +926,9 @@ export default function PreferenciasPage() {
     const handleToggleEditBranchDay = (dayValue: string) => {
         setEditBranchForm((prev) => {
             const hasDay = prev.daySchedules.some((slot) => slot.day === dayValue)
+            if (hasDay) {
+                registerDeletion('branchHours')
+            }
             const daySchedules = hasDay
                 ? prev.daySchedules.filter((slot) => slot.day !== dayValue)
                 : [...prev.daySchedules, { day: dayValue, openTime: '09:00', closeTime: '18:00' }]
@@ -790,19 +977,15 @@ export default function PreferenciasPage() {
     }
 
     // FUNCIONES FAQ
-    const handleAddFaq = async () => {
+    const handleAddFaq = () => {
         if (!newFaq.question || !newFaq.answer) return alert("Completa los campos")
-        setIsSubmitting(true)
-        try {
-            const result = await createSanityDocument('faq', newFaq)
-            if (result.success && result.data) {
-                setFaqs(prev => [...prev, toFaqItem(result.data as unknown as SanityFaqDocument)])
-                setNewFaq({ question: '', answer: '', order: faqs.length + 1 })
-                alert("Pregunta agregada")
-            } else {
-                alert("Error al agregar la pregunta")
-            }
-        } finally { setIsSubmitting(false) }
+        const tempId = `temp-faq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+        setFaqs(prev => [
+            ...prev,
+            { _id: tempId, question: newFaq.question, answer: newFaq.answer, order: newFaq.order || prev.length + 1 },
+        ])
+        setNewFaq({ question: '', answer: '', order: faqs.length + 1 })
+        alert("Pregunta agregada (pendiente de Guardar cambios)")
     }
 
     const handleDeleteFaq = async (id: string) => {
@@ -815,52 +998,34 @@ export default function PreferenciasPage() {
         })
         if (!confirmedByModal) return
         if (confirm("¿Eliminar esta pregunta?")) {
-            const result = await deleteSanityDocument(id)
-            if (result.success) {
-                setFaqs(prev => prev.filter(f => f._id !== id))
-            } else {
-                alert("Error al eliminar la pregunta")
+            setFaqs(prev => prev.filter(f => f._id !== id))
+            if (editingFaqId === id) {
+                setEditingFaqId(null)
+                setEditFaqForm({ question: '', answer: '', order: 0 })
             }
+            alert("Pregunta marcada para eliminar (pendiente de Guardar cambios)")
         }
     }
 
-    const handleUpdateFaq = async () => {
+    const handleUpdateFaq = () => {
         if (!editingFaqId) return
         if (!editFaqForm.question || !editFaqForm.answer) return alert("Completa los campos")
-
-        setIsSubmitting(true)
-        try {
-            const result = await updateSanityDocument(editingFaqId, editFaqForm)
-            if (result.success) {
-                setFaqs(prev =>
-                    prev
-                        .map(f => (f._id === editingFaqId ? { ...f, ...editFaqForm } : f))
-                        .sort((a, b) => (a.order || 0) - (b.order || 0))
-                )
-                setEditingFaqId(null)
-                alert("Pregunta actualizada")
-            } else {
-                alert("Error al actualizar la pregunta")
-            }
-        } finally {
-            setIsSubmitting(false)
-        }
+        setFaqs(prev =>
+            prev
+                .map(f => (f._id === editingFaqId ? { ...f, ...editFaqForm } : f))
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+        )
+        setEditingFaqId(null)
+        alert("Pregunta actualizada (pendiente de Guardar cambios)")
     }
 
     // FUNCIONES RESEÑAS
-    const handleAddReview = async () => {
+    const handleAddReview = () => {
         if (!newReview.name || !newReview.comment) return alert("Faltan datos")
-        setIsSubmitting(true)
-        try {
-            const result = await createSanityDocument('review', newReview)
-            if (result.success && result.data) {
-                setAllReviews(prev => [toReviewItem(result.data as unknown as SanityReviewDocument), ...prev])
-                setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
-                alert("Reseña publicada")
-            } else {
-                alert("Error al publicar la reseña")
-            }
-        } finally { setIsSubmitting(false) }
+        const tempId = `temp-review-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+        setAllReviews(prev => [{ ...newReview, _id: tempId }, ...prev])
+        setNewReview({ name: '', date: new Date().toISOString().split('T')[0], rating: 5, comment: '', badge: 'Comprador Satisfecho' })
+        alert("Reseña agregada (pendiente de Guardar cambios)")
     }
 
     const handleDeleteReview = async (id: string) => {
@@ -873,28 +1038,28 @@ export default function PreferenciasPage() {
         })
         if (!confirmedByModal) return
         if (confirm("¿Eliminar reseña?")) {
-            const result = await deleteSanityDocument(id)
-            if (result.success) {
-                setAllReviews(prev => prev.filter(r => r._id !== id))
-            } else {
-                alert("Error al eliminar la reseña")
+            setAllReviews(prev => prev.filter(r => r._id !== id))
+            if (editingReviewId === id) {
+                setEditingReviewId(null)
+                setEditForm({ name: '', date: '', rating: 5, comment: '', badge: '' })
             }
+            alert("Reseña marcada para eliminar (pendiente de Guardar cambios)")
         }
     }
 
-    const handleUpdateReview = async () => {
+    const handleUpdateReview = () => {
         if (!editingReviewId) return
-        setIsSubmitting(true)
-        try {
-            const result = await updateSanityDocument(editingReviewId, editForm)
-            if (result.success) {
-                setAllReviews(prev => prev.map(r => r._id === editingReviewId ? { ...r, ...editForm } : r))
-                setEditingReviewId(null)
-                alert("Cambios guardados")
-            } else {
-                alert("Error al guardar cambios")
-            }
-        } finally { setIsSubmitting(false) }
+        setAllReviews(prev => prev.map(r => r._id === editingReviewId ? { ...r, ...editForm } : r))
+        setEditingReviewId(null)
+        alert("Reseña actualizada (pendiente de Guardar cambios)")
+    }
+
+    const handleRemoveMenuItem = (target: 'navMenu' | 'footerLinks', index: number) => {
+        setSettings((prev) => ({
+            ...prev,
+            [target]: prev[target].filter((_, idx) => idx !== index),
+        }))
+        registerDeletion('navigationLinks')
     }
 
     return (
@@ -1625,7 +1790,7 @@ export default function PreferenciasPage() {
                                                     <div className="flex items-center gap-1">
                                                         <button onClick={() => handleMoveNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'up')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M5 15l7-7 7 7" /></svg></button>
                                                         <button onClick={() => handleMoveNavItem(menu.target as 'navMenu' | 'footerLinks', i, 'down')} className="p-2 text-zinc-400 hover:text-black transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M19 9l-7 7-7-7" /></svg></button>
-                                                        <button onClick={() => setSettings(prev => ({ ...prev, [menu.target as 'navMenu' | 'footerLinks']: prev[menu.target as 'navMenu' | 'footerLinks'].filter((_, idx) => idx !== i) }))} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                        <button onClick={() => handleRemoveMenuItem(menu.target as 'navMenu' | 'footerLinks', i)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-none"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
                                                     </div>
                                                 </div>
                                             ))}
