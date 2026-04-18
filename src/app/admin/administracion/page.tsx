@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import bcrypt from "bcryptjs"
 import { clearAuditLogs, deleteAdminProfile, updateAdminProfile } from '@/app/actions/updateProfile'
+import { useAdminFeedback } from '@/components/admin/AdminFeedbackProvider'
 
 type SessionUser = {
     role?: string
@@ -84,6 +85,7 @@ export default function AdministracionPage() {
     const [team, setTeam] = useState<AdminMember[]>([])
     const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
     const [userData, setUserData] = useState<AdminFormState>(EMPTY_USER_DATA)
+    const { confirmAction } = useAdminFeedback()
 
     const loadTeam = async () => {
         const [users, logs] = await Promise.all([
@@ -141,6 +143,14 @@ export default function AdministracionPage() {
     const handleDeleteMember = async (user: AdminMember) => {
         if (user.role === 'Administrador Principal') return
         const label = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user._id
+        const confirmedByModal = await confirmAction({
+            title: 'Eliminar usuario',
+            message: `¿Eliminar a ${label}? Esta acción no se puede deshacer.`,
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            tone: 'danger',
+        })
+        if (!confirmedByModal) return
         if (!confirm(`¿Eliminar a ${label}? Esta acción no se puede deshacer.`)) return
         setIsSubmitting(true)
         try {
@@ -218,6 +228,14 @@ export default function AdministracionPage() {
     }
 
     const handleClearActivityLogs = async () => {
+        const confirmedByModal = await confirmAction({
+            title: 'Limpiar registro de actividad',
+            message: '¿Limpiar todo el registro de actividad? Esta acción dejará solo un nuevo registro indicando la limpieza.',
+            confirmText: 'Limpiar',
+            cancelText: 'Cancelar',
+            tone: 'danger',
+        })
+        if (!confirmedByModal) return
         if (!confirm('¿Limpiar todo el registro de actividad? Esta acción dejará solo un nuevo registro indicando la limpieza.')) return
 
         setIsSubmitting(true)

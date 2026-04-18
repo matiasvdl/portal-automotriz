@@ -17,6 +17,7 @@ import {
 } from '@/app/actions/preferencesActions'
 import { deleteBrandAction, deleteBrandModelAction } from '@/app/actions/brandActions'
 import { urlFor } from '@/sanity/lib/image'
+import { useAdminFeedback } from '@/components/admin/AdminFeedbackProvider'
 import {
     ACCESSIBILITY_SCALE_MAX,
     ACCESSIBILITY_SCALE_MIN,
@@ -236,6 +237,7 @@ function toReviewItem(document: SanityReviewDocument): ReviewItem {
 export default function PreferenciasPage() {
     const { data: session, status } = useSession()
     const router = useRouter()
+    const { confirmAction } = useAdminFeedback()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [activeTab, setActiveTab] = useState<TabType>('general')
 
@@ -465,6 +467,14 @@ export default function PreferenciasPage() {
     }, [])
 
     const handleDeleteBrand = async (brand: BrandEntry) => {
+        const confirmedByModal = await confirmAction({
+            title: 'Eliminar marca',
+            message: `¿Eliminar la marca ${brand.name}?`,
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            tone: 'danger',
+        })
+        if (!confirmedByModal) return
         if (!confirm(`¿Eliminar la marca ${brand.name}?`)) return
 
         setIsSubmitting(true)
@@ -482,6 +492,14 @@ export default function PreferenciasPage() {
     }
 
     const handleDeleteModel = async (brandName: string, modelName: string) => {
+        const confirmedByModal = await confirmAction({
+            title: 'Eliminar modelo',
+            message: `¿Eliminar el modelo ${modelName} de ${brandName}?`,
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            tone: 'danger',
+        })
+        if (!confirmedByModal) return
         if (!confirm(`¿Eliminar el modelo ${modelName} de ${brandName}?`)) return
 
         setIsSubmitting(true)
@@ -788,6 +806,14 @@ export default function PreferenciasPage() {
     }
 
     const handleDeleteFaq = async (id: string) => {
+        const confirmedByModal = await confirmAction({
+            title: 'Eliminar pregunta',
+            message: '¿Eliminar esta pregunta?',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            tone: 'danger',
+        })
+        if (!confirmedByModal) return
         if (confirm("¿Eliminar esta pregunta?")) {
             const result = await deleteSanityDocument(id)
             if (result.success) {
@@ -838,6 +864,14 @@ export default function PreferenciasPage() {
     }
 
     const handleDeleteReview = async (id: string) => {
+        const confirmedByModal = await confirmAction({
+            title: 'Eliminar reseña',
+            message: '¿Eliminar reseña?',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            tone: 'danger',
+        })
+        if (!confirmedByModal) return
         if (confirm("¿Eliminar reseña?")) {
             const result = await deleteSanityDocument(id)
             if (result.success) {
@@ -1974,10 +2008,10 @@ export default function PreferenciasPage() {
                                                 {editingFaqId === f._id ? (
                                                     <>
                                                         <button onClick={handleUpdateFaq} className="text-emerald-500 p-1.5 rounded-full hover:bg-emerald-50 transition-none">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg>
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M5 13l4 4L19 7" /></svg>
                                                         </button>
                                                         <button onClick={() => setEditingFaqId(null)} className="text-zinc-500 p-1.5 rounded-full hover:bg-gray-100 transition-none">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
                                                         </button>
                                                     </>
                                                 ) : (

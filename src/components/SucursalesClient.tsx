@@ -76,23 +76,8 @@ function buildGoogleMapsEmbedUrl(address?: string) {
     return `https://maps.google.com/maps?q=${encodeURIComponent(source)}&t=&z=15&ie=UTF8&iwloc=&output=embed`
 }
 
-function buildGoogleMapsOpenUrl(address?: string) {
-    const source = (address || '').trim()
-
-    if (!source) {
-        return ''
-    }
-
-    if (source.startsWith('http://') || source.startsWith('https://')) {
-        return source
-    }
-
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(source)}`
-}
-
 export default function SucursalesClient() {
-    const { config, appearance } = useSettings()
-    const primaryColor = appearance?.primaryColor || '#000000'
+    const { config } = useSettings()
     const branches = (config?.branches || []) as BranchItem[]
     const content = config?.branchesContent || {}
 
@@ -119,7 +104,6 @@ export default function SucursalesClient() {
                     <div className="space-y-8">
                         {branches.map((branch, index) => {
                             const embedUrl = buildGoogleMapsEmbedUrl(branch.address)
-                            const openMapUrl = buildGoogleMapsOpenUrl(branch.address)
                             const schedule = formatBranchSchedule(branch)
 
                             return (

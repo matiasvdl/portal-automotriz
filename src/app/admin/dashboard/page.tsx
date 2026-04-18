@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { client } from '@/sanity/lib/client'
 import AdminNavigation from '@/components/AdminNavigation'
+import { useAdminFeedback } from '@/components/admin/AdminFeedbackProvider'
 import { toggleCarStatusAction, deleteCarAction } from '@/app/actions/carActions' // Importado deleteCarAction
 
 interface DashboardCar {
@@ -30,6 +31,7 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true)
     const [isEditMode, setIsEditMode] = useState(false)
     const router = useRouter()
+    const { confirmAction } = useAdminFeedback()
 
     const fetchCars = async () => {
         try {
@@ -54,6 +56,15 @@ export default function DashboardPage() {
     const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
         e.preventDefault();
         e.stopPropagation();
+
+        const confirmedByModal = await confirmAction({
+            title: 'Eliminar vehículo',
+            message: `¿Estás seguro de que deseas eliminar ${name} permanentemente?`,
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            tone: 'danger',
+        })
+        if (!confirmedByModal) return
 
         if (confirm(`¿Estás seguro de que deseas eliminar el ${name} permanentemente?`)) {
             try {

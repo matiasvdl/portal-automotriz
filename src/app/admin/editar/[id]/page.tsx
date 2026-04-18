@@ -14,6 +14,7 @@ import AdminNavigation from '@/components/AdminNavigation'
 import AdminSoftSelect from '@/components/AdminSoftSelect'
 import AdminCombobox from '@/components/AdminCombobox'
 import AdminCollapsibleCard from '@/components/AdminCollapsibleCard'
+import { useAdminFeedback } from '@/components/admin/AdminFeedbackProvider'
 
 // --- CONFIGURACIÓN DE PREVISUALIZACIÓN ---
 // Usamos el cliente de lectura para evitar errores de token en el navegador
@@ -98,6 +99,7 @@ type NestedCarGroupKey =
 export default function EditarVehiculoPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params)
     const router = useRouter()
+    const { confirmAction } = useAdminFeedback()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [successNotice, setSuccessNotice] = useState('')
     const [isLoading, setIsLoading] = useState(true)
@@ -241,7 +243,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
 
     useEffect(() => {
         if (!successNotice) return
-        const timer = setTimeout(() => setSuccessNotice(''), 2500)
+        const timer = setTimeout(() => setSuccessNotice(''), 12000)
         return () => clearTimeout(timer)
     }, [successNotice])
 
@@ -358,6 +360,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
             }
 
             await saveCarAction(id, doc)
+            alert('Cambios guardados correctamente.')
             setSuccessNotice('Cambios guardados correctamente.')
             await new Promise((resolve) => setTimeout(resolve, 1100))
             router.push('/admin/dashboard')
@@ -369,6 +372,14 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     }
 
     const handleDelete = async () => {
+        const confirmedByModal = await confirmAction({
+            title: 'Eliminar vehículo',
+            message: '¿Estás seguro de que deseas eliminar este vehículo permanentemente?',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            tone: 'danger',
+        })
+        if (!confirmedByModal) return
         if (confirm('¿Estás seguro de que deseas eliminar este vehículo permanentemente?')) {
             setIsSubmitting(true)
             try {

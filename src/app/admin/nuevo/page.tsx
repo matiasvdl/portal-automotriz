@@ -164,7 +164,7 @@ export default function NuevoVehiculoPage() {
 
     useEffect(() => {
         if (!successNotice) return
-        const timer = setTimeout(() => setSuccessNotice(''), 2500)
+        const timer = setTimeout(() => setSuccessNotice(''), 12000)
         return () => clearTimeout(timer)
     }, [successNotice])
 
@@ -299,6 +299,7 @@ export default function NuevoVehiculoPage() {
 
             // 3. Guardar el vehículo
             await saveCarAction(null, doc)
+            alert('Vehículo publicado correctamente.')
             setSuccessNotice('Vehículo publicado correctamente.')
             await new Promise((resolve) => setTimeout(resolve, 1100))
             router.push('/admin/dashboard')
