@@ -16,27 +16,15 @@ interface FooterConfig {
     footerDescription?: string
     footerTagline?: string
     footerLinks?: FooterLink[]
-    branchesPageEnabled?: boolean
 }
 
-function resolveFooterLinks(items: FooterLink[], branchesPageEnabled?: boolean) {
+function resolveFooterLinks(items: FooterLink[]) {
     const cleanedItems = items.filter((item) => item.path !== '/sucursales')
     const faqIndex = cleanedItems.findIndex((item) => item.path === '/faq')
     const preferredIndex = faqIndex >= 0 ? faqIndex : cleanedItems.length
 
-    if (branchesPageEnabled) {
-        const nextItems = [...cleanedItems]
-        nextItems.splice(preferredIndex, 0, { title: 'Sucursales', path: '/sucursales' })
-        return nextItems
-    }
-
-    const hasCatalogLink = cleanedItems.some((item) => item.path === '/catalogo')
-    if (hasCatalogLink) {
-        return cleanedItems
-    }
-
     const nextItems = [...cleanedItems]
-    nextItems.splice(preferredIndex, 0, { title: 'Comprar un Auto', path: '/catalogo' })
+    nextItems.splice(preferredIndex, 0, { title: 'Sucursales', path: '/sucursales' })
     return nextItems
 }
 
@@ -68,7 +56,7 @@ export default function Footer({ config: propConfig }: { config?: FooterConfig }
     const logoUrl = appearance?.logo ? urlFor(appearance.logo).url() : null
     const logoMaxH = resolveLogoMaxHeightPx(appearance?.logoWidth)
     const year = new Date().getFullYear()
-    const footerLinks = resolveFooterLinks(config?.footerLinks || [], config?.branchesPageEnabled)
+    const footerLinks = resolveFooterLinks(config?.footerLinks || [])
 
     return (
         <footer className="border-t border-white/5 bg-black pb-8 pt-16 text-white">

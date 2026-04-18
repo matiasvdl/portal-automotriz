@@ -112,7 +112,7 @@ export async function saveGlobalPreferences(
             navMenu: settings.navMenu,
             footerLinks: settings.footerLinks,
             maintenanceMode: settings.maintenanceMode,
-            branchesPageEnabled: settings.branchesPageEnabled === true,
+            branchesPageEnabled: true,
             branchesContent: {
                 eyebrow: settings.branchesContent?.eyebrow || "",
                 title: settings.branchesContent?.title || "",

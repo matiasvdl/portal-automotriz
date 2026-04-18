@@ -248,7 +248,7 @@ export default function PreferenciasPage() {
         navMenu: [] as NavItem[],
         footerLinks: [] as NavItem[],
         maintenanceMode: false,
-        branchesPageEnabled: false,
+        branchesPageEnabled: true,
         branchesContent: {
             eyebrow: 'Red presencial',
             title: 'Sucursales',
@@ -313,8 +313,14 @@ export default function PreferenciasPage() {
     const [editFaqForm, setEditFaqForm] = useState({ question: '', answer: '', order: 0 })
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState({ name: '', date: '', rating: 5, comment: '', badge: '' })
-    const [branchActiveDay, setBranchActiveDay] = useState<Record<string, string>>({})
-    const [branchCollapsed, setBranchCollapsed] = useState<Record<string, boolean>>({})
+    const [editingBranchKey, setEditingBranchKey] = useState<string | null>(null)
+    const [editBranchActiveDay, setEditBranchActiveDay] = useState('lun')
+    const [editBranchForm, setEditBranchForm] = useState({
+        name: '',
+        phone: '',
+        address: '',
+        daySchedules: defaultBranchDaySchedules(),
+    })
     const [newBranchFormActiveDay, setNewBranchFormActiveDay] = useState('lun')
     const [newBranchForm, setNewBranchForm] = useState({
         name: '',
@@ -404,7 +410,7 @@ export default function PreferenciasPage() {
                         navMenu: config.navMenu || [],
                         footerLinks: config.footerLinks || [],
                         maintenanceMode: config.maintenanceMode || false,
-                        branchesPageEnabled: config.branchesPageEnabled || false,
+                        branchesPageEnabled: true,
                         branchesContent: {
                             eyebrow: config.branchesContent?.eyebrow || 'Red presencial',
                             title: config.branchesContent?.title || 'Sucursales',
@@ -419,11 +425,6 @@ export default function PreferenciasPage() {
                         }
                     })
 
-                    const collapsedState: Record<string, boolean> = {}
-                    loadedBranches.forEach((branch) => {
-                        collapsedState[branch._key] = true
-                    })
-                    setBranchCollapsed(collapsedState)
                 }
 
                 if (appearance) {
@@ -652,7 +653,6 @@ export default function PreferenciasPage() {
         }
 
         setSettings(prev => ({ ...prev, branches: [...prev.branches, newBranch] }))
-        setBranchCollapsed(prev => ({ ...prev, [branchKey]: true }))
     }
 
     const handleToggleNewBranchDay = (dayValue: string) => {
@@ -696,70 +696,79 @@ export default function PreferenciasPage() {
         setNewBranchFormActiveDay('lun')
     }
 
-    const handleUpdateBranch = (branchKey: string, field: keyof Pick<BranchItem, 'name' | 'phone' | 'address'>, value: string) => {
-        setSettings(prev => ({
-            ...prev,
-            branches: prev.branches.map(branch => {
-                if (branch._key !== branchKey) return branch
-
-                const nextBranch = { ...branch, [field]: value }
-                return {
-                    ...nextBranch,
-                    hours: formatBranchSchedule(nextBranch.daySchedules),
-                }
-            }),
-        }))
-    }
-
-    const handleToggleBranchDay = (branchKey: string, dayValue: string) => {
-        setSettings(prev => ({
-            ...prev,
-            branches: prev.branches.map(branch => {
-                if (branch._key !== branchKey) return branch
-
-                const hasDay = branch.daySchedules.some((slot) => slot.day === dayValue)
-                const daySchedules = hasDay
-                    ? branch.daySchedules.filter((slot) => slot.day !== dayValue)
-                    : [...branch.daySchedules, { day: dayValue, openTime: '09:00', closeTime: '18:00' }]
-
-                return {
-                    ...branch,
-                    daySchedules,
-                    hours: formatBranchSchedule(daySchedules),
-                }
-            }),
-        }))
-    }
-
-    const handleUpdateBranchDayTime = (
-        branchKey: string,
-        dayValue: string,
-        field: 'openTime' | 'closeTime',
-        value: string
-    ) => {
-        setSettings(prev => ({
-            ...prev,
-            branches: prev.branches.map(branch => {
-                if (branch._key !== branchKey) return branch
-
-                const daySchedules = branch.daySchedules.map((slot) =>
-                    slot.day === dayValue ? { ...slot, [field]: value } : slot
-                )
-
-                return {
-                    ...branch,
-                    daySchedules,
-                    hours: formatBranchSchedule(daySchedules),
-                }
-            }),
-        }))
-    }
-
     const handleDeleteBranch = (branchKey: string) => {
         setSettings(prev => ({
             ...prev,
             branches: prev.branches.filter(branch => branch._key !== branchKey),
         }))
+
+        if (editingBranchKey === branchKey) {
+            setEditingBranchKey(null)
+            setEditBranchActiveDay('lun')
+            setEditBranchForm({ name: '', phone: '', address: '', daySchedules: defaultBranchDaySchedules() })
+        }
+    }
+
+    const handleStartEditBranch = (branch: BranchItem) => {
+        const daySchedules = branch.daySchedules?.length ? branch.daySchedules : defaultBranchDaySchedules()
+        setEditingBranchKey(branch._key)
+        setEditBranchForm({
+            name: branch.name || '',
+            phone: branch.phone || '',
+            address: branch.address || '',
+            daySchedules,
+        })
+        setEditBranchActiveDay(daySchedules[0]?.day || 'lun')
+    }
+
+    const handleToggleEditBranchDay = (dayValue: string) => {
+        setEditBranchForm((prev) => {
+            const hasDay = prev.daySchedules.some((slot) => slot.day === dayValue)
+            const daySchedules = hasDay
+                ? prev.daySchedules.filter((slot) => slot.day !== dayValue)
+                : [...prev.daySchedules, { day: dayValue, openTime: '09:00', closeTime: '18:00' }]
+
+            return { ...prev, daySchedules }
+        })
+    }
+
+    const handleUpdateEditBranchDayTime = (
+        dayValue: string,
+        field: 'openTime' | 'closeTime',
+        value: string
+    ) => {
+        setEditBranchForm((prev) => ({
+            ...prev,
+            daySchedules: prev.daySchedules.map((slot) =>
+                slot.day === dayValue ? { ...slot, [field]: value } : slot
+            ),
+        }))
+    }
+
+    const handleSaveBranchEdit = () => {
+        if (!editingBranchKey) return
+        if (!editBranchForm.name.trim() || !editBranchForm.address.trim()) {
+            alert('Completa al menos nombre y dirección de la sucursal.')
+            return
+        }
+
+        const nextSchedules = editBranchForm.daySchedules
+        setSettings((prev) => ({
+            ...prev,
+            branches: prev.branches.map((branch) =>
+                branch._key === editingBranchKey
+                    ? {
+                        ...branch,
+                        name: editBranchForm.name.trim(),
+                        phone: editBranchForm.phone.trim(),
+                        address: editBranchForm.address.trim(),
+                        daySchedules: nextSchedules,
+                        hours: formatBranchSchedule(nextSchedules),
+                    }
+                    : branch
+            ),
+        }))
+        setEditingBranchKey(null)
     }
 
     // FUNCIONES FAQ
@@ -1698,7 +1707,7 @@ export default function PreferenciasPage() {
                                                             key={day.value}
                                                             type="button"
                                                             onClick={() => setNewBranchFormActiveDay(day.value)}
-                                                            className={`h-[26px] rounded-full px-2.5 text-[8px] font-black uppercase tracking-tight transition-none ${isSelectedDay ? 'bg-black text-white' : 'border border-gray-100 bg-white text-zinc-500'}`}
+                                                            className={`h-[26px] rounded-full px-3 text-[8px] font-black uppercase tracking-tight transition-none ${isSelectedDay ? 'bg-black text-white' : 'border border-gray-100 bg-white text-zinc-500'}`}
                                                         >
                                                             {day.label}
                                                         </button>
@@ -1713,18 +1722,19 @@ export default function PreferenciasPage() {
                                                 const isActive = Boolean(activeSchedule)
 
                                                 return (
-                                                    <div className="space-y-2 rounded-[16px] border border-gray-100 bg-white p-3">                                                        <div className="flex items-center justify-between gap-2">
-                                                        <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                                                            {activeOption?.fullLabel || 'Día'}
-                                                        </p>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleToggleNewBranchDay(activeDay)}
-                                                            className={`rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
-                                                        >
-                                                            {isActive ? 'Activo' : 'Cerrado'}
-                                                        </button>
-                                                    </div>
+                                                    <div className="space-y-2 rounded-[16px] border border-gray-100 bg-white p-3">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                                                                {activeOption?.fullLabel || 'Día'}
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleToggleNewBranchDay(activeDay)}
+                                                                className={`rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
+                                                            >
+                                                                {isActive ? 'Activo' : 'Cerrado'}
+                                                            </button>
+                                                        </div>
 
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <input
@@ -1732,14 +1742,14 @@ export default function PreferenciasPage() {
                                                                 value={activeSchedule?.openTime || ''}
                                                                 onChange={(e) => handleUpdateNewBranchDayTime(activeDay, 'openTime', e.target.value)}
                                                                 disabled={!isActive}
-                                                                className="h-[34px] rounded-xl border border-gray-100 bg-[#F7F8FA] px-3 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                className="h-[35px] rounded-xl border border-gray-100 bg-[#F7F8FA] px-3 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
                                                             />
                                                             <input
                                                                 type="time"
                                                                 value={activeSchedule?.closeTime || ''}
                                                                 onChange={(e) => handleUpdateNewBranchDayTime(activeDay, 'closeTime', e.target.value)}
                                                                 disabled={!isActive}
-                                                                className="h-[34px] rounded-xl border border-gray-100 bg-[#F7F8FA] px-3 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                className="h-[35px] rounded-xl border border-gray-100 bg-[#F7F8FA] px-3 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
                                                             />
                                                         </div>
                                                     </div>
@@ -1751,128 +1761,101 @@ export default function PreferenciasPage() {
                                             disabled={isSubmitting}
                                             className="w-full bg-black text-white text-[9px] font-black uppercase py-4 rounded-xl shadow-xl shadow-black/10 transition-none"
                                         >
-                                            {isSubmitting ? 'Guardando...' : 'Agregar Sucursal'}
+                                            {isSubmitting ? 'Agregando...' : 'Agregar Sucursal'}
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="lg:col-span-2 bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Sucursales Registradas</h4>
-                                            <button
-                                                onClick={() => setSettings(prev => ({ ...prev, branchesPageEnabled: !prev.branchesPageEnabled }))}
-                                                className={`relative h-6 w-12 rounded-full transition-none ${settings.branchesPageEnabled ? 'bg-black' : 'bg-zinc-200'}`}
-                                                aria-label="Activar o desactivar página de sucursales"
-                                            >
-                                                <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-none ${settings.branchesPageEnabled ? 'left-7' : 'left-1'}`}></div>
-                                            </button>
+                                <div className="lg:col-span-2 space-y-4">
+                                    {settings.branches.length === 0 ? (
+                                        <div className="rounded-[24px] border border-gray-100 bg-white px-5 py-8 text-left">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Sin sucursales</p>
+                                            <p className="mt-2 text-[9px] font-medium leading-relaxed text-zinc-500">
+                                                Agrega al menos una sucursal para completar esta página.
+                                            </p>
                                         </div>
+                                    ) : (
+                                        settings.branches.map((branch) => {
+                                            const isEditing = editingBranchKey === branch._key
+                                            const displaySchedule = isEditing
+                                                ? formatBranchSchedule(editBranchForm.daySchedules)
+                                                : (branch.hours || 'Sin horario definido')
 
-                                        {settings.branches.length === 0 ? (
-                                            <div className="rounded-[24px] border border-gray-100 bg-[#F7F8FA] px-5 py-8 text-left">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Sin sucursales</p>
-                                                <p className="mt-2 text-[9px] font-medium leading-relaxed text-zinc-500">
-                                                    Agrega al menos una sucursal para completar esta página.
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            settings.branches.map((branch, index) => (
-                                                <div key={branch._key} className="rounded-[24px] border border-gray-100 bg-[#F7F8FA] p-4 space-y-4">
-                                                    <div className="flex items-center justify-between gap-4">
-                                                        <div>
-                                                            <p className="text-[7px] font-black uppercase tracking-[0.25em] text-zinc-400">Sucursal {index + 1}</p>
-                                                            <p className="mt-1 text-[11px] font-black uppercase text-black leading-none">
-                                                                {branch.name || 'Nueva sucursal'}
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setBranchCollapsed(prev => ({ ...prev, [branch._key]: !prev[branch._key] }))}
-                                                                className="rounded-full p-2 text-zinc-400 transition-none hover:bg-zinc-100"
-                                                                aria-label={branchCollapsed[branch._key] ? 'Expandir sucursal' : 'Contraer sucursal'}
-                                                            >
-                                                                {branchCollapsed[branch._key] ? (
-                                                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M19 9l-7 7-7-7" /></svg>
-                                                                ) : (
-                                                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M5 15l7-7 7 7" /></svg>
-                                                                )}
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteBranch(branch._key)}
-                                                                className="rounded-full p-2 text-red-400 transition-none hover:bg-red-50"
-                                                                aria-label="Eliminar sucursal"
-                                                            >
-                                                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
-                                                            </button>
+                                            return (
+                                                <div key={branch._key} className="bg-white border border-gray-100 rounded-3xl shadow-none transition-none p-5">
+                                                    <div className="mb-0 flex items-start justify-between gap-3">
+                                                        <h4 className="text-[11px] font-black uppercase tracking-tight text-black">
+                                                            {isEditing ? (editBranchForm.name || branch.name || 'Sucursal') : (branch.name || 'Nueva sucursal')}
+                                                        </h4>
+                                                        <div className="flex gap-1 items-center bg-white/80 p-1 rounded-full border border-gray-100">
+                                                            {isEditing ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={handleSaveBranchEdit}
+                                                                        className="text-emerald-500 p-1.5 rounded-full hover:bg-emerald-50 transition-none"
+                                                                    >
+                                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M5 13l4 4L19 7" /></svg>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setEditingBranchKey(null)}
+                                                                        className="text-zinc-500 p-1.5 rounded-full hover:bg-gray-100 transition-none"
+                                                                    >
+                                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleStartEditBranch(branch)}
+                                                                        className="p-1 text-zinc-400 hover:text-black rounded-full transition-none hover:bg-gray-50"
+                                                                    >
+                                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteBranch(branch._key)}
+                                                                        className="p-1 text-zinc-400 hover:text-red-500 rounded-full transition-none hover:bg-red-50"
+                                                                    >
+                                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
 
-                                                    {branchCollapsed[branch._key] ? (
-                                                        <div className="grid grid-cols-1 gap-2 rounded-xl border border-gray-100 bg-white px-4 py-3 text-left">
-                                                            <p className="text-[9px] font-black uppercase leading-relaxed text-black">
-                                                                {branch.address || 'Sin dirección'}
-                                                            </p>
-                                                            <p className="text-[8px] font-black uppercase leading-relaxed text-zinc-500">
-                                                                {branch.hours || 'Sin horario definido'}
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_290px]">
-                                                            <div className="space-y-3">
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                    <div className="flex flex-col space-y-2.5 text-left leading-none">
-                                                                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Nombre</label>
-                                                                        <input
-                                                                            type="text"
-                                                                            value={branch.name}
-                                                                            onChange={(e) => handleUpdateBranch(branch._key, 'name', e.target.value)}
-                                                                            className="h-[38px] w-full rounded-xl border border-gray-100 bg-white px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="flex flex-col space-y-2.5 text-left leading-none">
-                                                                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Teléfono</label>
-                                                                        <input
-                                                                            type="text"
-                                                                            value={branch.phone}
-                                                                            onChange={(e) => handleUpdateBranch(branch._key, 'phone', e.target.value)}
-                                                                            className="h-[38px] w-full rounded-xl border border-gray-100 bg-white px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
-                                                                        />
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="flex flex-col space-y-2.5 text-left leading-none transition-none">
-                                                                    <label className="text-[9px] font-black uppercase text-zinc-400 ml-1 leading-none">Dirección</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={branch.address}
-                                                                        onChange={(e) => handleUpdateBranch(branch._key, 'address', e.target.value)}
-                                                                        className="h-[38px] w-full bg-white border border-gray-100 rounded-xl px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black shadow-none"
-                                                                    />
-                                                                </div>
-                                                                <div className="rounded-xl border border-gray-100 bg-white px-4 py-3">
-                                                                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 leading-none">
-                                                                        Resumen Horario
-                                                                    </p>
-                                                                    <p className="mt-2 text-[9px] font-black uppercase text-black leading-relaxed">
-                                                                        {branch.hours || 'Sin horario definido'}
-                                                                    </p>
-                                                                </div>
+                                                    {isEditing ? (
+                                                        <div className="space-y-4 pt-0">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <input
+                                                                    value={editBranchForm.name}
+                                                                    onChange={(e) => setEditBranchForm((prev) => ({ ...prev, name: e.target.value }))}
+                                                                    className="w-full h-10 bg-gray-50 rounded-lg px-3 text-[11px] font-bold border-none"
+                                                                    placeholder="Nombre"
+                                                                />
+                                                                <input
+                                                                    value={editBranchForm.phone}
+                                                                    onChange={(e) => setEditBranchForm((prev) => ({ ...prev, phone: e.target.value }))}
+                                                                    className="w-full h-10 bg-gray-50 rounded-lg px-3 text-[11px] font-bold border-none"
+                                                                    placeholder="Teléfono"
+                                                                />
                                                             </div>
+                                                            <input
+                                                                value={editBranchForm.address}
+                                                                onChange={(e) => setEditBranchForm((prev) => ({ ...prev, address: e.target.value }))}
+                                                                className="w-full h-10 bg-gray-50 rounded-lg px-3 text-[11px] font-bold border-none"
+                                                                placeholder="Dirección"
+                                                            />
 
-                                                            <div className="rounded-[20px] border border-gray-100 bg-white p-3 space-y-3">
+                                                            <div className="space-y-3">
                                                                 <p className="text-[8px] font-black uppercase tracking-[0.22em] text-zinc-400 leading-none">Horario</p>
-
                                                                 <div className="flex flex-wrap gap-2">
                                                                     {BRANCH_DAY_OPTIONS.map((day) => {
-                                                                        const isSelectedDay = (branchActiveDay[branch._key] || 'lun') === day.value
+                                                                        const isSelectedDay = editBranchActiveDay === day.value
                                                                         return (
                                                                             <button
                                                                                 key={day.value}
                                                                                 type="button"
-                                                                                onClick={() => setBranchActiveDay(prev => ({ ...prev, [branch._key]: day.value }))}
-                                                                                className={`h-[26px] rounded-full px-2.5 text-[8px] font-black uppercase tracking-tight transition-none ${isSelectedDay ? 'bg-black text-white' : 'border border-gray-100 bg-[#F7F8FA] text-zinc-500'}`}
+                                                                                onClick={() => setEditBranchActiveDay(day.value)}
+                                                                                className={`h-[26px] rounded-full px-3 text-[8px] font-black uppercase tracking-tight transition-none ${isSelectedDay ? 'bg-black text-white' : 'border border-gray-100 bg-white text-zinc-500'}`}
                                                                             >
                                                                                 {day.label}
                                                                             </button>
@@ -1881,20 +1864,20 @@ export default function PreferenciasPage() {
                                                                 </div>
 
                                                                 {(() => {
-                                                                    const activeDay = branchActiveDay[branch._key] || 'lun'
+                                                                    const activeDay = editBranchActiveDay
                                                                     const activeOption = BRANCH_DAY_OPTIONS.find((day) => day.value === activeDay)
-                                                                    const activeSchedule = branch.daySchedules.find((slot) => slot.day === activeDay)
+                                                                    const activeSchedule = editBranchForm.daySchedules.find((slot) => slot.day === activeDay)
                                                                     const isActive = Boolean(activeSchedule)
 
                                                                     return (
-                                                                        <div className="space-y-2 rounded-xl border border-gray-100 bg-[#F7F8FA] p-2.5">
+                                                                        <div className="space-y-2 rounded-[16px] border border-gray-100 bg-white p-3">
                                                                             <div className="flex items-center justify-between gap-2">
                                                                                 <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
                                                                                     {activeOption?.fullLabel || 'Día'}
                                                                                 </p>
                                                                                 <button
                                                                                     type="button"
-                                                                                    onClick={() => handleToggleBranchDay(branch._key, activeDay)}
+                                                                                    onClick={() => handleToggleEditBranchDay(activeDay)}
                                                                                     className={`rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
                                                                                 >
                                                                                     {isActive ? 'Activo' : 'Cerrado'}
@@ -1905,29 +1888,38 @@ export default function PreferenciasPage() {
                                                                                 <input
                                                                                     type="time"
                                                                                     value={activeSchedule?.openTime || ''}
-                                                                                    onChange={(e) => handleUpdateBranchDayTime(branch._key, activeDay, 'openTime', e.target.value)}
+                                                                                    onChange={(e) => handleUpdateEditBranchDayTime(activeDay, 'openTime', e.target.value)}
                                                                                     disabled={!isActive}
-                                                                                    className="h-[30px] rounded-lg border border-gray-100 bg-white px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                                    className="h-[35px] rounded-lg border border-gray-100 bg-[#F7F8FA] px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
                                                                                 />
                                                                                 <input
                                                                                     type="time"
                                                                                     value={activeSchedule?.closeTime || ''}
-                                                                                    onChange={(e) => handleUpdateBranchDayTime(branch._key, activeDay, 'closeTime', e.target.value)}
+                                                                                    onChange={(e) => handleUpdateEditBranchDayTime(activeDay, 'closeTime', e.target.value)}
                                                                                     disabled={!isActive}
-                                                                                    className="h-[30px] rounded-lg border border-gray-100 bg-white px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                                    className="h-[35px] rounded-lg border border-gray-100 bg-[#F7F8FA] px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
                                                                                 />
                                                                             </div>
                                                                         </div>
                                                                     )
                                                                 })()}
-
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-left space-y-3">
+                                                            <div className="space-y-2 rounded-xl border border-gray-100 bg-[#F7F8FA] px-4 py-3">
+                                                                <p className="text-[10px] font-black uppercase leading-relaxed text-black">{branch.address || 'Sin dirección'}</p>
+                                                                {branch.phone ? (
+                                                                    <p className="text-[10px] font-black uppercase leading-relaxed text-zinc-500">{branch.phone}</p>
+                                                                ) : null}
+                                                                <p className="text-[9px] font-black uppercase leading-relaxed text-zinc-500">{displaySchedule}</p>
                                                             </div>
                                                         </div>
                                                     )}
                                                 </div>
-                                            ))
-                                        )}
-                                    </div>
+                                            )
+                                        })
+                                    )}
                                 </div>
                             </div>
                         )}
