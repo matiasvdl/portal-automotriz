@@ -97,11 +97,11 @@ export default function SucursalesClient() {
     const content = config?.branchesContent || {}
 
     return (
-        <div className="min-h-screen bg-[#F7F8FA] font-sans text-black antialiased">
-            <main className="mx-auto max-w-7xl px-6 pb-20 pt-10">
-                <header className="mb-10 max-w-3xl text-left">
+        <div className="min-h-screen bg-[#F7F8FA] antialiased text-black font-sans">
+            <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
+                <header className="mb-8 text-left">
                     <p className="mb-1 text-[8px] font-black uppercase tracking-[0.3em] text-zinc-400 italic leading-none">
-                        {content.eyebrow || 'Red presencial'}
+                        {content.eyebrow || 'Ubicaciones'}
                     </p>
                     <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
                         {content.title || 'Sucursales'}
