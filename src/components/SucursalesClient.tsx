@@ -110,7 +110,7 @@ export default function SucursalesClient() {
 
                 {branches.length === 0 ? (
                     <div className="rounded-[30px] border border-gray-100 bg-white p-8 text-left">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Sin sucursales publicadas</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Sin sucursales disponibles</p>
                         <p className="mt-3 text-[12px] font-medium leading-relaxed text-zinc-500">
                             Aún no hay sucursales disponibles para mostrar.
                         </p>
