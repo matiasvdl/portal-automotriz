@@ -1662,6 +1662,7 @@ export default function PreferenciasPage() {
                             </div>
                         )}
 
+                        {/* PESTAÑA SUCURSALES */}
                         {activeTab === 'sucursales' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                                 <div className="lg:col-span-1 bg-white rounded-[30px] border border-gray-100 p-6 space-y-6 shadow-none">
@@ -1686,7 +1687,7 @@ export default function PreferenciasPage() {
                                                 className="w-full h-[42px] bg-[#F7F8FA] border-none rounded-xl px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black"
                                             />
                                         </div>
-                                        <div className="rounded-[20px] border border-gray-100 bg-[#F7F8FA] p-3 space-y-3">
+                                        <div className="space-y-3">
                                             <p className="text-[8px] font-black uppercase tracking-[0.22em] text-zinc-400 leading-none">Horario</p>
 
                                             <div className="flex flex-wrap gap-2">
@@ -1712,19 +1713,18 @@ export default function PreferenciasPage() {
                                                 const isActive = Boolean(activeSchedule)
 
                                                 return (
-                                                    <div className="space-y-2 rounded-xl border border-gray-100 bg-white p-2.5">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                                                                {activeOption?.fullLabel || 'Día'}
-                                                            </p>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleToggleNewBranchDay(activeDay)}
-                                                                className={`rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
-                                                            >
-                                                                {isActive ? 'Activo' : 'Cerrado'}
-                                                            </button>
-                                                        </div>
+                                                    <div className="space-y-2 rounded-[16px] border border-gray-100 bg-white p-3">                                                        <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                                                            {activeOption?.fullLabel || 'Día'}
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleToggleNewBranchDay(activeDay)}
+                                                            className={`rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-tight transition-none ${isActive ? 'bg-black text-white' : 'border border-gray-200 bg-white text-zinc-500'}`}
+                                                        >
+                                                            {isActive ? 'Activo' : 'Cerrado'}
+                                                        </button>
+                                                    </div>
 
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <input
@@ -1732,14 +1732,14 @@ export default function PreferenciasPage() {
                                                                 value={activeSchedule?.openTime || ''}
                                                                 onChange={(e) => handleUpdateNewBranchDayTime(activeDay, 'openTime', e.target.value)}
                                                                 disabled={!isActive}
-                                                                className="h-[30px] rounded-lg border border-gray-100 bg-[#F7F8FA] px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                className="h-[34px] rounded-xl border border-gray-100 bg-[#F7F8FA] px-3 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
                                                             />
                                                             <input
                                                                 type="time"
                                                                 value={activeSchedule?.closeTime || ''}
                                                                 onChange={(e) => handleUpdateNewBranchDayTime(activeDay, 'closeTime', e.target.value)}
                                                                 disabled={!isActive}
-                                                                className="h-[30px] rounded-lg border border-gray-100 bg-[#F7F8FA] px-2 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
+                                                                className="h-[34px] rounded-xl border border-gray-100 bg-[#F7F8FA] px-3 text-[10px] font-bold outline-none focus:ring-1 focus:ring-black disabled:opacity-40"
                                                             />
                                                         </div>
                                                     </div>
