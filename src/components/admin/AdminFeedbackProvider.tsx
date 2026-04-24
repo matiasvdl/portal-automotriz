@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
+import { useSettings } from '@/context/SettingsContext'
+import { resolveAccessibilityScale } from '@/lib/content-defaults'
 
 type FeedbackType = 'success' | 'error' | 'info' | 'warning'
 
@@ -57,6 +59,18 @@ const MAX_STORED_NOTIFICATIONS = 150
 const DEFAULT_TOAST_AUTO_CLOSE_MS = 6000
 const STORAGE_NOTIFICATIONS_KEY = 'admin-feedback-notifications-v1'
 const STORAGE_TOAST_IDS_KEY = 'admin-feedback-toast-ids-v1'
+const ADMIN_ACCESSIBILITY_STORAGE_KEY = 'admin-accessibility-scale-multiplier-v1'
+const ACCESSIBILITY_MIN_MULTIPLIER = 1
+const ACCESSIBILITY_MAX_MULTIPLIER = 1.5
+const ACCESSIBILITY_STEP = 0.1
+
+function clampAccessibilityMultiplier(value: number) {
+    if (!Number.isFinite(value)) return ACCESSIBILITY_MIN_MULTIPLIER
+    return Math.min(
+        ACCESSIBILITY_MAX_MULTIPLIER,
+        Math.max(ACCESSIBILITY_MIN_MULTIPLIER, Math.round(value * 100) / 100)
+    )
+}
 
 function readStoredNotifications(): NotificationItem[] {
     if (typeof window === 'undefined') return []
@@ -392,10 +406,22 @@ function normalizeConfirmInput(input: ConfirmInput): ConfirmState {
 }
 
 export function AdminFeedbackProvider({ children }: { children: React.ReactNode }) {
+    const { appearance } = useSettings()
+    const baseScale = useMemo(() => resolveAccessibilityScale(appearance?.accessibilityScale), [appearance?.accessibilityScale])
     const pathname = usePathname()
     const [notifications, setNotifications] = useState<NotificationItem[]>(() => readStoredNotifications())
     const [toastIds, setToastIds] = useState<string[]>(() => readStoredToastIds())
     const [panelOpen, setPanelOpen] = useState(false)
+    const [accessibilityOpen, setAccessibilityOpen] = useState(false)
+    const [accessibilityMultiplier, setAccessibilityMultiplier] = useState(() => {
+        if (typeof window === 'undefined') return ACCESSIBILITY_MIN_MULTIPLIER
+        try {
+            const raw = window.localStorage.getItem(ADMIN_ACCESSIBILITY_STORAGE_KEY)
+            return raw ? clampAccessibilityMultiplier(Number(raw)) : ACCESSIBILITY_MIN_MULTIPLIER
+        } catch {
+            return ACCESSIBILITY_MIN_MULTIPLIER
+        }
+    })
     const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
     const confirmResolverRef = useRef<((result: boolean) => void) | null>(null)
     const toastTimeoutsRef = useRef<Record<string, number>>({})
@@ -548,6 +574,21 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
     }, [addNotification])
 
     useEffect(() => {
+        const effectiveScale = Math.round(baseScale * accessibilityMultiplier * 100) / 100
+        document.documentElement.style.fontSize = `${effectiveScale * 100}%`
+
+        try {
+            window.localStorage.setItem(ADMIN_ACCESSIBILITY_STORAGE_KEY, String(accessibilityMultiplier))
+        } catch {
+            // Ignoramos errores de persistencia para no bloquear la UI.
+        }
+
+        return () => {
+            document.documentElement.style.fontSize = `${baseScale * 100}%`
+        }
+    }, [baseScale, accessibilityMultiplier])
+
+    useEffect(() => {
         try {
             window.localStorage.setItem(STORAGE_NOTIFICATIONS_KEY, JSON.stringify(notifications))
             window.localStorage.setItem(STORAGE_TOAST_IDS_KEY, JSON.stringify(toastIds))
@@ -620,23 +661,79 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                         ) : null}
 
                         {!panelOpen && visibleToasts.length === 0 ? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    markAllRead()
-                                    setPanelOpen(true)
-                                }}
-                                className="relative inline-flex h-12 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700"
-                            >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.4">
-                                    <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                </svg>
-                                {unreadCount > 0 ? (
-                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-black px-1.5 text-[9px] font-black text-white leading-[18px]">
-                                        {unreadCount > 99 ? '99+' : unreadCount}
-                                    </span>
+                            <div className="relative flex flex-col items-end gap-2">
+                                {accessibilityOpen ? (
+                                    <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => setAccessibilityMultiplier((prev) => clampAccessibilityMultiplier(prev - ACCESSIBILITY_STEP))}
+                                            className="h-7 w-7 rounded-md border border-zinc-200 text-[10px] font-black text-zinc-700 hover:border-black hover:text-black"
+                                            aria-label="Reducir tamano de texto"
+                                        >
+                                            A-
+                                        </button>
+                                        <span className="min-w-[38px] text-center text-[9px] font-black tracking-widest text-zinc-700">
+                                            {Math.round(accessibilityMultiplier * 100)}%
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAccessibilityMultiplier((prev) => clampAccessibilityMultiplier(prev + ACCESSIBILITY_STEP))}
+                                            className="h-7 w-7 rounded-md border border-zinc-200 text-[10px] font-black text-zinc-700 hover:border-black hover:text-black"
+                                            aria-label="Aumentar tamano de texto"
+                                        >
+                                            A+
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAccessibilityMultiplier(ACCESSIBILITY_MIN_MULTIPLIER)}
+                                            className="h-7 rounded-md border border-zinc-200 px-2 text-[9px] font-black uppercase tracking-widest text-zinc-700 hover:border-black hover:text-black"
+                                            aria-label="Restablecer tamano de texto"
+                                        >
+                                            Reset
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAccessibilityOpen(false)}
+                                            className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 hover:border-black hover:text-black"
+                                            aria-label="Cerrar accesibilidad"
+                                        >
+                                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                                <path d="M6 6l12 12M18 6L6 18" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 ) : null}
-                            </button>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAccessibilityOpen((prev) => !prev)}
+                                        className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700"
+                                        aria-label="Abrir accesibilidad"
+                                    >
+                                        <span className="text-[12px] font-black tracking-tight leading-none">Aa</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAccessibilityOpen(false)
+                                            markAllRead()
+                                            setPanelOpen(true)
+                                        }}
+                                        className="relative inline-flex h-12 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700"
+                                    >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.4">
+                                            <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                        </svg>
+                                        {unreadCount > 0 ? (
+                                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-black px-1.5 text-[9px] font-black text-white leading-[18px]">
+                                                {unreadCount > 99 ? '99+' : unreadCount}
+                                            </span>
+                                        ) : null}
+                                    </button>
+                                </div>
+                            </div>
                         ) : null}
                     </div>
                 </div>

@@ -2,14 +2,15 @@ import { client } from '@/sanity/lib/client';
 import { redirect } from 'next/navigation';
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import PublicAccessibilityControl from "@/components/PublicAccessibilityControl";
 import { SettingsProvider } from '@/context/SettingsContext';
 import { Metadata } from 'next';
 import { urlFor, getContrastColor } from '@/sanity/lib/image';
 import { CONTENT_DEFAULTS, resolvePrimaryColor } from '@/lib/content-defaults';
 
-// --- PASO B y C: SEO, FAVICON Y OPENGRAPH DINÁMICO ---
+// --- PASO B y C: SEO, FAVICON Y OPENGRAPH DINÃMICO ---
 export async function generateMetadata(): Promise<Metadata> {
-    // CORRECCIÓN: Aseguramos que la metadata también busque por el ID estricto
+    // CORRECCIÃ“N: Aseguramos que la metadata tambiÃ©n busque por el ID estricto
     const data = await client.fetch(`*[_type == "siteConfig"][0]{ 
         siteName, 
         siteUrl,
@@ -18,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }`, {}, { next: { revalidate: 0 } });
 
     const name = data?.siteName?.trim() || CONTENT_DEFAULTS.siteDisplayName;
-    const description = data?.seoDescriptions?.home || 'Compra y venta de vehículos seleccionados.';
+    const description = data?.seoDescriptions?.home || 'Compra y venta de vehÃ­culos seleccionados.';
 
     const rawUrl = data?.siteUrl || 'localhost:3000';
     const baseUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
@@ -36,9 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
     return {
         metadataBase: new URL(baseUrl),
-        title: {
-            default: name,
-        },
+        title: name,
         description: description,
         icons: {
             icon: iconUrl,
@@ -96,7 +95,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         redirect('/mantenimiento');
     }
 
-    // --- LÓGICA DE COLOR DINÁMICO ---
+    // --- LÃ“GICA DE COLOR DINÃMICO ---
     const primary = resolvePrimaryColor(appearance?.primaryColor);
     const foreground = getContrastColor(primary); // Calcula si el texto debe ser blanco o negro
 
@@ -104,7 +103,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
     return (
         <SettingsProvider config={configCompleta} appearance={appearance}>
-            {/* INYECCIÓN DE VARIABLES CSS: 
+            {/* INYECCIÃ“N DE VARIABLES CSS: 
                 Esto permite que todo el sitio use var(--primary) y var(--primary-foreground)
             */}
             <style dangerouslySetInnerHTML={{
@@ -121,6 +120,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                     {children}
                 </main>
                 <Footer config={configCompleta} />
+                <PublicAccessibilityControl />
             </div>
         </SettingsProvider>
     );
