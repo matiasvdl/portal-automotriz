@@ -16,13 +16,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     if (!data || data.status === false) return { title: 'Auto no encontrado' }
 
     const title = `${data.make} ${data.model} ${data.year}`
-    const site = data.siteName || ''
 
     return {
         title: title,
         description: `Conoce el precio, ficha técnica y detalles del ${title}. Disponible ahora para entrega inmediata.`,
         openGraph: {
-            title: `${title} | ${site}`,
+            title: `${title}`,
         }
     }
 }

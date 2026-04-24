@@ -9,6 +9,8 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 const LOGIN_WINDOW_MS = 10 * 60_000
 const LOGIN_MAX_ATTEMPTS = 5
 const loginAttemptTracker = new Map<string, number[]>()
+const isProd = process.env.NODE_ENV === 'production'
+const secureCookiePrefix = isProd ? '__Secure-' : ''
 
 async function getRequestIdentifier() {
     const headerStore = await headers()
@@ -115,8 +117,42 @@ export const authOptions: NextAuthOptions = {
     },
     session: {
         strategy: "jwt",
-        maxAge: 24 * 60 * 60,
+        maxAge: 8 * 60 * 60,
+        updateAge: 60 * 60,
     },
+    jwt: {
+        maxAge: 8 * 60 * 60,
+    },
+    useSecureCookies: isProd,
+    cookies: {
+        sessionToken: {
+            name: `${secureCookiePrefix}next-auth.session-token`,
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: isProd,
+            },
+        },
+        callbackUrl: {
+            name: `${secureCookiePrefix}next-auth.callback-url`,
+            options: {
+                sameSite: 'lax',
+                path: '/',
+                secure: isProd,
+            },
+        },
+        csrfToken: {
+            name: `${isProd ? '__Host-' : ''}next-auth.csrf-token`,
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: isProd,
+            },
+        },
+    },
+    trustHost: true,
     callbacks: {
         async jwt({ token, user }) {
             if (user) {

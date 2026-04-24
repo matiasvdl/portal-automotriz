@@ -24,7 +24,6 @@ export async function generateMetadata() {
         metadataBase: new URL(baseUrl),
         title: {
             default: name,
-            template: `%s | ${name}`,
         },
         description,
         icons: {

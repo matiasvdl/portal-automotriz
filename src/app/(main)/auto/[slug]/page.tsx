@@ -13,13 +13,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     if (!data) return { title: 'Auto no encontrado' }
 
     const title = `${data.make} ${data.model} ${data.year}`
-    const site = data.siteName || ''
 
     return {
         title: title,
         description: `Conoce el precio, ficha técnica y detalles del ${title}. Disponible ahora.`,
         openGraph: {
-            title: `${title} | ${site}`,
+            title: `${title}`,
         }
     }
 }

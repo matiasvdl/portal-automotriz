@@ -12,7 +12,9 @@ type NotificationItem = {
     message: string
     eventKey: string
     locationLabel: string
+    locationDetail: string
     createdAt: number
+    autoCloseMs: number
     read: boolean
 }
 
@@ -50,8 +52,9 @@ type FeedbackContextValue = {
 }
 
 const FeedbackContext = createContext<FeedbackContextValue | null>(null)
-const MAX_VISIBLE_TOASTS = 3
+const MAX_VISIBLE_TOASTS = 1
 const MAX_STORED_NOTIFICATIONS = 150
+const DEFAULT_TOAST_AUTO_CLOSE_MS = 6000
 const STORAGE_NOTIFICATIONS_KEY = 'admin-feedback-notifications-v1'
 const STORAGE_TOAST_IDS_KEY = 'admin-feedback-toast-ids-v1'
 
@@ -67,6 +70,15 @@ function readStoredNotifications(): NotificationItem[] {
 
         return parsed
             .filter((item) => item && typeof item.id === 'string')
+            .map((item) => ({
+                ...item,
+                locationDetail: typeof item.locationDetail === 'string' && item.locationDetail.trim()
+                    ? item.locationDetail
+                    : 'Detalle no disponible (registro anterior)',
+                autoCloseMs: typeof item.autoCloseMs === 'number' && item.autoCloseMs > 0
+                    ? item.autoCloseMs
+                    : DEFAULT_TOAST_AUTO_CLOSE_MS,
+            }))
             .slice(0, MAX_STORED_NOTIFICATIONS)
     } catch {
         return []
@@ -91,13 +103,25 @@ function readStoredToastIds(): string[] {
     }
 }
 
-const TYPE_STYLES: Record<FeedbackType, { badge: string; dot: string; title: string; subtitle: string; panelCard: string }> = {
+const TYPE_STYLES: Record<FeedbackType, {
+    badge: string
+    dot: string
+    title: string
+    subtitle: string
+    panelCard: string
+    panelTitle: string
+    panelMessage: string
+    panelMeta: string
+}> = {
     success: {
         badge: 'text-emerald-700 bg-emerald-50 border-emerald-200',
         dot: 'bg-emerald-500',
         title: 'text-black',
         subtitle: 'text-zinc-800',
         panelCard: 'border-emerald-200 bg-emerald-50/60',
+        panelTitle: 'text-emerald-900',
+        panelMessage: 'text-emerald-700',
+        panelMeta: 'text-emerald-800/80',
     },
     error: {
         badge: 'text-red-700 bg-red-50 border-red-200',
@@ -105,6 +129,9 @@ const TYPE_STYLES: Record<FeedbackType, { badge: string; dot: string; title: str
         title: 'text-black',
         subtitle: 'text-zinc-800',
         panelCard: 'border-red-200 bg-red-50/60',
+        panelTitle: 'text-red-900',
+        panelMessage: 'text-red-700',
+        panelMeta: 'text-red-800/80',
     },
     warning: {
         badge: 'text-amber-700 bg-amber-50 border-amber-200',
@@ -112,6 +139,9 @@ const TYPE_STYLES: Record<FeedbackType, { badge: string; dot: string; title: str
         title: 'text-black',
         subtitle: 'text-zinc-800',
         panelCard: 'border-amber-200 bg-amber-50/60',
+        panelTitle: 'text-amber-900',
+        panelMessage: 'text-amber-700',
+        panelMeta: 'text-amber-800/80',
     },
     info: {
         badge: 'text-zinc-700 bg-zinc-50 border-zinc-200',
@@ -119,6 +149,9 @@ const TYPE_STYLES: Record<FeedbackType, { badge: string; dot: string; title: str
         title: 'text-black',
         subtitle: 'text-zinc-800',
         panelCard: 'border-zinc-200 bg-zinc-50/70',
+        panelTitle: 'text-zinc-900',
+        panelMessage: 'text-zinc-700',
+        panelMeta: 'text-zinc-700/85',
     },
 }
 
@@ -168,11 +201,11 @@ function inferLegacyAlertType(message: string): FeedbackType {
 }
 
 function resolveAutoCloseMs(type: FeedbackType, sticky?: boolean, provided?: number) {
-    if (typeof provided === 'number') return provided
-    if (sticky) return 0
-    if (type === 'error') return 0
-    if (type === 'warning') return 18000
-    return 12000
+    if (typeof provided === 'number') return DEFAULT_TOAST_AUTO_CLOSE_MS
+    if (sticky) return DEFAULT_TOAST_AUTO_CLOSE_MS
+    if (type === 'error') return DEFAULT_TOAST_AUTO_CLOSE_MS
+    if (type === 'warning') return DEFAULT_TOAST_AUTO_CLOSE_MS
+    return DEFAULT_TOAST_AUTO_CLOSE_MS
 }
 
 function toCompactText(message: string) {
@@ -279,6 +312,37 @@ function deriveLocationLabel(pathname: string, message: string) {
     return 'Panel administrativo'
 }
 
+function deriveLocationDetail(pathname: string, message: string, title: string) {
+    const normalized = `${title} ${message}`.toLowerCase()
+
+    if (pathname.startsWith('/admin/preferencias')) {
+        if (normalized.includes('sucursal') || normalized.includes('horario')) return 'Modulo de sucursales y horarios'
+        if (normalized.includes('rese') || normalized.includes('resena')) return 'Modulo de resenas'
+        if (normalized.includes('faq') || normalized.includes('pregunta')) return 'Modulo de preguntas frecuentes'
+        if (normalized.includes('marca') || normalized.includes('modelo')) return 'Modulo de marcas y modelos'
+        if (normalized.includes('seo')) return 'Modulo de SEO'
+        return 'Seccion general de preferencias'
+    }
+    if (pathname.startsWith('/admin/editar')) return 'Formulario de edicion de vehiculo'
+    if (pathname.startsWith('/admin/nuevo')) return 'Formulario de publicacion de vehiculo'
+    if (pathname.startsWith('/admin/dashboard')) return 'Listado principal de vehiculos'
+    if (pathname.startsWith('/admin/administracion')) return 'Panel de administracion de usuarios'
+    if (pathname.startsWith('/admin/cuenta')) return 'Configuracion de cuenta del administrador'
+
+    return `Ruta: ${pathname}`
+}
+
+function formatDateTime(timestamp: number) {
+    const date = new Date(timestamp)
+    return date.toLocaleString('es-CL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+}
+
 function normalizeNotifyInput(input: NotifyInput) {
     if (typeof input === 'string') {
         const inferredType = inferLegacyAlertType(input)
@@ -342,6 +406,7 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
         const duplicateWindowMs = 15000
         const currentPath = pathname || '/'
         const locationLabel = deriveLocationLabel(currentPath, normalized.message)
+        const locationDetail = deriveLocationDetail(currentPath, normalized.message, normalized.title)
 
         let notificationId = `${createdAt}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -357,7 +422,15 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                 notificationId = duplicate.id
                 return prev.map((item) =>
                     item.id === duplicate.id
-                        ? { ...item, createdAt, read: false, message: normalized.message, title: normalized.title }
+                        ? {
+                            ...item,
+                            createdAt,
+                            read: false,
+                            message: normalized.message,
+                            title: normalized.title,
+                            locationDetail,
+                            autoCloseMs: normalized.autoCloseMs,
+                        }
                         : item
                 )
             }
@@ -370,7 +443,9 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                     message: normalized.message,
                     eventKey: normalized.eventKey,
                     locationLabel,
+                    locationDetail,
                     createdAt,
+                    autoCloseMs: normalized.autoCloseMs,
                     read: false,
                 },
                 ...prev.slice(0, MAX_STORED_NOTIFICATIONS - 1),
@@ -389,8 +464,31 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
         toastTimeoutsRef.current[notificationId] = window.setTimeout(() => {
             setToastIds((prev) => prev.filter((itemId) => itemId !== notificationId))
             delete toastTimeoutsRef.current[notificationId]
-        }, 5000)
+        }, normalized.autoCloseMs)
     }, [pathname])
+
+    useEffect(() => {
+        const now = Date.now()
+        const activeToastIds = toastIds.filter((id) => notifications.some((item) => item.id === id))
+
+        activeToastIds.forEach((id) => {
+            if (toastTimeoutsRef.current[id]) return
+
+            const notification = notifications.find((item) => item.id === id)
+            if (!notification) return
+
+            const remainingMs = notification.createdAt + notification.autoCloseMs - now
+            if (remainingMs <= 0) {
+                setToastIds((prev) => prev.filter((itemId) => itemId !== id))
+                return
+            }
+
+            toastTimeoutsRef.current[id] = window.setTimeout(() => {
+                setToastIds((prev) => prev.filter((itemId) => itemId !== id))
+                delete toastTimeoutsRef.current[id]
+            }, remainingMs)
+        })
+    }, [notifications, toastIds])
 
     const confirmAction = useCallback((input: ConfirmInput) => {
         const nextState = normalizeConfirmInput(input)
@@ -489,7 +587,7 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                                     <div key={toast.id} className="w-full rounded-xl border border-gray-100 bg-white p-4">
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex items-start gap-4">
-                                                <span className={`inline-flex h-1.5 w-1.5 rounded-full ${TYPE_STYLES[toast.type].dot}`}></span>
+                                                <span className={`mt-[1px] block h-2 w-2 min-h-2 min-w-2 shrink-0 rounded-full ${TYPE_STYLES[toast.type].dot}`}></span>
                                                 <div className="flex min-w-0 flex-col justify-center text-left">
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-black leading-none">
                                                         {toast.title}
@@ -499,6 +597,9 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                                                     </p>
                                                     <p className="mt-[6px] text-[8px] font-bold uppercase tracking-tighter text-zinc-500 leading-none">
                                                         {toast.locationLabel}
+                                                    </p>
+                                                    <p className="mt-[4px] text-[8px] font-bold uppercase tracking-tighter text-zinc-500 leading-none">
+                                                        {toast.locationDetail}
                                                     </p>
                                                 </div>
                                             </div>
@@ -570,21 +671,24 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                                     <div key={item.id} className={`w-full rounded-xl border p-4 text-left ${TYPE_STYLES[item.type].panelCard} ${item.read ? 'opacity-75' : 'opacity-100'}`}>
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex items-start gap-4">
-                                                <span className={`mt-0.5 inline-flex h-1.5 w-1.5 rounded-full ${TYPE_STYLES[item.type].dot}`}></span>
+                                                <span className={`mt-0.5 block h-2 w-2 min-h-2 min-w-2 shrink-0 rounded-full ${TYPE_STYLES[item.type].dot}`}></span>
                                                 <div className="flex min-w-0 flex-col justify-center text-left">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-black leading-none">
+                                                    <p className={`text-[10px] font-black uppercase tracking-widest leading-none ${TYPE_STYLES[item.type].panelTitle}`}>
                                                         {item.title}
                                                     </p>
-                                                    <p className="mt-[7px] text-[8px] font-bold uppercase tracking-tighter text-zinc-400 leading-none">
+                                                    <p className={`mt-[7px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMessage}`}>
                                                         {item.message}
                                                     </p>
-                                                    <p className="mt-[6px] text-[8px] font-bold uppercase tracking-tighter text-zinc-500 leading-none">
+                                                    <p className={`mt-[6px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
                                                         {item.locationLabel}
+                                                    </p>
+                                                    <p className={`mt-[4px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
+                                                        {item.locationDetail}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <span className="mt-0.5 shrink-0 whitespace-nowrap text-right text-[8px] font-bold uppercase tracking-widest text-zinc-400 leading-none">
-                                                {new Date(item.createdAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                                            <span className={`mt-0.5 shrink-0 whitespace-nowrap text-right text-[8px] font-bold uppercase tracking-widest leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
+                                                {formatDateTime(item.createdAt)}
                                             </span>
                                         </div>
                                     </div>

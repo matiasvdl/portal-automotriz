@@ -83,6 +83,10 @@ interface BrandOption {
     models?: BrandModel[];
 }
 
+function hasValue(value: string | undefined | null) {
+    return Boolean(value && value.trim().length > 0);
+}
+
 type NestedCarGroupKey =
     | 'specsGeneral'
     | 'specsHistory'
@@ -95,7 +99,6 @@ type NestedCarGroupKey =
 export default function NuevoVehiculoPage() {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [successNotice, setSuccessNotice] = useState('')
     const [tags, setTags] = useState<string[]>([])
     const [currentTag, setCurrentTag] = useState('')
     const [expandedSections, setExpandedSections] = useState({
@@ -161,12 +164,6 @@ export default function NuevoVehiculoPage() {
         }
         fetchBrands()
     }, [])
-
-    useEffect(() => {
-        if (!successNotice) return
-        const timer = setTimeout(() => setSuccessNotice(''), 12000)
-        return () => clearTimeout(timer)
-    }, [successNotice])
 
     // --- MANEJADORES ---
     const handleChange = (field: keyof CarFormData, value: string | number) => {
@@ -282,8 +279,33 @@ export default function NuevoVehiculoPage() {
         }
     }
 
+    const isVehicleFormEmpty = () => {
+        const hasCoreText =
+            hasValue(formData.make) ||
+            hasValue(formData.model) ||
+            hasValue(formData.version) ||
+            hasValue(formData.slug) ||
+            hasValue(formData.engine) ||
+            hasValue(formData.location) ||
+            hasValue(formData.description);
+
+        const hasNumbers = formData.listPrice > 0 || formData.financedPrice > 0 || formData.mileage > 0;
+        const hasMedia =
+            formData.images.length > 0 ||
+            formData.exteriorImages.length > 0 ||
+            formData.interiorImages.length > 0 ||
+            Boolean(formData.reportDocument);
+        const hasTags = tags.length > 0;
+
+        return !(hasCoreText || hasNumbers || hasMedia || hasTags);
+    }
+
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault()
+        if (isVehicleFormEmpty()) {
+            alert('No puedes publicar un vehículo con el formulario vacío. Completa al menos los datos principales.')
+            return
+        }
         setIsSubmitting(true)
 
         try {
@@ -298,9 +320,12 @@ export default function NuevoVehiculoPage() {
             }
 
             // 3. Guardar el vehículo
-            await saveCarAction(null, doc)
+            const result = await saveCarAction(null, doc)
+            if (!result.success) {
+                alert(result.error || 'No se pudo guardar el vehículo.')
+                return
+            }
             alert('Vehículo publicado correctamente.')
-            setSuccessNotice('Vehículo publicado correctamente.')
             await new Promise((resolve) => setTimeout(resolve, 1100))
             router.push('/admin/dashboard')
         } catch {
@@ -653,20 +678,6 @@ export default function NuevoVehiculoPage() {
                     {isSubmitting ? '...' : 'Publicar Vehículo'}
                 </button>
             </div>
-
-            {successNotice && (
-                <div className="fixed bottom-6 right-6 z-[140] flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
-                    <div className="flex flex-col justify-center text-left">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-black leading-none">
-                            Vehículo guardado
-                        </p>
-                        <p className="mt-[4px] text-[8px] font-bold uppercase tracking-tighter text-zinc-400 leading-none">
-                            {successNotice}
-                        </p>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }
@@ -771,3 +782,5 @@ function ImageUploadPlaceholder({
         </div>
     )
 }
+
+

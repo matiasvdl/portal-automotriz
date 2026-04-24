@@ -38,7 +38,6 @@ export async function generateMetadata(): Promise<Metadata> {
         metadataBase: new URL(baseUrl),
         title: {
             default: name,
-            template: `%s | ${name}`,
         },
         description: description,
         icons: {
