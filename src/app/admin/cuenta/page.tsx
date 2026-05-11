@@ -285,7 +285,7 @@ export default function MiCuentaPage() {
                                 <AccountInput label="Apellido" value={profileData.lastName} onChange={(v) => setProfileData({ ...profileData, lastName: v })} />
                                 <AccountInput label="Nombre de Usuario" value={profileData.username} onChange={(v) => setProfileData({ ...profileData, username: v })} />
                                 <AccountInput label="Correo Electrónico" value={profileData.email} onChange={(v) => setProfileData({ ...profileData, email: v })} />
-                                <AccountInput label="Teléfono de Contacto" value={profileData.phone} onChange={(v) => setProfileData({ ...profileData, phone: v })} />
+                                <AccountInput label="Teléfono / WhatsApp" value={profileData.phone} onChange={(v) => setProfileData({ ...profileData, phone: v })} />
                             </div>
                         </div>
 

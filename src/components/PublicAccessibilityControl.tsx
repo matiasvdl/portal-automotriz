@@ -17,7 +17,7 @@ function clampMultiplier(value: number) {
 export default function PublicAccessibilityControl() {
     const { appearance } = useSettings()
     const baseScale = useMemo(() => resolveAccessibilityScale(appearance?.accessibilityScale), [appearance?.accessibilityScale])
-    const [isOpen, setIsOpen] = useState(true)
+    const [isOpen, setIsOpen] = useState(false)
     const [multiplier, setMultiplier] = useState(() => {
         if (typeof window === 'undefined') return MIN_MULTIPLIER
         try {

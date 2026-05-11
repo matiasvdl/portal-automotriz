@@ -163,6 +163,70 @@ export const car = defineType({
         }),
 
         defineField({
+            name: 'assignedSeller',
+            title: 'Vendedor Asignado',
+            description: 'Miembro del equipo que atenderá las consultas de este vehículo. Si no se asigna, se usa el WhatsApp general.',
+            type: 'reference',
+            to: [{ type: 'adminProfile' }],
+        }),
+
+        defineField({
+            name: 'commission',
+            title: 'Comisión del vendedor',
+            description: 'Monto que gana el vendedor por este auto. Puede ser monto fijo (CLP) o porcentaje del precio.',
+            type: 'object',
+            fields: [
+                {
+                    name: 'type',
+                    title: 'Tipo',
+                    type: 'string',
+                    options: {
+                        list: [
+                            { title: 'Monto fijo (CLP)', value: 'fixed' },
+                            { title: 'Porcentaje del precio (%)', value: 'percent' },
+                        ],
+                        layout: 'radio',
+                    },
+                    initialValue: 'fixed',
+                },
+                {
+                    name: 'value',
+                    title: 'Valor',
+                    description: 'Si tipo = monto fijo: cantidad en CLP. Si tipo = porcentaje: número del 0 al 100.',
+                    type: 'number',
+                },
+            ],
+        }),
+
+        defineField({
+            name: 'origin',
+            title: 'Origen del vehículo (interno)',
+            description: 'Sólo visible en el panel. No se muestra al cliente.',
+            type: 'object',
+            fields: [
+                {
+                    name: 'type',
+                    title: 'Tipo',
+                    type: 'string',
+                    options: {
+                        list: [
+                            { title: 'Propio', value: 'propio' },
+                            { title: 'Consignación', value: 'consignacion' },
+                        ],
+                        layout: 'radio',
+                    },
+                    initialValue: 'propio',
+                },
+                {
+                    name: 'note',
+                    title: 'Nota / origen',
+                    description: 'Por ejemplo: "Auto en consignación de Maipú Motors".',
+                    type: 'string',
+                },
+            ],
+        }),
+
+        defineField({
             name: 'specsGeneral',
             title: 'Especificaciones: General',
             type: 'object',

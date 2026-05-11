@@ -89,8 +89,19 @@ export async function saveCarAction(id: string | null, carData: CarPayload) {
             mileage: Number(carData.mileage) || 0,
         }
 
+        const sellerRef = cleanData.assignedSeller as { _ref?: string } | null | undefined
+        const hasValidSellerRef = Boolean(sellerRef && typeof sellerRef === 'object' && sellerRef._ref)
+
+        if (!hasValidSellerRef) {
+            delete cleanData.assignedSeller
+        }
+
         if (id) {
-            await writeClient.patch(id).set(cleanData).commit()
+            const patch = writeClient.patch(id).set(cleanData)
+            if (!hasValidSellerRef) {
+                patch.unset(['assignedSeller'])
+            }
+            await patch.commit()
             await recordAuditLogFromSession({
                 action: 'update_car',
                 entityType: 'vehiculo',

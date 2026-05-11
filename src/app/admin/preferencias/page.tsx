@@ -1092,7 +1092,7 @@ export default function PreferenciasPage() {
                                 onClick={() => setActiveTab(tab)}
                                 className={`px-4 sm:px-5 py-2.5 sm:py-2 rounded-full text-[8px] sm:text-[9px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-black text-white' : 'bg-white text-zinc-400 border border-gray-100'}`}
                             >
-                                {tab === 'general' ? 'General' : tab === 'personalizacion' ? 'Personalización' : tab === 'navegacion' ? 'Navegación' : tab === 'financiamiento' ? 'Financiamiento' : tab === 'contacto' ? 'Contacto' : tab === 'sucursales' ? 'Sucursales' : tab === 'preguntas' ? 'Preguntas' : tab === 'seo' ? 'SEO' : tab === 'marcas' ? 'Marcas' : tab === 'legales' ? 'Legales' : 'Reseñas'}
+                                {TAB_LABELS[tab]}
                             </button>
                         ))}
                     </div>

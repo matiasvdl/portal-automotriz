@@ -45,6 +45,12 @@ interface SanityImage {
     asset: { _type: 'reference'; _ref: string };
 }
 
+interface SellerOption {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+}
+
 interface CarFormData {
     make: string;
     model: string;
@@ -62,6 +68,9 @@ interface CarFormData {
     fuel: string;
     color: string;
     location: string;
+    assignedSeller: { _type: 'reference'; _ref: string } | null;
+    commission: { type: 'fixed' | 'percent'; value: number };
+    origin: { type: 'propio' | 'consignacion'; note: string };
     specsGeneral: { cilindrada: string; cilindros: string; potencia: string };
     specsHistory: { duenos: string; mantenciones: string; historial: string };
     specsExterior: { puertas: string; rin: string; tipoRin: string; luces: string };
@@ -106,6 +115,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
     const [currentTag, setCurrentTag] = useState('')
     const [expandedSections, setExpandedSections] = useState({
         identidad: true,
+        asignacion: true,
         ficha: true,
         specsGeneralHistorial: true,
         specsExteriorInterior: true,
@@ -115,6 +125,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
 
     // --- ESTADOS PARA LA BASE DE DATOS DE MARCAS/MODELOS ---
     const [dbBrands, setDbBrands] = useState<BrandOption[]>([])
+    const [sellers, setSellers] = useState<SellerOption[]>([])
 
     const mainImagesRef = useRef<HTMLInputElement>(null)
     const exteriorImagesRef = useRef<HTMLInputElement>(null)
@@ -138,6 +149,9 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         fuel: 'Bencina',
         color: 'Blanco',
         location: '',
+        assignedSeller: null,
+        commission: { type: 'fixed', value: 0 },
+        origin: { type: 'propio', note: '' },
         specsGeneral: { cilindrada: '', cilindros: '', potencia: '' },
         specsHistory: { duenos: '', mantenciones: '', historial: '' },
         specsExterior: { puertas: '', rin: '', tipoRin: '', luces: '' },
@@ -160,6 +174,12 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                 const brands = await readClient.fetch(`*[_type == "brand"] | order(name asc) { name, models }`)
                 setDbBrands(brands)
 
+                // 1b. Cargar los vendedores disponibles
+                const sellersData = await readClient.fetch(
+                    `*[_type == "adminProfile"] | order(firstName asc) { _id, firstName, lastName }`
+                )
+                setSellers(sellersData)
+
                 // 2. Cargar los datos del vehículo actual
                 const car = await readClient.fetch(`*[_type == "car" && _id == $id][0]`, { id })
 
@@ -181,6 +201,17 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                         fuel: car.fuel || 'Bencina',
                         color: car.color || 'Blanco',
                         location: car.location || '',
+                        assignedSeller: car.assignedSeller && car.assignedSeller._ref
+                            ? { _type: 'reference', _ref: car.assignedSeller._ref }
+                            : null,
+                        commission: {
+                            type: car.commission?.type === 'percent' ? 'percent' : 'fixed',
+                            value: typeof car.commission?.value === 'number' ? car.commission.value : 0,
+                        },
+                        origin: {
+                            type: (car.origin?.type === 'consignacion' ? 'consignacion' : 'propio'),
+                            note: car.origin?.note || '',
+                        },
                         specsGeneral: {
                             cilindrada: car.specsGeneral?.cilindrada || '',
                             cilindros: car.specsGeneral?.cilindros || '',
@@ -249,6 +280,37 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
         setFormData(prev => ({
             ...prev,
             [group]: { ...prev[group], [field]: value }
+        }))
+    }
+
+    const handleSellerChange = (sellerId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            assignedSeller: sellerId ? { _type: 'reference', _ref: sellerId } : null,
+        }))
+    }
+
+    const handleOriginChange = (field: 'type' | 'note', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            origin: {
+                ...prev.origin,
+                [field]: field === 'type' ? (value as 'propio' | 'consignacion') : value,
+            },
+        }))
+    }
+
+    const handleCommissionToggle = () => {
+        setFormData(prev => ({
+            ...prev,
+            commission: { type: prev.commission.type === 'fixed' ? 'percent' : 'fixed', value: 0 },
+        }))
+    }
+
+    const handleCommissionValueChange = (value: number) => {
+        setFormData(prev => ({
+            ...prev,
+            commission: { ...prev.commission, value },
         }))
     }
 
@@ -484,7 +546,7 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                                 <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Enlace (Slug)</label>
                                 <div className="flex gap-2 h-[42px]">
                                     <input value={formData.slug} onChange={(e) => handleChange('slug', e.target.value)} className="flex-1 bg-[#F7F8FA] border-none rounded-xl px-5 py-0 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black" />
-                                    <button type="button" onClick={generateSlug} className="bg-[#F0F2F5] px-4 rounded-xl text-[9px] font-black uppercase hover:bg-black hover:text-white transition-all h-full">Generar</button>
+                                    <button type="button" onClick={generateSlug} className="bg-black text-white px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95 whitespace-nowrap flex items-center justify-center h-full">Generar</button>
                                 </div>
                             </div>
                             <FormGroup label="Año" type="number" value={formData.year} onChange={(val: string) => handleChange('year', parseInt(val) || 0)} />
@@ -512,6 +574,60 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
                                 type="text"
                                 value={formatChileanNumber(formData.mileage)}
                                 onChange={(val: string) => handleChange('mileage', parseChileanNumber(val))}
+                            />
+                        </div>
+                    </AdminCollapsibleCard>
+
+                    <AdminCollapsibleCard
+                        title="Asignación y Comisión"
+                        summary="Vendedor responsable, origen del auto y comisión a pagar."
+                        isOpen={expandedSections.asignacion}
+                        onToggle={() => toggleSection('asignacion')}
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                            {/* VENDEDOR ASIGNADO */}
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Vendedor Asignado</label>
+                                <AdminSoftSelect
+                                    value={formData.assignedSeller?._ref || ''}
+                                    onChange={handleSellerChange}
+                                    options={[
+                                        { value: '', label: 'Sin asignar (WhatsApp general)' },
+                                        ...sellers.map((s) => ({
+                                            value: s._id,
+                                            label: `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Vendedor',
+                                        })),
+                                    ]}
+                                />
+                            </div>
+
+                            {/* ORIGEN INTERNO */}
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Origen (interno)</label>
+                                <AdminSoftSelect
+                                    value={formData.origin.type}
+                                    onChange={(v) => handleOriginChange('type', v)}
+                                    options={[
+                                        { value: 'propio', label: 'Propio' },
+                                        { value: 'consignacion', label: 'Consignación' },
+                                    ]}
+                                />
+                            </div>
+
+                            {/* NOTA INTERNA (opcional) */}
+                            <FormGroup
+                                label="Nota interna (opcional)"
+                                value={formData.origin.note}
+                                onChange={(v) => handleOriginChange('note', v)}
+                                placeholder={formData.origin.type === 'consignacion' ? 'Ej: Auto de Maipú Motors' : 'Sólo visible en el panel'}
+                            />
+
+                            {/* COMISIÓN (manual con toggle $/%) */}
+                            <CommissionInput
+                                commission={formData.commission}
+                                price={formData.financedPrice || formData.listPrice || 0}
+                                onToggle={handleCommissionToggle}
+                                onValueChange={handleCommissionValueChange}
                             />
                         </div>
                     </AdminCollapsibleCard>
@@ -628,105 +744,108 @@ export default function EditarVehiculoPage({ params }: { params: Promise<{ id: s
 
                     <AdminCollapsibleCard
                         title="Multimedia y Extras"
-                        className="space-y-3 text-left"
                         summary="Características, imágenes y descripción del vehículo."
                         isOpen={expandedSections.multimedia}
                         onToggle={() => toggleSection('multimedia')}
                     >
-                        <div className="space-y-2.5 text-left">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Equipamiento / Características (Comas o ENTER)</label>
-                            <div className="flex gap-2 h-[45px]">
-                                <input
-                                    value={currentTag}
-                                    onChange={(e) => setCurrentTag(e.target.value)}
-                                    onKeyDown={addTag}
-                                    placeholder="Aire Acondicionado, Bluetooth, Llantas..."
-                                    className="flex-1 bg-[#F7F8FA] border-none rounded-xl px-5 py-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black leading-none"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddTags}
-                                    className="bg-black text-white px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95"
-                                >
-                                    Agregar
-                                </button>
-                            </div>
-                            <div className="flex flex-wrap gap-2 pt-1 leading-none">
-                                {tags.map(tag => (
-                                    <span key={tag} className="bg-black text-white text-[9px] font-black uppercase px-3 py-2 rounded-lg flex items-center gap-2 leading-none">
-                                        {tag} <button type="button" onClick={() => setTags(tags.filter(t => t !== tag))}>✕</button>
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        <input type="file" multiple className="hidden" ref={mainImagesRef} onChange={(e) => handleImageUpload(e, 'images')} />
-                        <input type="file" multiple className="hidden" ref={exteriorImagesRef} onChange={(e) => handleImageUpload(e, 'exteriorImages')} />
-                        <input type="file" multiple className="hidden" ref={interiorImagesRef} onChange={(e) => handleImageUpload(e, 'interiorImages')} />
-                        <input type="file" accept=".pdf,application/pdf" className="hidden" ref={reportFileRef} onChange={handleReportUpload} />
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 leading-none pt-1">
-                            <ImageUploadPlaceholder
-                                label="Imágenes Principales"
-                                images={formData.images}
-                                field="images"
-                                onRemove={removeImage}
-                                onMove={moveImage}
-                                onClick={() => mainImagesRef.current?.click()}
-                            />
-                            <ImageUploadPlaceholder
-                                label="Fotos Detalles Exterior"
-                                images={formData.exteriorImages}
-                                field="exteriorImages"
-                                onRemove={removeImage}
-                                onMove={moveImage}
-                                onClick={() => exteriorImagesRef.current?.click()}
-                            />
-                            <ImageUploadPlaceholder
-                                label="Fotos Detalles Interior"
-                                images={formData.interiorImages}
-                                field="interiorImages"
-                                onRemove={removeImage}
-                                onMove={moveImage}
-                                onClick={() => interiorImagesRef.current?.click()}
-                            />
-                        </div>
-
-                        <div className="space-y-2.5 pt-2 text-left">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Descripción</label>
-                            <textarea value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={6} className="w-full bg-[#F7F8FA] border-none rounded-2xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed" />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end pt-4">
-                            <FormGroup label="Nombre del Informe" value={formData.reportLabel} onChange={(v) => handleChange('reportLabel', v)} placeholder="Autofact o Informe" />
-                            <button
-                                type="button"
-                                onClick={() => reportFileRef.current?.click()}
-                                className="h-[42px] rounded-xl border border-black bg-black px-5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all whitespace-nowrap"
-                            >
-                                {formData.reportDocument ? 'Cambiar Informe' : 'Subir Informe'}
-                            </button>
-                        </div>
-
-                        {formData.reportDocument && (
-                            <div className="mt-3 flex items-center justify-between rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3 text-left">
-                                <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-black leading-none">
-                                        {formData.reportLabel || 'INFORME DEL VEHICULO'}
-                                    </p>
-                                    <p className="mt-1 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-none">
-                                        Archivo PDF cargado para descarga
-                                    </p>
+                        <div className="space-y-6">
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Equipamiento / Características (Comas o ENTER)</label>
+                                <div className="flex gap-2 h-[42px]">
+                                    <input
+                                        value={currentTag}
+                                        onChange={(e) => setCurrentTag(e.target.value)}
+                                        onKeyDown={addTag}
+                                        placeholder="Aire Acondicionado, Bluetooth, Llantas..."
+                                        className="flex-1 bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black leading-none"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAddTags}
+                                        className="bg-black text-white px-6 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95"
+                                    >
+                                        Agregar
+                                    </button>
                                 </div>
+                                {tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 pt-1 leading-none">
+                                        {tags.map(tag => (
+                                            <span key={tag} className="bg-black text-white text-[9px] font-black uppercase px-3 py-2 rounded-lg flex items-center gap-2 leading-none">
+                                                {tag} <button type="button" onClick={() => setTags(tags.filter(t => t !== tag))}>✕</button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <input type="file" multiple className="hidden" ref={mainImagesRef} onChange={(e) => handleImageUpload(e, 'images')} />
+                            <input type="file" multiple className="hidden" ref={exteriorImagesRef} onChange={(e) => handleImageUpload(e, 'exteriorImages')} />
+                            <input type="file" multiple className="hidden" ref={interiorImagesRef} onChange={(e) => handleImageUpload(e, 'interiorImages')} />
+                            <input type="file" accept=".pdf,application/pdf" className="hidden" ref={reportFileRef} onChange={handleReportUpload} />
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 leading-none">
+                                <ImageUploadPlaceholder
+                                    label="Imágenes Principales"
+                                    images={formData.images}
+                                    field="images"
+                                    onRemove={removeImage}
+                                    onMove={moveImage}
+                                    onClick={() => mainImagesRef.current?.click()}
+                                />
+                                <ImageUploadPlaceholder
+                                    label="Fotos Detalles Exterior"
+                                    images={formData.exteriorImages}
+                                    field="exteriorImages"
+                                    onRemove={removeImage}
+                                    onMove={moveImage}
+                                    onClick={() => exteriorImagesRef.current?.click()}
+                                />
+                                <ImageUploadPlaceholder
+                                    label="Fotos Detalles Interior"
+                                    images={formData.interiorImages}
+                                    field="interiorImages"
+                                    onRemove={removeImage}
+                                    onMove={moveImage}
+                                    onClick={() => interiorImagesRef.current?.click()}
+                                />
+                            </div>
+
+                            <div className="flex flex-col space-y-2.5 text-left leading-none">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">Descripción</label>
+                                <textarea value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={6} className="w-full bg-[#F7F8FA] border-none rounded-2xl p-5 text-[11px] font-medium outline-none focus:ring-1 focus:ring-black resize-none leading-relaxed" />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+                                <FormGroup label="Nombre del Informe" value={formData.reportLabel} onChange={(v) => handleChange('reportLabel', v)} placeholder="Autofact o Informe" />
                                 <button
                                     type="button"
-                                    onClick={() => setFormData((prev) => ({ ...prev, reportDocument: null }))}
-                                    className="rounded-lg px-3 py-2 text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                    onClick={() => reportFileRef.current?.click()}
+                                    className="h-[42px] rounded-xl border border-black bg-black px-5 text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all whitespace-nowrap"
                                 >
-                                    Quitar
+                                    {formData.reportDocument ? 'Cambiar Informe' : 'Subir Informe'}
                                 </button>
                             </div>
-                        )}
+
+                            {formData.reportDocument && (
+                                <div className="flex items-center justify-between rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-3 text-left">
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-black leading-none">
+                                            {formData.reportLabel || 'INFORME DEL VEHICULO'}
+                                        </p>
+                                        <p className="mt-1 text-[8px] font-bold uppercase tracking-tight text-zinc-400 leading-none">
+                                            Archivo PDF cargado para descarga
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData((prev) => ({ ...prev, reportDocument: null }))}
+                                        className="rounded-lg px-3 py-2 text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                    >
+                                        Quitar
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </AdminCollapsibleCard>
                 </form>
             </main>
@@ -779,6 +898,61 @@ function FormSelect({ label, value, options, onChange }: FSProps) {
         <div className="flex flex-col space-y-2.5 text-left leading-none">
             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">{label}</label>
             <AdminSoftSelect value={value ?? ''} onChange={onChange} options={options.map((opt) => ({ value: opt, label: opt }))} />
+        </div>
+    )
+}
+
+interface CommissionInputProps {
+    commission: { type: 'fixed' | 'percent'; value: number };
+    price: number;
+    onToggle: () => void;
+    onValueChange: (value: number) => void;
+}
+function CommissionInput({ commission, price, onToggle, onValueChange }: CommissionInputProps) {
+    const isPercent = commission.type === 'percent'
+    const preview = isPercent && commission.value > 0 && price > 0
+        ? Math.round((price * commission.value) / 100)
+        : 0
+
+    return (
+        <div className="flex flex-col space-y-2.5 text-left leading-none">
+            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 ml-1 leading-none">
+                {isPercent ? 'Comisión (%)' : 'Comisión (CLP)'}
+            </label>
+            <div className="flex gap-2 h-[42px]">
+                <input
+                    type="text"
+                    inputMode="decimal"
+                    value={isPercent
+                        ? (commission.value > 0 ? String(commission.value) : '')
+                        : (commission.value > 0 ? formatChileanNumber(commission.value) : '')}
+                    onChange={(e) => {
+                        const raw = e.target.value
+                        if (isPercent) {
+                            const n = Number(raw.replace(',', '.'))
+                            onValueChange(Number.isNaN(n) ? 0 : n)
+                        } else {
+                            onValueChange(parseChileanNumber(raw))
+                        }
+                    }}
+                    placeholder={isPercent ? 'Ej: 3' : 'Ej: 200.000'}
+                    className="flex-1 h-[42px] bg-[#F7F8FA] border-none rounded-xl px-5 text-[11px] font-bold outline-none focus:ring-1 focus:ring-black leading-none"
+                />
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    className="bg-black text-white w-[42px] rounded-xl text-[12px] font-black hover:bg-zinc-800 transition-all active:scale-95 shrink-0"
+                    aria-label={isPercent ? 'Cambiar a monto fijo' : 'Cambiar a porcentaje'}
+                    title={isPercent ? 'Cambiar a monto fijo' : 'Cambiar a porcentaje'}
+                >
+                    {isPercent ? '%' : '$'}
+                </button>
+            </div>
+            {isPercent && preview > 0 && (
+                <p className="text-[8px] font-bold uppercase tracking-widest text-zinc-500 ml-1 leading-none mt-1">
+                    ≈ ${formatChileanNumber(preview)} sobre ${formatChileanNumber(price)}
+                </p>
+            )}
         </div>
     )
 }

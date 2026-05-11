@@ -379,7 +379,7 @@ export default function AdministracionPage() {
                                 </div>
 
                                 <AccountInput label="Correo Electronico" value={userData.email} onChange={(v) => setUserData({ ...userData, email: v })} />
-                                <AccountInput label="Teléfono" value={userData.phone} onChange={(v) => setUserData({ ...userData, phone: v })} />
+                                <AccountInput label="Teléfono / WhatsApp" value={userData.phone} onChange={(v) => setUserData({ ...userData, phone: v })} />
                             </div>
                         </div>
 

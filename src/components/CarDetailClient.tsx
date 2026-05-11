@@ -13,6 +13,15 @@ interface CarFeatureSection {
     items: { label: string; value: string | number }[]
 }
 
+interface AssignedSeller {
+    _id: string
+    firstName?: string
+    lastName?: string
+    role?: string
+    phone?: string
+    imageUrl?: string
+}
+
 interface DetailCar {
     _id: string
     make: string
@@ -37,6 +46,7 @@ interface DetailCar {
     images?: string[]
     exteriorImages?: string[]
     interiorImages?: string[]
+    assignedSeller?: AssignedSeller | null
 }
 
 interface RecommendedCar {
@@ -64,7 +74,11 @@ async function getCar(slug: string) {
     "images": images[].asset->url,
     "exteriorImages": exteriorImages[].asset->url,
     "interiorImages": interiorImages[].asset->url,
-    "reportDocumentUrl": reportDocument.asset->url
+    "reportDocumentUrl": reportDocument.asset->url,
+    "assignedSeller": assignedSeller->{
+      _id, firstName, lastName, role, phone,
+      "imageUrl": image.asset->url
+    }
   }`
     return await client.fetch<DetailCar | null>(query, { slug })
 }
@@ -207,6 +221,19 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
         ...(detailFilter === 'all' || detailFilter === 'interior' ? interiorImages : []),
     ];
 
+    // --- VENDEDOR Y WHATSAPP DINÁMICOS ---
+    const seller = car.assignedSeller || null
+    const sellerFullName = seller ? `${seller.firstName || ''} ${seller.lastName || ''}`.trim() : ''
+    const sellerInitial = (seller?.firstName || seller?.lastName || 'V').charAt(0).toUpperCase()
+    const sellerRoleLabel = 'Asesor de Ventas'
+    const sellerRawNumber = (seller?.phone || contact?.whatsapp || '').toString()
+    const whatsappNumber = sellerRawNumber.replace(/\D/g, '')
+    const greetingName = sellerFullName ? sellerFullName.split(' ')[0] : ''
+    const whatsappMessage = `${greetingName ? `Hola ${greetingName}` : 'Hola'}, me interesa el ${car.make} ${car.model} (${car.year}) que vi en el catálogo.`
+    const whatsappUrl = whatsappNumber
+        ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
+        : ''
+
     const carFeatures: CarFeatureSection[] = [
         { title: "General", items: [{ label: "Cilindrada", value: car.specsGeneral?.cilindrada || "-" }, { label: "Cilindros", value: car.specsGeneral?.cilindros || "-" }, { label: "Potencia", value: car.specsGeneral?.potencia || "-" }, { label: "Transmisión", value: car.transmission || "-" }, { label: "Combustible", value: car.fuel || "-" }] },
         { title: "Historial", items: [{ label: "Dueños", value: car.specsHistory?.duenos || "-" }, { label: "Mantenciones", value: car.specsHistory?.mantenciones || "-" }, { label: "Historial Autofact", value: car.specsHistory?.historial || "-" }] },
@@ -312,23 +339,54 @@ export default function CarDetailClient({ params }: { params: Promise<{ slug: st
                                     <p className="text-3xl font-black tracking-tighter leading-none">${car.financedPrice?.toLocaleString('es-CL')}</p>
                                 </div>
                             </div>
+                            {seller && (
+                                <div className="bg-[#FBFBFB] rounded-2xl p-6 border border-gray-100 shadow-sm">
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.1em] text-black mb-4">Tu Asesor</h4>
+                                    <div className="flex items-center gap-4">
+                                        {seller.imageUrl ? (
+                                            <img
+                                                src={seller.imageUrl}
+                                                alt={sellerFullName || 'Asesor'}
+                                                className="w-12 h-12 rounded-full object-cover border border-gray-100 shrink-0"
+                                            />
+                                        ) : (
+                                            <div
+                                                className="w-12 h-12 rounded-full flex items-center justify-center font-black text-white uppercase text-[14px] shrink-0"
+                                                style={{ backgroundColor: primaryColor }}
+                                            >
+                                                {sellerInitial}
+                                            </div>
+                                        )}
+                                        <div className="leading-none">
+                                            <p className="text-[12px] font-extrabold uppercase tracking-tight text-black leading-none">
+                                                {sellerFullName || 'Asesor de Ventas'}
+                                            </p>
+                                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-1.5 leading-none">
+                                                {sellerRoleLabel}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             <div className="bg-[#FBFBFB] rounded-2xl p-6 border border-gray-100 shadow-sm">
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.1em] text-black mb-4">Especificaciones</h4>
                                 <div className="flex flex-col mb-4">
                                     <DataRow label="Marca" value={car.make} /><DataRow label="Modelo" value={car.model} /><DataRow label="Año" value={car.year} /><DataRow label="Kilometraje" value={`${car.mileage?.toLocaleString('es-CL')} KM`} /><DataRow label="Combustible" value={car.fuel} /><DataRow label="Transmisión" value={car.transmission} /><DataRow label="Ubicación" value={car.location || config?.defaultLocation || 'Santiago'} />
                                 </div>
-                                <div className="text-center">
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">{config?.catalogContent?.whatsappLabel?.trim() || 'Cotiza en línea vía WhatsApp'}</p>
-                                    <a
-                                        href={`https://wa.me/${contact.whatsapp || "56937084907"}?text=${encodeURIComponent(`Hola, me interesa el ${car.make} ${car.model} (${car.year}) que vi en el catálogo.`)}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block w-full text-white text-center font-bold text-[10px] uppercase tracking-[0.15em] py-4 rounded-xl hover:opacity-90 transition-all shadow-sm"
-                                        style={{ backgroundColor: primaryColor }}
-                                    >
-                                        CONSULTAR STOCK
-                                    </a>
-                                </div>
+                                {whatsappUrl && (
+                                    <div className="text-center">
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">{config?.catalogContent?.whatsappLabel?.trim() || 'Cotiza en línea vía WhatsApp'}</p>
+                                        <a
+                                            href={whatsappUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block w-full text-white text-center font-bold text-[10px] uppercase tracking-[0.15em] py-4 rounded-xl hover:opacity-90 transition-all shadow-sm"
+                                            style={{ backgroundColor: primaryColor }}
+                                        >
+                                            CONSULTAR STOCK
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                             {car.reportDocumentUrl && (
                                 <div className="bg-[#FBFBFB] rounded-2xl p-6 border border-gray-100 shadow-sm">

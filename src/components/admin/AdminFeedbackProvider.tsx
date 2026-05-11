@@ -621,7 +621,7 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
 
             {shouldRenderFeedbackUi ? (
                 <div className="fixed bottom-4 right-4 z-[80]">
-                    <div className="relative flex flex-col items-end">
+                    <div className="relative flex flex-col items-end gap-3">
                         {visibleToasts.length > 0 ? (
                             <div className="grid w-[360px] grid-cols-1 gap-2">
                                 {visibleToasts.map((toast) => (
@@ -660,8 +660,69 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                             </div>
                         ) : null}
 
-                        {!panelOpen && visibleToasts.length === 0 ? (
-                            <div className="relative flex flex-col items-end gap-2">
+                        <div className="relative flex flex-col items-end gap-2">
+                                {panelOpen ? (
+                                    <div className="w-[360px] max-h-[70vh] overflow-hidden rounded-3xl border border-gray-200 bg-white">
+                                        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Notificaciones</p>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={clearNotifications}
+                                                    className="text-[8px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-700"
+                                                >
+                                                    Limpiar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPanelOpen(false)}
+                                                    className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 hover:border-black hover:text-black transition-colors"
+                                                    aria-label="Cerrar notificaciones"
+                                                >
+                                                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                                        <path d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="max-h-[56vh] overflow-y-auto px-3 py-3 space-y-2">
+                                            {notifications.length === 0 ? (
+                                                <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-5 text-left">
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Sin notificaciones</p>
+                                                    <p className="mt-1 text-[10px] font-medium text-zinc-500">Aqui apareceran las alertas del panel</p>
+                                                </div>
+                                            ) : (
+                                                notifications.map((item) => (
+                                                    <div key={item.id} className={`w-full rounded-xl border p-4 text-left ${TYPE_STYLES[item.type].panelCard} ${item.read ? 'opacity-75' : 'opacity-100'}`}>
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div className="flex items-start gap-4">
+                                                                <span className={`mt-0.5 block h-2 w-2 min-h-2 min-w-2 shrink-0 rounded-full ${TYPE_STYLES[item.type].dot}`}></span>
+                                                                <div className="flex min-w-0 flex-col justify-center text-left">
+                                                                    <p className={`text-[10px] font-black uppercase tracking-widest leading-none ${TYPE_STYLES[item.type].panelTitle}`}>
+                                                                        {item.title}
+                                                                    </p>
+                                                                    <p className={`mt-[7px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMessage}`}>
+                                                                        {item.message}
+                                                                    </p>
+                                                                    <p className={`mt-[6px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
+                                                                        {item.locationLabel}
+                                                                    </p>
+                                                                    <p className={`mt-[4px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
+                                                                        {item.locationDetail}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <span className={`mt-0.5 shrink-0 whitespace-nowrap text-right text-[8px] font-bold uppercase tracking-widest leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
+                                                                {formatDateTime(item.createdAt)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : null}
+
                                 {accessibilityOpen ? (
                                     <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5">
                                         <button
@@ -718,10 +779,13 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                                         type="button"
                                         onClick={() => {
                                             setAccessibilityOpen(false)
-                                            markAllRead()
-                                            setPanelOpen(true)
+                                            setPanelOpen((prev) => {
+                                                if (!prev) markAllRead()
+                                                return !prev
+                                            })
                                         }}
-                                        className="relative inline-flex h-12 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700"
+                                        className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-zinc-700"
+                                        aria-label="Abrir notificaciones"
                                     >
                                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.4">
                                             <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -734,64 +798,6 @@ export function AdminFeedbackProvider({ children }: { children: React.ReactNode 
                                     </button>
                                 </div>
                             </div>
-                        ) : null}
-                    </div>
-                </div>
-            ) : null}
-
-            {panelOpen && shouldRenderFeedbackUi ? (
-                <div className="fixed inset-0 z-[75] bg-transparent" onClick={() => setPanelOpen(false)}>
-                    <div
-                        className="absolute bottom-4 right-4 w-[360px] max-h-[70vh] overflow-hidden rounded-3xl border border-gray-200 bg-white"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Notificaciones</p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={clearNotifications}
-                                    className="text-[8px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-700"
-                                >
-                                    Limpiar
-                                </button>
-                            </div>
-                        </div>
-                        <div className="max-h-[56vh] overflow-y-auto px-3 py-3 space-y-2">
-                            {notifications.length === 0 ? (
-                                <div className="rounded-2xl border border-gray-100 bg-[#F7F8FA] px-4 py-5 text-left">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Sin notificaciones</p>
-                                    <p className="mt-1 text-[10px] font-medium text-zinc-500">Aqui apareceran las alertas del panel</p>
-                                </div>
-                            ) : (
-                                notifications.map((item) => (
-                                    <div key={item.id} className={`w-full rounded-xl border p-4 text-left ${TYPE_STYLES[item.type].panelCard} ${item.read ? 'opacity-75' : 'opacity-100'}`}>
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="flex items-start gap-4">
-                                                <span className={`mt-0.5 block h-2 w-2 min-h-2 min-w-2 shrink-0 rounded-full ${TYPE_STYLES[item.type].dot}`}></span>
-                                                <div className="flex min-w-0 flex-col justify-center text-left">
-                                                    <p className={`text-[10px] font-black uppercase tracking-widest leading-none ${TYPE_STYLES[item.type].panelTitle}`}>
-                                                        {item.title}
-                                                    </p>
-                                                    <p className={`mt-[7px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMessage}`}>
-                                                        {item.message}
-                                                    </p>
-                                                    <p className={`mt-[6px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
-                                                        {item.locationLabel}
-                                                    </p>
-                                                    <p className={`mt-[4px] text-[8px] font-bold uppercase tracking-tighter leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
-                                                        {item.locationDetail}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <span className={`mt-0.5 shrink-0 whitespace-nowrap text-right text-[8px] font-bold uppercase tracking-widest leading-none ${TYPE_STYLES[item.type].panelMeta}`}>
-                                                {formatDateTime(item.createdAt)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
                     </div>
                 </div>
             ) : null}
