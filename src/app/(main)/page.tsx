@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { client } from '@/sanity/lib/client'
 import Link from 'next/link'
 import CarCard from "@/components/CarCard"
+import HeroSearch from "@/components/HeroSearch"
 import { urlFor } from '@/sanity/lib/image'
 import { CONTENT_DEFAULTS, resolvePrimaryColor } from '@/lib/content-defaults'
 
@@ -131,19 +132,7 @@ export default async function HomePage() {
             {heroSubtitle}
           </p>
 
-          <div className="bg-white p-1 rounded-xl flex max-w-xl mx-auto border border-gray-200 shadow-sm">
-            <input
-              type="text"
-              placeholder="Busca por marca o modelo..."
-              className="flex-grow bg-transparent text-black py-3 px-4 outline-none text-sm font-medium placeholder:text-gray-400"
-            />
-            <button
-              className="text-white px-8 py-3 rounded-lg text-[11px] font-bold uppercase transition-colors"
-              style={{ backgroundColor: 'var(--primary)' }}
-            >
-              Buscar
-            </button>
-          </div>
+          <HeroSearch />
         </div>
       </header>
 

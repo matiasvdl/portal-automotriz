@@ -38,15 +38,18 @@ async function getCars() {
     return await client.fetch(query)
 }
 
-export default async function CatalogoPage() {
-    const cars = await getCars()
+export default async function CatalogoPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ search?: string | string[] }>
+}) {
+    const [cars, params] = await Promise.all([getCars(), searchParams])
+    const rawSearch = Array.isArray(params.search) ? params.search[0] : params.search
+    const initialSearch = rawSearch?.trim() ?? ''
 
     return (
         <main className="min-h-screen bg-[#F7F8F9]">
-            {/* Paso A: CatalogFilters debe usar el hook useSettings() 
-                para aplicar el primaryColor a los botones y filtros. 
-            */}
-            <CatalogFilters initialCars={cars} />
+            <CatalogFilters initialCars={cars} initialSearch={initialSearch} />
         </main>
     )
 }

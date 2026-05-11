@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
         siteUrl,
         seoDescriptions,
         "appearance": *[_id == "appearance-settings"][0]{ logo, favicon } 
-    }`, {}, { next: { revalidate: 0 } });
+    }`, {}, { next: { revalidate: 300 } });
 
     const name = data?.siteName?.trim() || CONTENT_DEFAULTS.siteDisplayName;
     const description = data?.seoDescriptions?.home || 'Compra y venta de vehÃ­culos seleccionados.';
@@ -64,7 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
     // 1. Fetch unificado, usando el ID estricto para evitar documentos duplicados/borradores
     const [config, appearance, contact] = await Promise.all([
-        client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' }),
+        client.fetch(`*[_type == "siteConfig"][0]`, {}, { next: { revalidate: 300 } }),
         client.fetch(`*[_id == "appearance-settings"][0]{
             brandName, 
             logo, 
@@ -83,11 +83,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                 image,
                 position
             }
-        }`, {}, { cache: 'no-store' }),
+        }`, {}, { next: { revalidate: 300 } }),
         client.fetch(
             `coalesce(*[_id == "contact-settings" && _type == "contact"][0], *[_type == "contact"][0], *[_type == "contactSettings"][0])`,
             {},
-            { cache: 'no-store' }
+            { next: { revalidate: 300 } }
         )
     ]);
 

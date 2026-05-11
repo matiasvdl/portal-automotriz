@@ -11,7 +11,7 @@ export async function generateMetadata() {
         siteUrl,
         seoDescriptions,
         "logo": *[_type == "appearance"][0].logo
-    }`, {}, { next: { revalidate: 0 } })
+    }`, {}, { next: { revalidate: 300 } })
 
     const name = data?.siteName || ''
     const description = data?.seoDescriptions?.home || 'Compra y venta de vehículos seleccionados.'
@@ -54,7 +54,7 @@ export default async function RootLayout({
     children: React.ReactNode
 }) {
     const [config, appearance, contact] = await Promise.all([
-        client.fetch(`*[_type == "siteConfig"][0]`, {}, { cache: 'no-store' }),
+        client.fetch(`*[_type == "siteConfig"][0]`, {}, { next: { revalidate: 300 } }),
         client.fetch(`*[_id == "appearance-settings"][0]{
             brandName,
             logo,
@@ -73,11 +73,11 @@ export default async function RootLayout({
                 image,
                 position
             }
-        }`, {}, { cache: 'no-store' }),
+        }`, {}, { next: { revalidate: 300 } }),
         client.fetch(
             `coalesce(*[_id == "contact-settings" && _type == "contact"][0], *[_type == "contact"][0], *[_type == "contactSettings"][0])`,
             {},
-            { cache: 'no-store' }
+            { next: { revalidate: 300 } }
         ),
     ])
 

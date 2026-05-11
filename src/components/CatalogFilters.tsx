@@ -101,8 +101,8 @@ const SORT_OPTIONS = [
     { key: 'km-menor', label: 'MENOS KM' },
 ]
 
-export default function CatalogFilters({ initialCars }: { initialCars: CatalogCar[] }) {
-    const [search, setSearch] = useState('')
+export default function CatalogFilters({ initialCars, initialSearch = '' }: { initialCars: CatalogCar[]; initialSearch?: string }) {
+    const [search, setSearch] = useState(initialSearch)
     const [sortBy, setSortBy] = useState('relevancia')
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false)
 

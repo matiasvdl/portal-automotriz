@@ -5,7 +5,7 @@ import { getToken } from 'next-auth/jwt'
 const PRINCIPAL_ROLE = 'Administrador Principal'
 const ADMIN_ROLE = 'Administrador'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname
 
     // Definimos que rutas son privadas.
