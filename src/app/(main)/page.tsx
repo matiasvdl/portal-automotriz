@@ -61,7 +61,7 @@ export async function generateMetadata() {
   const config = await client.fetch(`*[_type == "siteConfig"][0]{ seoDescriptions }`)
   return {
     title: 'Inicio',
-    description: config?.seoDescriptions?.home || 'Comprar y vender un auto nunca fue tan simple. Explora nuestro catÃ¡logo de vehÃ­culos seleccionados.'
+    description: config?.seoDescriptions?.home || 'Comprar y vender un auto nunca fue tan simple. Explora nuestro catálogo de vehículos seleccionados.'
   }
 }
 
@@ -139,7 +139,7 @@ export default async function HomePage() {
       <section className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex justify-between items-baseline mb-8">
           <div className="space-y-2">
-            <h2 className="text-xl font-black tracking-tight text-black uppercase">{config?.homeContent?.featuredTitle?.trim() || 'ReciÃ©n llegados'}</h2>
+            <h2 className="text-xl font-black tracking-tight text-black uppercase">{config?.homeContent?.featuredTitle?.trim() || 'Recién llegados'}</h2>
             <div className="h-1 w-12" style={{ backgroundColor: 'var(--primary)' }}></div>
           </div>
           <Link href="/catalogo" className="text-[11px] font-bold text-[#666666] hover:text-black uppercase tracking-[0.15em] transition-colors">
@@ -157,7 +157,7 @@ export default async function HomePage() {
       <section className="bg-white pb-16 pt-10 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-10 space-y-2 text-left">
-            <h2 className="text-xl font-black tracking-tight text-black uppercase">{config?.homeContent?.reviewsTitle?.trim() || 'ReseÃ±a de nuestros clientes'}</h2>
+            <h2 className="text-xl font-black tracking-tight text-black uppercase">{config?.homeContent?.reviewsTitle?.trim() || 'Reseña de nuestros clientes'}</h2>
             <div className="h-1 w-12" style={{ backgroundColor: 'var(--primary)' }}></div>
           </div>
 

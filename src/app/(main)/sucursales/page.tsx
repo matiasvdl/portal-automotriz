@@ -6,7 +6,7 @@ export async function generateMetadata() {
 
     return {
         title: 'Sucursales',
-        description: config?.seoDescriptions?.sucursales || 'Conoce nuestras sucursales, horarios y ubicaciÃ³n.',
+        description: config?.seoDescriptions?.sucursales || 'Conoce nuestras sucursales, horarios y ubicación.',
         openGraph: {
             title: `Sucursales`,
         },

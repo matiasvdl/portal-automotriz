@@ -50,21 +50,21 @@ export default function CarCard({ car }: { car: Car }) {
 
                     <div className="flex gap-4">
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1 text-zinc-400">Kilómetros</span>
+                            <span className="text-[8px] font-bold uppercase tracking-tighter leading-none mb-1 text-zinc-400">Kilómetros</span>
                             <span className="text-[11px] font-bold text-zinc-700 italic">
                                 {car.mileage ? car.mileage.toLocaleString('es-CL') : '0'} KM
                             </span>
                         </div>
                         <div className="h-6 w-[1px] bg-gray-100"></div>
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1 text-zinc-400">Motor</span>
+                            <span className="text-[8px] font-bold uppercase tracking-tighter leading-none mb-1 text-zinc-400">Motor</span>
                             <span className="text-[11px] font-bold text-zinc-700 uppercase italic">
                                 {car.engine ? `${car.engine}L` : '-'}
                             </span>
                         </div>
                         <div className="h-6 w-[1px] bg-gray-100"></div>
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1 text-zinc-400">Combustible</span>
+                            <span className="text-[8px] font-bold uppercase tracking-tighter leading-none mb-1 text-zinc-400">Combustible</span>
                             <span className="text-[11px] font-bold text-zinc-700 uppercase italic">
                                 {car.fuel}
                             </span>
